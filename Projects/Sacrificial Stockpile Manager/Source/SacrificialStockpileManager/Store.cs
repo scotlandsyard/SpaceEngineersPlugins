@@ -393,8 +393,7 @@ internal static class Store
 		{
 			if (PluginStorage.FileExists(fileName, typeof(Store)))
 			{
-				using TextReader reader = PluginStorage.Read(fileName, typeof(Store));
-				return MyAPIGateway.Utilities.SerializeFromXML<T>(reader.ReadToEnd());
+				return PluginStorage.ReadXml<T>(fileName, typeof(Store));
 			}
 		}
 		catch (Exception e)

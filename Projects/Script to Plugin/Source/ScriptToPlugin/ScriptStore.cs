@@ -107,8 +107,7 @@ internal static class ScriptStore
 		{
 			if (PluginStorage.FileExists(_fileName, typeof(ScriptStore)))
 			{
-				using TextReader reader = PluginStorage.Read(_fileName, typeof(ScriptStore));
-				ScriptFile file = MyAPIGateway.Utilities.SerializeFromXML<ScriptFile>(reader.ReadToEnd());
+				ScriptFile file = PluginStorage.ReadXml<ScriptFile>(_fileName, typeof(ScriptStore));
 				if (file?.Scripts != null)
 				{
 					scripts.AddRange(file.Scripts.Where(s => s != null));

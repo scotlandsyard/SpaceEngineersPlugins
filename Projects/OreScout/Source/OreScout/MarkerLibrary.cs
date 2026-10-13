@@ -233,8 +233,7 @@ public static class MarkerLibrary
 		{
 			if (PluginStorage.FileExists(fileName, typeof(MarkerLibrary)))
 			{
-				using TextReader reader = PluginStorage.Read(fileName, typeof(MarkerLibrary));
-				_file = MyAPIGateway.Utilities.SerializeFromXML<LibraryFile>(reader.ReadToEnd()) ?? new LibraryFile();
+				_file = PluginStorage.ReadXml<LibraryFile>(fileName, typeof(MarkerLibrary)) ?? new LibraryFile();
 			}
 		}
 		catch (Exception e)
