@@ -58,6 +58,12 @@ public class ScriptSession : MySessionComponentBase
 
 	internal static double Now => MyAPIGateway.Session?.ElapsedPlayTime.TotalSeconds ?? 0.0;
 
+	/// <summary>
+	/// Scripts only compile and run in offline worlds (single player, not hosted for anyone). On a server, or in a
+	/// world hosted for other players, this plugin does nothing but show its menu and say so.
+	/// </summary>
+	internal static bool IsOffline => MyAPIGateway.Session != null && MyAPIGateway.Session.OnlineMode == MyOnlineModeEnum.OFFLINE;
+
 	internal IgcHub Igc { get; } = new IgcHub();
 
 	internal IReadOnlyList<VirtualProgram> Programs => _programs;
@@ -172,25 +178,33 @@ public class ScriptSession : MySessionComponentBase
 				program.Shutdown(callSave: !_savedOnUnload);
 			}
 			SaveNow();
-			try
-			{
-				MySession.OnUnloading -= OnSessionUnloading;
-				MyAPIGateway.TerminalControls.CustomActionGetter -= CustomActionGetter;
-				MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
-				PluginSwitcher.Unregister();
-				Personality.Changed -= OnPersonalityChanged;
-				Personality.Unregister();
-			}
-			catch
-			{
-			}
 		}
+		// Unsubscribe whether or not BeforeStart finished: if it failed half way, the handlers it had already added
+		// are static and would otherwise stay alive. Taking off a handler that was never added does nothing.
+		Unsubscribe(() => MySession.OnUnloading -= OnSessionUnloading);
+		Unsubscribe(() => MyAPIGateway.TerminalControls.CustomActionGetter -= CustomActionGetter);
+		Unsubscribe(() => MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered);
+		Unsubscribe(PluginSwitcher.Unregister);
+		Unsubscribe(() => Personality.Changed -= OnPersonalityChanged);
+		Unsubscribe(Personality.Unregister);
 		_programs.Clear();
 		_compileQueue.Clear();
 		ScriptEditors.Clear();
 		ScriptStore.Unload();
 		_started = false;
 		Instance = null;
+	}
+
+	private static void Unsubscribe(Action remove)
+	{
+		try
+		{
+			remove();
+		}
+		catch (Exception ex)
+		{
+			MyLog.Default.WriteLineAndConsole($"[ScriptToPlugin] Unsubscribe: {ex.Message}");
+		}
 	}
 
 	public override void UpdateAfterSimulation()

@@ -1,11 +1,12 @@
 # Script to Plugin
 
-A client-side Pulsar plugin that runs programmable block scripts in your own game instead of in a programmable block. Every script in its menu works like its own programmable block, so one plugin can stand in for any number of them.
+A Pulsar plugin for testing programmable block scripts in your own game, without building a programmable block for each one. Every script in its menu works like its own programmable block, so one plugin can stand in for any number of them.
+
+**It only works in offline worlds** (single player, not hosted for anyone). In an online world or on a server it compiles and runs nothing; the menu says so. It is a script-testing tool, not a way to run scripts on a server.
 
 - Paste any in-game script, or load one with **Browse Scripts** in the game's own code editor (local and workshop scripts).
 - Scripts compile with the game's own script compiler and whitelist, and have the programmable block's limits (50,000 instructions per run).
 - `Me`, `GridTerminalSystem`, `Runtime`, `Storage`, `Echo`, `Save()`, `UpdateFrequency` and run arguments work as in a programmable block. `IGC` works between the plugin's own scripts.
-- Works on multiplayer servers without anything installed on the server.
 
 ## Opening the menu
 
@@ -51,23 +52,22 @@ Every block that hosts a script gets these actions, one set per script:
 | `<script>: On/Off` | Switches the script on or off; the slot shows On or Off |
 | Script to Plugin menu | Opens the menu on this block's script |
 
-They work from your own toolbar (cockpit, remote control, and so on). Button panels, timers, sensors and event controllers run their actions on the server, where the plugin isn't loaded, so they can't run these scripts.
+They work from your own toolbar (cockpit, remote control, and so on). Button panels, timers, sensors and event controllers can't run these scripts.
 
-## Multiplayer
+## Offline worlds only
 
-Everything runs on your client. Nothing is needed on the server.
+Scripts compile and run only when the world is offline: single player, not hosted for anyone. In an online world, on a server or in a world you host for other players, nothing is compiled or run. The list shows **Offline worlds only** as the state, the menu says why, and the Run buttons and toolbar actions do nothing. Your scripts and their Storage are kept, so they are there again the next time you play offline.
 
-- **Changes go through the server.** When a script switches a block, changes a setting or writes to Custom Data, the game sends the same request as a change made in the terminal. The server checks your access, so a script can't do anything you couldn't do by hand. `GridTerminalSystem` only lists blocks you have access to, as a programmable block you own would.
-- **LCDs.** Text a script writes (`WriteText`) is sent to the server when it changes, so everyone sees it. Sprites a script draws (`DrawFrame`) are shown only on your own screen.
-- **Only while you're around.** Scripts run while you're online and the host's grid is loaded near you. When the grid unloads, the script stops and keeps its Storage. It starts again when the grid is back.
-- **IGC.** The game's IGC runs on the server and only knows real programmable blocks. The plugin's scripts talk to each other through the plugin's own IGC, with the game's rules (next-tick delivery, 25 waiting messages per listener, message callbacks). Reach depends on how the host grids are connected; antenna range isn't checked, so anything farther counts as in antenna range. Scripts can't message real programmable blocks, and real programmable blocks can't message them.
-- **Worlds with scripts switched off.** If the server has in-game scripts switched off, the plugin still runs your scripts in your game, and the menu shows a note about it.
-- **Other players** don't see the scripts, their output or their sprites.
+- **Why:** a script that changes blocks in an online world sends the same requests to the server as a player at the terminal would, but at script speed. This plugin is meant for trying out a script in single player, then putting it in a real programmable block.
+- **IGC.** The plugin's scripts talk to each other through the plugin's own IGC, with the game's rules (next-tick delivery, 25 waiting messages per listener, message callbacks). Antenna range isn't checked, so anything farther counts as in antenna range. Scripts can't message real programmable blocks, and real programmable blocks can't message them.
+- **Worlds with scripts switched off.** In your own offline world the plugin still runs your scripts if the world has in-game scripts switched off, and the menu shows a note about it.
+- **Only while you're around.** Scripts run while the host's grid is loaded near you. When the grid unloads, the script stops and keeps its Storage. It starts again when the grid is back.
 
 ## Differences from a programmable block
 
 - There is no block: the host block stands in for it (see above), and output shows in the menu instead of the terminal.
 - `Me` has no terminal actions or properties, and `Me.TryRun` on itself returns false (as it does in a running programmable block).
+- Scripts only run in offline worlds (see above).
 - Timers, sensors, button panels and event controllers can't run the scripts (see Toolbar actions).
 - IGC only reaches the plugin's own scripts.
 - Scripts start again after a world load like a programmable block: the constructor runs with the saved Storage.
@@ -93,7 +93,7 @@ Both settings are yours, the same in every world, and saved in `ScriptToPlugin_S
 
 ## Where scripts are kept
 
-Code, Custom Data, Storage, the default argument and the on/off state are saved in the plugin's local storage (under `%AppData%\SpaceEngineers\Storage`), one file per world, named after the world. They're saved a second after a change, every minute while scripts run, when you save the world, and when you leave. Nothing is stored in the world itself, so the scripts are yours and aren't shared with other players.
+Code, Custom Data, Storage, the default argument and the on/off state are saved in the plugin's local storage (under `%AppData%\SpaceEngineers\Storage`), one file per world, named after the world. They're saved a second after a change, every minute while scripts run, when you save the world, and when you leave. Nothing is stored in the world itself, so the scripts are yours.
 
 ## Switching between our plugins
 

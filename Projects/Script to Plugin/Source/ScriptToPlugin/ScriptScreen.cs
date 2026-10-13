@@ -284,6 +284,10 @@ public class ScriptScreen : MyGuiScreenBase
 
 	private string Hint(VirtualProgram selected)
 	{
+		if (!ScriptSession.IsOffline)
+		{
+			return "Scripts only run in offline worlds (single player). This world is online, so nothing here runs.";
+		}
 		if (Session.Programs.Count == 0)
 		{
 			return "No scripts yet. Press New script to add one.";

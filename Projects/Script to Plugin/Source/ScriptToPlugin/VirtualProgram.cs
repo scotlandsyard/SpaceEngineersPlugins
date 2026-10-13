@@ -108,7 +108,7 @@ internal class VirtualProgram
 
 	public long RunCount { get; private set; }
 
-	public bool HasProblem => _compileFailed || _crashed || (Entry.Enabled && (Host == null || !_hasAccess));
+	public bool HasProblem => _compileFailed || _crashed || (Entry.Enabled && (!ScriptSession.IsOffline || Host == null || !_hasAccess));
 
 	public string StateText
 	{
@@ -117,6 +117,10 @@ internal class VirtualProgram
 			if (!Entry.Enabled)
 			{
 				return "Off";
+			}
+			if (!ScriptSession.IsOffline)
+			{
+				return "Offline worlds only";
 			}
 			if (_compiling)
 			{
@@ -167,7 +171,8 @@ internal class VirtualProgram
 			LoadMsPerTick = _loadWindowMs / 60.0;
 			_loadWindowMs = 0.0;
 		}
-		if (!Entry.Enabled || _crashed || _compileFailed || _compiling)
+		// Nothing is compiled or run unless the world is offline.
+		if (!ScriptSession.IsOffline || !Entry.Enabled || _crashed || _compileFailed || _compiling)
 		{
 			return;
 		}
@@ -364,7 +369,7 @@ internal class VirtualProgram
 	/// <summary>Runs Main, like pressing Run on the programmable block. False when the script isn't running.</summary>
 	public bool Run(string argument, UpdateType updateType)
 	{
-		if (_instance == null || IsRunning)
+		if (_instance == null || IsRunning || !ScriptSession.IsOffline)
 		{
 			return false;
 		}
