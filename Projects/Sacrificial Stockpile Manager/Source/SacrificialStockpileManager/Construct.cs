@@ -109,6 +109,18 @@ internal class Construct
 	/// <summary>The same for each docked ship, by unit.</summary>
 	public Dictionary<long, Dictionary<string, string>> UnitNotes = new Dictionary<long, Dictionary<string, string>>();
 
+	// Whether the server would accept requests for this construct's grids (see Reach); false pauses everything that sends.
+
+	public bool InReach = true;
+
+	/// <summary>Why it is paused, when it is.</summary>
+	public string ReachNote;
+
+	public double ReachChecked = double.MinValue;
+
+	/// <summary>The grids of the construct when it was last discovered, to notice docking, undocking and merging.</summary>
+	public string GridSignature;
+
 	// For the chat lines (Shared/Personality.cs), which comment on changes, not on states.
 
 	/// <summary>Items sent into storage since the running Sort now or unload started.</summary>

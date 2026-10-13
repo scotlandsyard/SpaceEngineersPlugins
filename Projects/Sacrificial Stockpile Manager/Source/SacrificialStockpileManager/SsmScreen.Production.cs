@@ -322,6 +322,10 @@ public partial class SsmScreen
 			ShowMessage("That block isn't loaded.", WarningColor);
 			return;
 		}
+		if (RefuseNotYours(s_machineId, block.CustomName))
+		{
+			return;
+		}
 		block.Enabled = !block.Enabled;
 		ShowMessage($"{block.CustomName} switched {(block.Enabled ? "on" : "off")}.", block.Enabled ? GoodColor : (Color?)null);
 		_rowsSignature = null;

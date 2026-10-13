@@ -144,24 +144,32 @@ public class SsmSession : MySessionComponentBase
 
 	protected override void UnloadData()
 	{
+		// Every handler is removed whether or not BeforeStart got to the end: a start that failed halfway can leave
+		// some subscribed, and unsubscribing something that was never added does nothing.
+		Detach(() => MyAPIGateway.TerminalControls.CustomActionGetter -= CustomActionGetter);
+		Detach(() => MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered);
+		Detach(() => Personality.Changed -= OnPersonalityChanged);
+		Detach(PluginSwitcher.Unregister);
+		Detach(Personality.Unregister);
 		if (_started)
 		{
-			try
-			{
-				MyAPIGateway.TerminalControls.CustomActionGetter -= CustomActionGetter;
-				MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
-				PluginSwitcher.Unregister();
-				Personality.Changed -= OnPersonalityChanged;
-				Personality.Unregister();
-				Store.Unload();
-			}
-			catch (Exception ex)
-			{
-				MyLog.Default.WriteLineAndConsole($"[SSM] Unload: {ex}");
-			}
+			// Only saved after a complete start, so a failed load can't overwrite the stored settings.
+			Detach(Store.Unload);
 		}
 		_started = false;
 		Instance = null;
+	}
+
+	private static void Detach(Action action)
+	{
+		try
+		{
+			action();
+		}
+		catch (Exception ex)
+		{
+			MyLog.Default.WriteLineAndConsole($"[SSM] Unload: {ex.Message}");
+		}
 	}
 
 	public override void UpdateAfterSimulation()
@@ -451,6 +459,18 @@ public class SsmSession : MySessionComponentBase
 			construct.Key = main.EntityId;
 			construct.MainGrid = main;
 			construct.Grids = grids;
+			// Docking, undocking and merging change which grids share a terminal system: conveyor results from before
+			// no longer apply, and the reach has to be looked at again.
+			string signature = string.Join(",", grids.Select(g => g.EntityId).OrderBy(id => id));
+			if (construct.GridSignature != signature)
+			{
+				if (construct.GridSignature != null)
+				{
+					StockEngine.ForgetConnections();
+				}
+				construct.GridSignature = signature;
+				construct.ReachChecked = double.MinValue;
+			}
 		}
 		string outOfRange = null;
 		foreach (IMyGridTerminalSystem gone in _constructs.Keys.Where(t => !_found.ContainsKey(t)).ToList())
@@ -464,6 +484,11 @@ public class SsmSession : MySessionComponentBase
 			}
 			_constructs.Remove(gone);
 			changed = true;
+		}
+		if (changed)
+		{
+			// A construct appeared, left or was renamed after a merge: forget the conveyor checks of the old layout.
+			StockEngine.ForgetConnections();
 		}
 		if (outOfRange != null)
 		{
@@ -564,6 +589,15 @@ public class SsmSession : MySessionComponentBase
 	{
 		construct.NextEngine = now + EngineSeconds;
 		bool oneShot = construct.RunOnceUntil > 0.0 || construct.UnloadUntil > 0.0;
+		if (oneShot && !Reach.Check(construct, now))
+		{
+			// A Sort now or unload can't do anything out of reach: end it instead of reporting it finished.
+			construct.AddLog("Sort now / unload stopped: " + construct.ReachNote);
+			construct.RunOnceUntil = 0.0;
+			construct.UnloadUntil = 0.0;
+			construct.OneShotSorted = 0.0;
+			oneShot = false;
+		}
 		StockEngine engine = StockEngine.Run(construct, rules, now);
 		construct.Warnings = engine.Warnings;
 		construct.OneShotSorted += oneShot ? engine.Sorted : 0.0;

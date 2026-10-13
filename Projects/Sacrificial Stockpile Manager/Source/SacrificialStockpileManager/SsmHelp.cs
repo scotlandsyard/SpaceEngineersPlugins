@@ -9,7 +9,7 @@ internal static class SsmHelp
 	private static readonly string[] Lines =
 	{
 		"# What it does",
-		"Sacrificial Stockpile Manager keeps track of the inventory on all your ships and stations and keeps them stocked. It sorts items into the containers you choose, keeps blocks between a minimum and maximum of each item, and queues items in your assemblers to keep a quota. Everything is set up in this window; nothing is stored in Custom Data.",
+		"Sacrificial Stockpile Manager keeps track of the inventory on all your ships and stations and keeps them stocked. It sorts items into the containers you choose, keeps blocks between a minimum and maximum of each item, and queues items in your assemblers to keep a quota. Everything is set up in this window; your settings are stored on your computer, not in Custom Data. Only the assembler mode shared with our other plugins is written to the Custom Data of assemblers you own.",
 		"It runs in your own game. It works on a grid while that grid is loaded near you, and remembers what each grid held when it was last in range.",
 		"",
 		"# Opening this window",
@@ -39,7 +39,10 @@ internal static class SsmHelp
 		"Unload docked ships (button, toolbar action, or /ssm unload) moves the cargo of your ships docked to this grid into its storage: their cargo containers, connectors and collectors. Stock and Manual blocks keep their contents, a block keeps its minimums, and a ship keeps its own quota amounts: only what it holds above a quota is unloaded.",
 		"",
 		"# Whose blocks",
-		"The game lets you use blocks shared with your faction, blocks shared with everyone, and blocks nobody owns. The plugin only manages blocks you own: it never takes from, puts into or queues on anyone else's block, and never writes to their screens. They show as 'not yours'. Switch 'Blocks shared with me' on in a grid's Overview to manage those too, for example on a faction station everyone builds on. Either way the server checks every move against your access, so the plugin can never do more than you could by hand.",
+		"The game lets you use blocks shared with your faction, blocks shared with everyone, and blocks nobody owns. The plugin only manages blocks you own: it never takes from, puts into or queues on anyone else's block, and never writes to their screens or Custom Data, and never switches them on or off. They show as 'not yours'. Switch 'Blocks shared with me' on in a grid's Overview to manage those too, for example on a faction station everyone builds on. Either way the server checks every move against your access, so the plugin can never do more than you could by hand.",
+		"",
+		"# Reach",
+		"The server only accepts item moves, queue changes and screen text from a player within 15 m of the grid (or any grid docked to it) or linked to it by antenna; for anything else it refuses every request and logs it as a failed validation for the admin. So when you're out of reach of a ship or station, the plugin pauses everything that sends requests for it, the Overview says 'out of reach: automation paused', and the Items view shows 'Paused: out of reach'. It resumes by itself when you're back in reach. It doesn't apply in single player or on the host of a game. The log shows 'Moved ...' once the server has confirmed the move.",
 		"",
 		"# Block roles",
 		"Every block with an inventory has a role. Auto picks one from the block type.",

@@ -50,6 +50,11 @@ internal class StockEngine
 		public double Base;
 
 		public double Expires;
+
+		/// <summary>"Moved ..." lines for transfers into this inventory, written to the log once the server has confirmed.</summary>
+		public List<string> Logs;
+
+		public Construct Owner;
 	}
 
 	private class Stack
@@ -178,12 +183,18 @@ internal class StockEngine
 	public static StockEngine Run(Construct construct, GridRules rules, double now)
 	{
 		ExpirePending(now);
-		bool runOnce = now < construct.RunOnceUntil;
-		StockEngine engine = new StockEngine(construct, (rules != null && rules.Automation) || runOnce, now);
+		// Out of the server's reach: the pass still reads and works out warnings, but sends nothing (see Reach).
+		bool reach = Reach.Check(construct, now);
+		bool runOnce = reach && now < construct.RunOnceUntil;
+		StockEngine engine = new StockEngine(construct, reach && ((rules != null && rules.Automation) || runOnce), now);
+		if (!reach)
+		{
+			engine.Warnings.Add(construct.ReachNote);
+		}
 		// Settings a grid hasn't saved yet have their defaults (Clean production blocks is on by default).
 		rules ??= new GridRules();
 		engine._coreRules = rules;
-		if (now < construct.UnloadUntil)
+		if (reach && now < construct.UnloadUntil)
 		{
 			// Asked for by the player, so it goes first.
 			engine.UnloadDocked();
@@ -250,6 +261,12 @@ internal class StockEngine
 		_move = move;
 	}
 
+	/// <summary>Forgets the remembered conveyor checks, for when grids dock, undock or merge.</summary>
+	public static void ForgetConnections()
+	{
+		s_connections.Clear();
+	}
+
 	private static void ExpirePending(double now)
 	{
 		if (s_connections.Count > 2000)
@@ -263,9 +280,14 @@ internal class StockEngine
 		{
 			return;
 		}
-		foreach (string key in s_pending.Where(p => p.Value.Expires < now).Select(p => p.Key).ToList())
+		foreach (KeyValuePair<string, Pending> expired in s_pending.Where(p => p.Value.Expires < now).ToList())
 		{
-			s_pending.Remove(key);
+			s_pending.Remove(expired.Key);
+			// No answer in time: the move may not have happened, so it isn't logged as done.
+			foreach (string line in expired.Value.Logs ?? new List<string>())
+			{
+				expired.Value.Owner?.AddLog("Not confirmed by the server in time: " + line);
+			}
 		}
 	}
 
@@ -305,6 +327,11 @@ internal class StockEngine
 				if ((actual - entry.Value.Base) * Math.Sign(entry.Value.Delta) >= Math.Abs(entry.Value.Delta) / 2.0)
 				{
 					s_pending.Remove(entry.Key);
+					// The server answered: now the moves into this inventory are logged.
+					foreach (string line in entry.Value.Logs ?? new List<string>())
+					{
+						entry.Value.Owner?.AddLog(line);
+					}
 					continue;
 				}
 				inv.Amounts[key] = Math.Max(0.0, actual + entry.Value.Delta);
@@ -1055,7 +1082,19 @@ internal class StockEngine
 		}
 		if (moved > 0.0)
 		{
-			_construct.AddLog($"Moved {Items.Amount(moved)} {Items.Name(key)}: {source.Label} > {destination.Label}");
+			string line = $"Moved {Items.Amount(moved)} {Items.Name(key)}: {source.Label} > {destination.Label}";
+			// On a client the server confirms later (Read sees the amount change); the line is logged then.
+			string pendingKey = PendingPrefix(destination) + key;
+			if (!_isServer && s_pending.TryGetValue(pendingKey, out Pending pending))
+			{
+				(pending.Logs ??= new List<string>()).Add(line);
+				pending.Owner = _construct;
+				s_pending[pendingKey] = pending;
+			}
+			else
+			{
+				_construct.AddLog(line);
+			}
 		}
 		return moved;
 	}

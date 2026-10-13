@@ -86,6 +86,11 @@ internal static class Displays
 			{
 				continue;
 			}
+			// The server refuses text from a player who is out of reach of the grid (see Reach); the screen keeps its last text.
+			if (!Reach.Check(construct, SsmSession.Now))
+			{
+				continue;
+			}
 			GridSnapshot grid = rule.SourceGrid != 0 ? Store.Grid(rule.SourceGrid) : OwnGrid(construct, block);
 			Construct live = rule.SourceGrid != 0 ? session.FindConstruct(rule.SourceGrid) : construct;
 			Measure(surface, out int columns, out int rows);

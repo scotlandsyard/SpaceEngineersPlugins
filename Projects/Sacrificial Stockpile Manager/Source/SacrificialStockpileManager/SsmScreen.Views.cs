@@ -195,7 +195,7 @@ public partial class SsmScreen
 
 		Vector3D player = MyAPIGateway.Session?.Player?.GetPosition() ?? Vector3D.Zero;
 		string distance = FormatDistance(Vector3D.Distance(player, grid.Position));
-		rows.Add(Row("status", live != null ? GoodColor : MutedColor, "Status", live != null ? $"Loaded ({distance} away), updating live" : $"Last seen {Displays.Ago(grid.LastSeenUtc)}, {distance} away"));
+		rows.Add(Row("status", live != null && live.InReach ? GoodColor : live != null ? WarningColor : MutedColor, "Status", live != null && !live.InReach ? $"Loaded ({distance} away), out of reach: automation paused" : live != null ? $"Loaded ({distance} away), updating live" : $"Last seen {Displays.Ago(grid.LastSeenUtc)}, {distance} away"));
 		rows.Add(Row("type", null, "Type", $"{(grid.IsStation ? "Station" : "Ship")}, {grid.GridIds.Count} grid(s), {grid.BlockCount:N0} blocks"));
 
 		Construct.StorageVolume(grid, out double used, out double max);
@@ -636,6 +636,20 @@ public partial class SsmScreen
 		SwitchView(View.Block);
 	}
 
+	/// <summary>
+	/// True (after saying why) when the block isn't the player's: switching it, writing its screen or its Custom Data
+	/// would touch someone else's block. Switch on Blocks shared with me for the grid to manage it.
+	/// </summary>
+	private bool RefuseNotYours(long blockId, string name)
+	{
+		if (Grid?.Block(blockId)?.NotYours != true)
+		{
+			return false;
+		}
+		ShowMessage($"{name} isn't yours, so it's left alone. Switch on Blocks shared with me in the grid's Overview to manage it.", WarningColor);
+		return true;
+	}
+
 	private void ToggleSelectedBlock()
 	{
 		long id = SelectedBlockId();
@@ -647,6 +661,10 @@ public partial class SsmScreen
 		if (!(LiveEntity(id) is IMyFunctionalBlock block) || !block.HasLocalPlayerAccess())
 		{
 			ShowMessage("That block isn't loaded or can't be switched.", WarningColor);
+			return;
+		}
+		if (RefuseNotYours(id, block.CustomName))
+		{
 			return;
 		}
 		block.Enabled = !block.Enabled;
@@ -779,7 +797,12 @@ public partial class SsmScreen
 		string shared = "";
 		if (LiveEntity(block.Id) is IMyAssembler assembler)
 		{
-			if (role == BlockRole.Manual && !TimShared.AssemblerModes.IsManual(assembler))
+			if (role == BlockRole.Manual && !TimShared.AssemblerModes.IsManual(assembler) && block.NotYours)
+			{
+				// Writing the mode changes the assembler's Custom Data, which is only done on your own blocks.
+				shared = " It isn't yours, so its assembler mode (Custom Data) was left alone.";
+			}
+			else if (role == BlockRole.Manual && !TimShared.AssemblerModes.IsManual(assembler))
 			{
 				TimShared.AssemblerModes.Set(assembler, TimShared.AssemblerMode.Manual);
 				shared = " Its assembler mode is Manual too, so none of our plugins queues on it.";
@@ -1018,6 +1041,10 @@ public partial class SsmScreen
 		if (key == null || !TryParseDisplayKey(key, out long blockId, out int surface))
 		{
 			ShowMessage("Select a screen first.", WarningColor);
+			return;
+		}
+		if (RefuseNotYours(blockId, Grid?.Block(blockId)?.Name ?? "That screen"))
+		{
 			return;
 		}
 		string page = Displays.Pages[Math.Max(0, Math.Min(s_page, Displays.Pages.Length - 1))];

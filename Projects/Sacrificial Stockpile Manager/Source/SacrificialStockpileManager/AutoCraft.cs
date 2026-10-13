@@ -102,6 +102,15 @@ internal static class AutoCraft
 		{
 			return;
 		}
+		if (!Reach.Check(construct, now))
+		{
+			// The server would refuse every queue change and mode switch: say so in the Items view and send nothing.
+			foreach (ItemLimit quota in Store.GridRules(construct.Snapshot)?.Quotas ?? new List<ItemLimit>())
+			{
+				construct.QuotaNotes[quota.Item] = "Paused: out of reach";
+			}
+			return;
+		}
 		bool isServer = MyAPIGateway.Multiplayer?.IsServer ?? true;
 		double cooldown = isServer ? ServerCooldownSeconds : ClientCooldownSeconds;
 		s_quotaMet = null;
