@@ -62,7 +62,7 @@ public class FatAlbertScreen : MyGuiScreenBase
 
 	private const int RefreshFrames = 60;
 
-	private const double ShipRange = 5000.0;
+	private const double ShipRange = ShipReader.ReadRange;
 
 	private const float Left = -0.42f;
 
@@ -966,7 +966,7 @@ public class FatAlbertScreen : MyGuiScreenBase
 		}
 		else if (_ship == null)
 		{
-			rows.Add(Row(BadColor, "No ship", s_shipKey == 0 ? "None of your ships is within 5 km. Sit in one, or press Rescan." : "That ship isn't loaded any more. Press Rescan."));
+			rows.Add(Row(BadColor, "No ship", s_shipKey == 0 ? "None of your ships is within 5 km. Sit in one, or press Rescan." : "That ship isn't yours or within 5 km any more, or isn't loaded. Press Rescan."));
 		}
 		else if (_ship.IsStatic)
 		{

@@ -60,6 +60,9 @@ internal static class ShipReader
 
 	private static Dictionary<string, int> s_priorities;
 
+	/// <summary>How far away (m) a ship can be and still be read: the 5 km the window lists ships within.</summary>
+	public const double ReadRange = 5000.0;
+
 	public static void Clear()
 	{
 		s_cache.Clear();
@@ -97,14 +100,33 @@ internal static class ShipReader
 			{
 				continue;
 			}
-			bool mine = main.EntityId == controlledKey || main.BigOwners.Contains(player.IdentityId);
-			if (!mine || GroupHasStatic(main))
+			if (!IsMine(main, player, controlledKey) || GroupHasStatic(main))
 			{
 				continue;
 			}
 			result.Add(new ShipEntry { Key = main.EntityId, Name = main.CustomName, Distance = Vector3D.Distance(position, main.WorldAABB.Center) });
 		}
 		return result.OrderBy(s => s.Key == controlledKey ? 0 : 1).ThenBy(s => s.Distance).ToList();
+	}
+
+	/// <summary>The ship being flown, or one whose big owner is the player.</summary>
+	private static bool IsMine(IMyCubeGrid main, IMyPlayer player, long controlledKey)
+	{
+		return main.EntityId == controlledKey || main.BigOwners.Contains(player.IdentityId);
+	}
+
+	/// <summary>
+	/// A remembered ship is only read while it is still the player's and within range, the same rule FindShips uses,
+	/// so it can't be used to read someone else's ship or one that was sold, claimed or left far behind.
+	/// </summary>
+	private static bool StillInReach(IMyCubeGrid main)
+	{
+		IMyPlayer player = MyAPIGateway.Session?.Player;
+		if (player == null)
+		{
+			return false;
+		}
+		return IsMine(main, player, ControlledShipKey()) && Vector3D.Distance(player.GetPosition(), main.WorldAABB.Center) <= ReadRange;
 	}
 
 	/// <summary>The ship the player is sitting in, or 0.</summary>
@@ -131,7 +153,7 @@ internal static class ShipReader
 
 	public static ShipSnapshot Read(long key, bool countOff, bool rebuild)
 	{
-		if (!(MyAPIGateway.Entities.GetEntityById(key) is IMyCubeGrid main) || main.MarkedForClose)
+		if (!(MyAPIGateway.Entities.GetEntityById(key) is IMyCubeGrid main) || main.MarkedForClose || !StillInReach(main))
 		{
 			s_cache.Remove(key);
 			return null;

@@ -14,7 +14,7 @@ It reads the ship (thrusters, mass, tanks, batteries, reactors, engines) and the
 
 | Control | What it does |
 |---|---|
-| Ship | Your ships within 5 km; the one you're sitting in comes first |
+| Ship | Your ships within 5 km; the one you're sitting in comes first. A ship remembered from earlier (by the window or the HUD) is checked again each time it's read: if it's no longer yours or is more than 5 km away it isn't read |
 | View | Lift-off check, Thrust by direction, Thrusters, Fuel & power, Help |
 | Lift with | Which thrusters lift the ship, named from the cockpit. **Up** = the thrusters that push the ship up (flames pointing down). **Auto**: on the ground (within 1 km of the highest ground), the side facing away from the planet; anywhere else, the side with the most thrust where the climb starts |
 | Climb km | Empty: climb to where the planet's gravity ends (read from the world). A number: climb that many km from here |
