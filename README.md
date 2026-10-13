@@ -1,6 +1,8 @@
-# SpaceEngineers
+# SpaceEngineersPlugins
 
-Plugins for Space Engineers, loaded with the [Pulsar](https://github.com/SpaceGT/Pulsar) plugin manager. Each project lives in its own folder under [`Projects/`](Projects/) and has a README with the full details.
+Plugins for Space Engineers, loaded with the [Pulsar](https://github.com/SpaceGT/Pulsar) plugin manager. Each project lives in its own folder under [`Projects/`](Projects/) and has a README with the full details. Workshop mods are in [SpaceEngineersMods](https://github.com/scotlandsyard/SpaceEngineersMods).
+
+This repository used to be called [SpaceEngineers](https://github.com/scotlandsyard/SpaceEngineers); releases and links from before the move still work there.
 
 All of them run on the client: they need nothing installed on the server and work in multiplayer through the same requests the game's own terminal sends.
 
@@ -58,7 +60,7 @@ Each plugin still works on its own; none of them needs another to be loaded. See
 
 ## Reporting bugs
 
-Open an issue on [GitHub](https://github.com/scotlandsyard/SpaceEngineers/issues) with the plugin's name in the title (one issue per bug). Say what you did, what you expected and what happened instead, and attach the game log (`%AppData%\SpaceEngineers\SpaceEngineers_<date>.log`) and Pulsar's log (`%AppData%\Pulsar\Legacy\info.log`) if you can.
+Open an issue on [GitHub](https://github.com/scotlandsyard/SpaceEngineersPlugins/issues) with the plugin's name in the title (one issue per bug). Say what you did, what you expected and what happened instead, and attach the game log (`%AppData%\SpaceEngineers\SpaceEngineers_<date>.log`) and Pulsar's log (`%AppData%\Pulsar\Legacy\info.log`) if you can.
 
 ## Building by hand
 
@@ -73,6 +75,6 @@ Code used by more than one project lives once in [`Shared/`](Shared/) and is lin
 
 ## Licence
 
-Copyright (C) 2026 scotlandsyard. Everything in this repository is free software under the [GNU General Public License v3.0](LICENSE): you may use, change and share it, and if you share a plugin or mod built from this code, you must share its source under the same licence.
+Copyright (C) 2026 scotlandsyard. Everything in this repository is free software under the [GNU General Public License v3.0](LICENSE): you may use, change and share it, and if you share a plugin built from this code, you must share its source under the same licence.
 
 If you build something with this code, I'd love to see it: please link back to this repository, or open an issue to tell me about it. That part is a request, not a condition.

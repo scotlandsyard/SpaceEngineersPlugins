@@ -40,4 +40,4 @@ Usually nothing. When it had to step in, a chat line from **Seamless Unload Fix*
 
 ## Reporting bugs
 
-Open an issue on [GitHub](https://github.com/scotlandsyard/SpaceEngineers/issues) with the plugin's name in the title. Say what you did, what you expected and what happened instead, and attach the game log (`%AppData%\SpaceEngineers\SpaceEngineers_<date>.log`) and Pulsar's log (`%AppData%\Pulsar\Legacy\info.log`) if you can.
+Open an issue on [GitHub](https://github.com/scotlandsyard/SpaceEngineersPlugins/issues) with the plugin's name in the title. Say what you did, what you expected and what happened instead, and attach the game log (`%AppData%\SpaceEngineers\SpaceEngineers_<date>.log`) and Pulsar's log (`%AppData%\Pulsar\Legacy\info.log`) if you can.
