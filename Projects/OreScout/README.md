@@ -21,16 +21,16 @@ The detector must be intact, switched on and powered. The scan radius is the det
 
 ## Settings
 
-The detector's Custom Data gets two sections, `OreScout` and `OreScout Deposits`, each with:
+The first time you run a scan, the detector's Custom Data gets two sections, `OreScout` and `OreScout Deposits`, each with (if the Custom Data isn't valid INI it is left alone and the defaults are used):
 
-- `Ores`: comma-separated list; blank means every ore in the world. Stone is never reported.
+- `Ores`: comma-separated list of the rare ores the vanilla detector shows (platinum, gold and so on); blank means all of them, and other names are ignored. Stone and ice are never reported.
 - `MinDepositVoxels`: smallest deposit to report, in m³ (defaults 8 and 64).
 - `YieldBonusPercent`: extra yield for modded drills, e.g. `50`.
 - `CreateGps`, `ShowChat`.
 
 `OreScout` also has `MergeRadius` (default 1500 m; 0 turns merging off). `OreScout Deposits` has `DepositSpacing` (default 8 m): ore voxels up to that far apart count as one deposit.
 
-Amounts are what a vanilla ship drill would collect, times the world's harvest multiplier and `YieldBonusPercent`.
+Amounts are what a vanilla ship drill would collect from a typical deposit of that ore, times the world's harvest multiplier and `YieldBonusPercent`.
 
 Rescanning updates markers in place. Scout Ore markers are kept when their ore is mined out, because asteroids get reset; one is only removed when a marker for the same ore within `MergeRadius` replaces it. Scout Deposits markers in range whose deposit is gone are removed.
 

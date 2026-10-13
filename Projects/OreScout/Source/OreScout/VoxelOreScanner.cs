@@ -100,14 +100,25 @@ public static class VoxelOreScanner
 	public static Dictionary<byte, OreMaterial> BuildMaterialMap(HashSet<string> ores, double yieldMultiplier)
 	{
 		Dictionary<byte, OreMaterial> map = new Dictionary<byte, OreMaterial>();
-		foreach (MyVoxelMaterialDefinition def in MyDefinitionManager.Static.GetVoxelMaterialDefinitions())
+		// Only the rare materials, which the vanilla ore detector shows.
+		List<MyVoxelMaterialDefinition> wanted = MyDefinitionManager.Static.GetVoxelMaterialDefinitions()
+			.Where(def => def != null && def.IsRare && !string.IsNullOrWhiteSpace(def.MinedOre) && ores.Contains(def.MinedOre) && !def.MinedOre.Trim().Equals(StoneOre, StringComparison.OrdinalIgnoreCase))
+			.ToList();
+		// One baseline per ore name (the lowest ratio among its materials), so an amount never hints which variant it is.
+		Dictionary<string, double> baseline = new Dictionary<string, double>(StringComparer.OrdinalIgnoreCase);
+		foreach (MyVoxelMaterialDefinition def in wanted)
 		{
-			if (def != null && !string.IsNullOrWhiteSpace(def.MinedOre) && ores.Contains(def.MinedOre) && !def.MinedOre.Trim().Equals(StoneOre, StringComparison.OrdinalIgnoreCase) && !map.ContainsKey(def.Index))
+			string name = def.MinedOre.Trim();
+			baseline[name] = baseline.TryGetValue(name, out double lowest) ? Math.Min(lowest, def.MinedOreRatio) : def.MinedOreRatio;
+		}
+		foreach (MyVoxelMaterialDefinition def in wanted)
+		{
+			if (!map.ContainsKey(def.Index))
 			{
 				map[def.Index] = new OreMaterial
 				{
 					Ore = def.MinedOre,
-					KgPerM3 = KgPerCubicMetre(def) * yieldMultiplier
+					KgPerM3 = KgPerCubicMetre(def.MinedOre, baseline[def.MinedOre.Trim()]) * yieldMultiplier
 				};
 			}
 		}
@@ -115,14 +126,14 @@ public static class VoxelOreScanner
 	}
 
 	/// <summary>Same maths as MyDrillBase.TryHarvestOreMaterial: ore volume mined, converted to item count, then to kg.</summary>
-	private static double KgPerCubicMetre(MyVoxelMaterialDefinition material)
+	private static double KgPerCubicMetre(string oreName, double minedOreRatio)
 	{
 		try
 		{
-			MyPhysicalItemDefinition ore = MyDefinitionManager.Static.GetPhysicalItemDefinition(new MyDefinitionId(typeof(MyObjectBuilder_Ore), material.MinedOre));
+			MyPhysicalItemDefinition ore = MyDefinitionManager.Static.GetPhysicalItemDefinition(new MyDefinitionId(typeof(MyObjectBuilder_Ore), oreName));
 			if (ore != null && ore.Volume > 0f)
 			{
-				return DrillHarvestRatio * material.MinedOreRatio / ore.Volume * ore.Mass;
+				return DrillHarvestRatio * minedOreRatio / ore.Volume * ore.Mass;
 			}
 		}
 		catch

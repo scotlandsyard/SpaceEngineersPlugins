@@ -90,7 +90,7 @@ public class OreScoutSession : MySessionComponentBase
 
 	private static Color DepositColor => new Color(180, 120, 255);
 
-	private static readonly HashSet<string> FallbackOres = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Iron", "Nickel", "Cobalt", "Silicon", "Silver", "Gold", "Platinum", "Uranium", "Magnesium", "Ice" };
+	private static readonly HashSet<string> FallbackOres = new HashSet<string>(StringComparer.OrdinalIgnoreCase) { "Iron", "Nickel", "Cobalt", "Silicon", "Silver", "Gold", "Platinum", "Uranium", "Magnesium" };
 
 	private readonly List<IMyTerminalAction> _actions = new List<IMyTerminalAction>();
 
@@ -199,7 +199,6 @@ public class OreScoutSession : MySessionComponentBase
 		{
 			if (block is IMyOreDetector)
 			{
-				EnsureCustomData(block);
 				foreach (IMyTerminalAction action in _actions)
 				{
 					if (!actions.Contains(action))
@@ -487,19 +486,33 @@ public class OreScoutSession : MySessionComponentBase
 		}
 	}
 
+	/// <summary>Parses the block's Custom Data. When it isn't valid INI the result is empty (defaults apply in memory) and false is returned.</summary>
+	private static bool TryParseCustomData(IMyTerminalBlock block, out MyIni ini)
+	{
+		ini = new MyIni();
+		if (ini.TryParse(block.CustomData ?? "", out var _))
+		{
+			return true;
+		}
+		ini = new MyIni();
+		return false;
+	}
+
 	private static MyIni ParseCustomData(IMyTerminalBlock block)
 	{
-		MyIni ini = new MyIni();
-		ini.TryParse(block.CustomData ?? "", out var _);
+		TryParseCustomData(block, out MyIni ini);
 		return ini;
 	}
 
-	/// <summary>Adds any missing OreScout sections or keys to the detector's Custom Data without touching values already there.</summary>
+	/// <summary>Adds any missing OreScout sections or keys to the detector's Custom Data without touching values already there. Only called when a scan starts; Custom Data that doesn't parse is left alone.</summary>
 	private static void EnsureCustomData(IMyTerminalBlock block)
 	{
 		try
 		{
-			MyIni ini = ParseCustomData(block);
+			if (!TryParseCustomData(block, out MyIni ini))
+			{
+				return;
+			}
 			bool changed = false;
 			void Default(string section, string key, object value)
 			{
@@ -561,15 +574,18 @@ public class OreScoutSession : MySessionComponentBase
 				}
 			}
 		}
+		// Names that aren't rare materials (what the vanilla detector shows) are ignored.
+		HashSet<string> worldOres = GetAllWorldOres();
+		settings.Ores = new HashSet<string>(settings.Ores.Where(worldOres.Contains), StringComparer.OrdinalIgnoreCase);
 		if (settings.Ores.Count == 0)
 		{
-			settings.Ores = GetAllWorldOres();
+			settings.Ores = worldOres;
 		}
 		settings.Ores.Remove(VoxelOreScanner.StoneOre);
 		return settings;
 	}
 
-	/// <summary>Every ore the world's voxel materials can yield: the rare materials, plus ice.</summary>
+	/// <summary>Every ore the world's rare voxel materials can yield, the ones the vanilla ore detector shows.</summary>
 	private HashSet<string> GetAllWorldOres()
 	{
 		if (_cachedWorldOres == null)
@@ -579,7 +595,7 @@ public class OreScoutSession : MySessionComponentBase
 			{
 				foreach (MyVoxelMaterialDefinition def in MyDefinitionManager.Static.GetVoxelMaterialDefinitions())
 				{
-					if (def != null && !string.IsNullOrWhiteSpace(def.MinedOre) && (def.IsRare || def.MinedOre.Trim().Equals("Ice", StringComparison.OrdinalIgnoreCase)))
+					if (def != null && !string.IsNullOrWhiteSpace(def.MinedOre) && def.IsRare)
 					{
 						_cachedWorldOres.Add(def.MinedOre.Trim());
 					}
