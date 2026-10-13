@@ -152,6 +152,11 @@ Every plugin keeps working on its own, with or without the director. The directo
 
 Local storage that survives a PluginHub build. The game's `MyAPIGateway.Utilities.*FileInLocalStorage` calls name the folder after the calling type's DLL, but the hub compiles a plugin under a new random assembly name on every rebuild, so its settings would be lost after each update. `PluginStorage.FileExists`, `Read` and `Write` take the same arguments and keep the folder the game would use for our own DLL name, `Storage\<first part of the type's namespace>`, which is the plugin's assembly name. Files saved by a plugin installed as a DLL are found again when it's built by the hub, and the other way round.
 
+Saving can't lose a file:
+- `Write` collects the text and saves it when the writer is disposed: to `<name>.tmp` first, which then replaces the old file. If nothing was written (the save failed before it got to writing), the old file stays as it is.
+- A file that failed to load this session (it couldn't be opened, or `ReadXml` couldn't parse it) is renamed to `<name>.unreadable` before the next save, and the game log says so.
+- XML files are read with `PluginStorage.ReadXml<T>(file, type)`, which does the read and the parse together, so a file that doesn't parse is noticed. Line-based files (key=value) read with `Read` can't fail to parse, only to open.
+
 Every plugin that keeps files uses these instead of the game's calls, from a type in its own root namespace. For the same reason, never look up a plugin by its assembly name: look for one of its types instead (`assembly.GetType("BaRMaid.BaRMaidSession", false)`).
 
 ## Releasing a plugin that uses these files
