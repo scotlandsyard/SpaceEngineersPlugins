@@ -1,6 +1,6 @@
 # BaR Maid
 
-A client-side Pulsar plugin version of the [BaR companion script](https://steamcommunity.com/sharedfiles/filedetails/?id=3472701905) (v2.5.4) for the SKO Nanobot Build and Repair System. It does what the programmable block script does, but shows everything in an in-game menu instead of on LCD panels:
+A client-side Pulsar plugin version of the [BaR companion script](https://steamcommunity.com/sharedfiles/filedetails/?id=3472701905) (v2.5.4), written by SKO85, who also maintains the SKO Nanobot Build and Repair System mod. The script, the mod and the idea are theirs; this plugin only reads what the mod publishes. It does what the programmable block script does, but shows everything in an in-game menu instead of on LCD panels:
 
 - Queues the components a Build and Repair system is missing into the assemblers of its group.
 - Shows live status: current weld and grind targets, target lists, floating items, missing components and the priority lists.
@@ -22,7 +22,7 @@ The menu opens on the group of the block you used. From chat, it opens on a grou
 | View | Status, Weld targets, Grind targets, Collect targets, Missing components, BaR settings, Weld priority, Grind priority, Setup: groups, Help |
 | Auto-queue | Turns auto-queuing on or off for the group |
 | Queue now | Queues what's missing once, whether auto-queue is on or not |
-| Rescan | Looks for systems and assemblers again straight away (this also happens every 5 seconds by itself) |
+| Rescan | Looks for systems and assemblers again straight away (this also happens every 5 seconds by itself). It reports how many systems were found and how many you have no access to, and names any of yours that are left out of a group |
 | Help | Opens the in-game help page; Back returns to the view you came from |
 
 The window closes with the X in its corner or with Esc. Tables update every half second. Click a column header to sort. Until you do, targets are listed in the mod's own order.
@@ -95,7 +95,7 @@ The plugin was called Needy BOB at first. A `[Needy BOB]` section from then is s
 While auto-queue is on, each group is checked every 3 seconds. This is based on the mod's own EnsureQueued, which the script calls, with two differences, in steps 2 and 3:
 
 1. It takes the missing components across the group's systems. Overlapping systems report the same shortfall, so each component uses the largest amount any one system reports, not the sum.
-2. It subtracts what's already on the construct (cargo, connectors, the systems themselves, finished output in assemblers) and what's already queued on any assembler of the construct, and queues only the difference.
+2. It subtracts what's already on the construct (only blocks you have access to: cargo, connectors, the systems themselves, finished output in assemblers) and what's already queued on any assembler of the construct, and queues only the difference.
 3. It puts the whole order in one of the group's **Main** assemblers, the one with the shortest queue that can build the component, and the **Co-op** assemblers share it out (see below). The mod's EnsureQueued splits each order across every assembler, which leaves the same item queued everywhere.
 
 Step 2 matters because the Build and Repair mod looks through at most 16 inventories each time it fetches components, carrying on from where it stopped the time before. On a base with many inventories, it reports a component as missing whenever the inventories it just checked didn't have it, even with plenty in a cargo container it hasn't reached yet. Inventory sorters make this happen more often, because they keep moving items and emptying the Build and Repair block. The original script queued on every one of those reports. BaR Maid only crafts what the construct really doesn't have.

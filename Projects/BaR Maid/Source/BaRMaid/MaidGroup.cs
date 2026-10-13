@@ -240,7 +240,7 @@ internal class MaidGroup
 			return stock;
 		}
 		List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
-		TerminalSystem.GetBlocksOfType(blocks, b => b.HasInventory && !b.Closed && !(b is IMyAssembler));
+		TerminalSystem.GetBlocksOfType(blocks, b => b.HasInventory && !b.Closed && !(b is IMyAssembler) && b.HasLocalPlayerAccess());
 		foreach (IMyTerminalBlock block in blocks)
 		{
 			for (int i = 0; i < block.InventoryCount; i++)

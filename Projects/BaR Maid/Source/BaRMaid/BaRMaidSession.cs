@@ -133,19 +133,35 @@ public class BaRMaidSession : MySessionComponentBase
 
 	protected override void UnloadData()
 	{
-		if (_started)
+		// Unsubscribe whether or not BeforeStart finished, so a startup failure can't leave handlers behind.
+		try
 		{
-			try
-			{
-				MyAPIGateway.TerminalControls.CustomActionGetter -= CustomActionGetter;
-				MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
-				PluginSwitcher.Unregister();
-				Personality.Changed -= OnPersonalityChanged;
-				Personality.Unregister();
-			}
-			catch
-			{
-			}
+			MyAPIGateway.TerminalControls.CustomActionGetter -= CustomActionGetter;
+		}
+		catch
+		{
+		}
+		try
+		{
+			MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
+		}
+		catch
+		{
+		}
+		Personality.Changed -= OnPersonalityChanged;
+		try
+		{
+			PluginSwitcher.Unregister();
+		}
+		catch
+		{
+		}
+		try
+		{
+			Personality.Unregister();
+		}
+		catch
+		{
 		}
 		_started = false;
 		Instance = null;
@@ -267,10 +283,27 @@ public class BaRMaidSession : MySessionComponentBase
 
 	private void OnMessageEntered(string messageText, ref bool sendToOthers)
 	{
-		if (messageText != null && messageText.Trim().Equals(ChatCommand, StringComparison.OrdinalIgnoreCase))
+		string text = messageText?.Trim();
+		if (text == null || !text.StartsWith(ChatCommand, StringComparison.OrdinalIgnoreCase))
 		{
-			sendToOthers = false;
+			return;
+		}
+		string rest = text.Substring(ChatCommand.Length);
+		if (rest.Length > 0 && rest[0] != ' ')
+		{
+			return;
+		}
+		// Anything starting with the command is ours and never goes to public chat.
+		sendToOthers = false;
+		if (rest.Length == 0)
+		{
 			OpenMenu(null);
+		}
+		else if (rest.StartsWith(" name", StringComparison.OrdinalIgnoreCase) && (rest.Length == 5 || rest[5] == ' '))
+		{
+			// "/barmaid name <new name>"; no name goes back to BaR Maid.
+			SetChatName(rest.Substring(5));
+			MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Chat name: {Personality.DisplayName}");
 		}
 	}
 
@@ -631,11 +664,15 @@ public class BaRMaidSession : MySessionComponentBase
 	/// </summary>
 	internal string DiscoveryReport()
 	{
-		StringBuilder log = new StringBuilder($"[BaRMaid] Rescan: {_gridsScanned} grid(s) scanned, {_gridsSkipped} skipped (projections/previews), {_foundSystems.Count} BaR system(s), {_otherWelders.Count} other welder(s), {_sortedGroups.Count} group(s)");
+		// Only blocks the player has access to are named; other players' welders are counted at most.
+		StringBuilder log = new StringBuilder($"[BaRMaid] Rescan: {_gridsScanned} grid(s) scanned, {_gridsSkipped} skipped (projections/previews), {_foundSystems.Count} BaR system(s) ({_noAccess.Count} without access), {_sortedGroups.Count} group(s)");
 		foreach (IMyShipWelder welder in _foundSystems.Concat(_otherWelders))
 		{
+			if (_noAccess.Contains(welder) || !welder.HasLocalPlayerAccess())
+			{
+				continue;
+			}
 			string reason = _otherWelders.Contains(welder) ? "not a BaR (no BuildAndRepair data)"
-				: _noAccess.Contains(welder) ? "no access"
 				: _noTerminal.Contains(welder) ? "no terminal system"
 				: _outOfGroups.Contains(welder) ? "Group=None"
 				: "in " + (_sortedGroups.FirstOrDefault(g => g.Systems.Contains(welder))?.Label ?? "no group (?)");
@@ -644,7 +681,10 @@ public class BaRMaidSession : MySessionComponentBase
 		MyLog.Default.WriteLineAndConsole(log.ToString());
 
 		StringBuilder text = new StringBuilder($"Found {_foundSystems.Count} BaR system(s) in {_sortedGroups.Count} group(s)");
-		AppendNames(text, "no access", _noAccess);
+		if (_noAccess.Count > 0)
+		{
+			text.Append($"; {_noAccess.Count} without access (not yours)");
+		}
 		AppendNames(text, "Group=None (use Setup on another group, or delete that line in Custom Data)", _outOfGroups);
 		AppendNames(text, "no terminal system", _noTerminal);
 		return text.Append('.').ToString();
