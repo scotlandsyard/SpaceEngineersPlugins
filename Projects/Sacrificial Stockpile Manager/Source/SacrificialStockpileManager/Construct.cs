@@ -130,6 +130,9 @@ internal class Construct
 	public bool? WasFull;
 
 	/// <summary>Per unit and quota item ("unit:item"): whether it was short at the last autocraft pass.</summary>
+	/// <summary>The refinery priority the last engine pass used: ores for short ingot quotas, then the player's list.</summary>
+	public RefineByNeed RefinePlan;
+
 	public readonly Dictionary<string, bool> QuotaShort = new Dictionary<string, bool>();
 
 	private readonly Dictionary<string, List<KeyValuePair<double, double>>> _inbound = new Dictionary<string, List<KeyValuePair<double, double>>>();

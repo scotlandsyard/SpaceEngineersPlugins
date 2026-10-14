@@ -193,7 +193,7 @@ public partial class SsmScreen
 	{
 		string state = !refinery.IsFunctional ? "Damaged" : !refinery.Enabled ? "Off" : !refinery.IsWorking ? "No power" : refinery.IsProducing ? "Working" : "Idle";
 		rows.Add(Row("info", state == "Working" ? GoodColor : state == "Idle" ? (Color?)null : WarningColor, "Refining", "", "", "", "", state));
-		List<string> priority = Store.GridRules(grid)?.OrePriority ?? new List<string>();
+		List<string> priority = PlanFor(grid).Priority;
 		rows.Add(Row("hdr", MutedColor, "Input, refined top to bottom"));
 		int index = 0;
 		foreach (MyPhysicalInventoryItem item in refinery.InputInventory.GetItems())
@@ -335,7 +335,9 @@ public partial class SsmScreen
 
 	private List<RowData> RefiningRows(GridSnapshot grid)
 	{
-		List<string> priority = Store.GridRules(grid)?.OrePriority ?? new List<string>();
+		RefineByNeed plan = PlanFor(grid);
+		List<string> manual = Store.GridRules(grid)?.OrePriority ?? new List<string>();
+		List<string> priority = plan.Priority;
 		Dictionary<string, double> inStorage = new Dictionary<string, double>();
 		Dictionary<string, double> inRefineries = new Dictionary<string, double>();
 		Dictionary<string, List<string>> refining = new Dictionary<string, List<string>>();
@@ -377,11 +379,36 @@ public partial class SsmScreen
 			rows.Add(new RowData
 			{
 				Key = "o:" + key,
-				Texts = new[] { rank >= 0 ? (rank + 1).ToString() : "-", Items.Name(key), stored > 0.0 ? Items.Amount(stored) : "", refiningAmount > 0.0 ? Items.Amount(refiningAmount) : "", where },
+				Texts = new[] { rank >= 0 ? (rank + 1).ToString() : "-", Items.Name(key), stored > 0.0 ? Items.Amount(stored) : "", refiningAmount > 0.0 ? Items.Amount(refiningAmount) : "", Why(plan, manual, key), where },
 				Color = rank >= 0 ? GoodColor : stored > 0.0 || refiningAmount > 0.0 ? (Color?)null : MutedColor
 			});
 		}
 		return rows;
+	}
+
+	/// <summary>
+	/// The refinery order shown: what the last engine pass used when the grid is loaded, else worked out from its
+	/// last known contents. A docked ship's refineries aren't steered by quotas, so it shows only the player's list.
+	/// </summary>
+	private static RefineByNeed PlanFor(GridSnapshot grid)
+	{
+		GridRules rules = Store.GridRules(grid);
+		if (grid.DockedTo != null)
+		{
+			return RefineByNeed.Compute(null, rules);
+		}
+		return Live?.RefinePlan ?? RefineByNeed.Compute(grid, rules);
+	}
+
+	/// <summary>Why an ore has its place: a short ingot quota, the player's list, or both.</summary>
+	private static string Why(RefineByNeed plan, List<string> manual, string ore)
+	{
+		if (plan.IsNeed(ore))
+		{
+			string items = string.Join(", ", plan.Reasons[ore].Select(i => plan.Short.TryGetValue(i, out double missing) ? $"{Items.Name(i)} short {Items.Amount(missing)}" : Items.Name(i)));
+			return manual.Contains(ore) ? $"{items} (yours: {manual.IndexOf(ore) + 1})" : items;
+		}
+		return manual.Contains(ore) ? "Your list" : "";
 	}
 
 	/// <summary>The first ore in a refinery's input: live when loaded, else the order stored in the snapshot.</summary>
@@ -437,7 +464,8 @@ public partial class SsmScreen
 		Store.SaveSettings();
 		Session?.RunNow(Live);
 		string off = rules.Automation ? "" : " Automation is off for this grid, so refineries aren't changed yet.";
-		ShowMessage($"{Items.Name(ore)} is priority {priority.IndexOf(ore) + 1}.{off}", off.Length > 0 ? WarningColor : GoodColor);
+		string need = PlanFor(grid).Reasons.Count > 0 ? " Ores for short ingot quotas still come first." : "";
+		ShowMessage($"{Items.Name(ore)} is number {priority.IndexOf(ore) + 1} on your list.{need}{off}", off.Length > 0 ? WarningColor : GoodColor);
 		_rowsSignature = null;
 		RefreshAll();
 	}

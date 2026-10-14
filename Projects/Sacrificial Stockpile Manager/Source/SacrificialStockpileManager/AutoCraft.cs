@@ -204,6 +204,12 @@ internal static class AutoCraft
 				unit.Notes[key] = quota.HasMax ? "Within maximum" : "";
 				continue;
 			}
+			// Ingots and gravel: no assembler can make them. Refinery priority does (see RefineByNeed).
+			if (Items.RefineryOnly(key))
+			{
+				unit.Notes[key] = have >= quota.Min ? "Stocked" : !rules.Autocraft ? $"Short {Items.Amount(quota.Min - have)} (autocraft off)" : RefineryNote(construct, unit, key, quota.Min - have);
+				continue;
+			}
 			if (blueprint == null)
 			{
 				unit.Notes[key] = have >= quota.Min ? "Stocked" : "No blueprint makes it";
@@ -303,6 +309,47 @@ internal static class AutoCraft
 			runsPerSecond += world * speed / Math.Max(0.01f, blueprint.BaseProductionTimeInSeconds);
 		}
 		return Math.Max(1, (int)Math.Floor(runsPerSecond * YieldBatchSeconds));
+	}
+
+	/// <summary>The ore the plan pulled up for this item first, or null.</summary>
+	private static string Puller(RefineByNeed plan, string key)
+	{
+		return plan?.Priority.FirstOrDefault(o => plan.Reasons.TryGetValue(o, out List<string> items) && items.Contains(key));
+	}
+
+	/// <summary>The Items note for a short item only refineries make: what the plugin does about it, or why it can't.</summary>
+	private static string RefineryNote(Construct construct, Unit unit, string key, double shortfall)
+	{
+		string shortText = $"Short {Items.Amount(shortfall)}";
+		List<KeyValuePair<string, double>> sources = Items.RefinedFrom(key);
+		string oreNames = string.Join(" or ", sources.Select(s => Items.Name(s.Key)));
+		if (unit.Id != construct.CoreUnit)
+		{
+			return $"{shortText}: made by refineries; only the station's own quotas steer its refinery priority";
+		}
+		RefineByNeed plan = construct.RefinePlan;
+		string ore = Puller(plan, key);
+		if (ore == null)
+		{
+			// The last engine pass may predate the quota or Autocraft being switched on.
+			plan = RefineByNeed.Compute(construct.Snapshot, unit.Rules);
+			ore = Puller(plan, key);
+		}
+		if (ore == null)
+		{
+			return $"{shortText}: made by refineries, but no ore here is refined into it";
+		}
+		if (!unit.Rules.Automation)
+		{
+			return $"{shortText}: made by refineries; {Items.Name(ore)} goes to the top of refinery priority once Automation is on";
+		}
+		Dictionary<string, double> totals = unit.Totals ?? Construct.StationTotals(construct.Snapshot);
+		if (!sources.Any(s => totals.TryGetValue(s.Key, out double amount) && amount > 0.0))
+		{
+			return $"{shortText}: made by refineries from {oreNames}, and there is none here";
+		}
+		int rank = plan.Priority.IndexOf(ore) + 1;
+		return rank == 1 ? $"{shortText}: {Items.Name(ore)} moved to the top of refinery priority" : $"{shortText}: {Items.Name(ore)} moved up to refinery priority {rank}";
 	}
 
 	/// <summary>Queues the surplus for disassembly. Returns the note shown in the Items view.</summary>

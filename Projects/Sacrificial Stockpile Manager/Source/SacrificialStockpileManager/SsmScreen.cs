@@ -941,7 +941,7 @@ public partial class SsmScreen : MyGuiScreenBase
 		case View.Machine:
 			return live ? "Queue first, then the materials the whole queue needs. Missing = what the grid doesn't have." : "Not loaded: queue details show while the grid is in range.";
 		case View.Refining:
-			return "Refineries work on ores with a priority first, in this order. Double-click or Raise priority to add one. Needs Automation.";
+			return "Ores for short ingot quotas first (Autocraft), then your list. Raise priority adds to your list. Needs Automation.";
 		case View.Displays:
 			return "Select a screen, pick a page and what it shows, then Show page. The LCD updates by itself." + offline;
 		case View.Log:

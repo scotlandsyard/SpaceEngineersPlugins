@@ -209,9 +209,11 @@ internal class StockEngine
 		engine.FillMinimums();
 		engine.RestockDockedShips();
 		engine.TrimMaximums();
-		if (rules.OrePriority.Count > 0)
+		// Ores for short ingot quotas first, then the player's own list (see RefineByNeed).
+		construct.RefinePlan = RefineByNeed.Compute(construct.Snapshot, rules);
+		if (construct.RefinePlan.Priority.Count > 0)
 		{
-			engine.PrioritizeOres(rules.OrePriority);
+			engine.PrioritizeOres(construct.RefinePlan.Priority);
 		}
 		engine.ClearStockBlocks();
 		engine.DrainIntakes();
@@ -915,7 +917,8 @@ internal class StockEngine
 				_transfers++;
 				refinery.Stacks.Remove(best);
 				refinery.Stacks.Insert(0, best);
-				_construct.AddLog($"{Items.Name(best.Key)} to the front of {refinery.Block.Name} (ore priority)");
+				string why = _construct.RefinePlan?.IsNeed(best.Key) == true ? $"for the {_construct.RefinePlan.ReasonText(best.Key)} quota" : "ore priority";
+				_construct.AddLog($"{Items.Name(best.Key)} to the front of {refinery.Block.Name} ({why})");
 			}
 		}
 	}

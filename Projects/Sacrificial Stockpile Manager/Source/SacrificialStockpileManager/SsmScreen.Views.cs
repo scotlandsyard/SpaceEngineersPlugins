@@ -64,11 +64,12 @@ public partial class SsmScreen
 		case View.Refining:
 			return new List<Column>
 			{
-				new Column { Name = "Priority", Width = 0.1f, RightAligned = true, Sortable = false },
-				new Column { Name = "Ore", Width = 0.3f, Sortable = false },
-				new Column { Name = "In storage", Width = 0.15f, RightAligned = true, Sortable = false },
-				new Column { Name = "In refineries", Width = 0.15f, RightAligned = true, Sortable = false },
-				new Column { Name = "Being refined in", Width = 0.3f, Sortable = false }
+				new Column { Name = "Priority", Width = 0.09f, RightAligned = true, Sortable = false },
+				new Column { Name = "Ore", Width = 0.17f, Sortable = false },
+				new Column { Name = "In storage", Width = 0.12f, RightAligned = true, Sortable = false },
+				new Column { Name = "In refineries", Width = 0.13f, RightAligned = true, Sortable = false },
+				new Column { Name = "Why", Width = 0.27f, Sortable = false },
+				new Column { Name = "Being refined in", Width = 0.22f, Sortable = false }
 			};
 		case View.Blocks:
 			return new List<Column>

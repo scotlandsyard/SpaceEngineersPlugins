@@ -166,6 +166,88 @@ internal static class Items
 		return total > 0.0 ? total : 1.0;
 	}
 
+	private static Dictionary<string, List<KeyValuePair<string, double>>> s_refinedFrom;
+
+	private static HashSet<string> s_assemblerMade;
+
+	/// <summary>
+	/// The ores a refinery turns into the item, each with how much of the item one unit of ore gives, best first.
+	/// Empty for anything no refinery makes. Read from the refinery blocks' blueprint classes, so modded refineries
+	/// and ores that give several ingots are covered.
+	/// </summary>
+	public static List<KeyValuePair<string, double>> RefinedFrom(string key)
+	{
+		if (s_refinedFrom == null)
+		{
+			s_refinedFrom = new Dictionary<string, List<KeyValuePair<string, double>>>();
+			s_assemblerMade = new HashSet<string>();
+			foreach (MyProductionBlockDefinition block in MyDefinitionManager.Static.GetAllDefinitions().OfType<MyProductionBlockDefinition>())
+			{
+				bool refinery = block is MyRefineryDefinition;
+				bool assembler = block is MyAssemblerDefinition;
+				if ((!refinery && !assembler) || block.BlueprintClasses == null)
+				{
+					continue;
+				}
+				foreach (MyBlueprintClassDefinition blueprintClass in block.BlueprintClasses)
+				{
+					foreach (MyBlueprintDefinitionBase blueprint in blueprintClass)
+					{
+						if (blueprint?.Results == null || blueprint.Prerequisites == null)
+						{
+							continue;
+						}
+						if (assembler)
+						{
+							foreach (MyBlueprintDefinitionBase.Item result in blueprint.Results)
+							{
+								s_assemblerMade.Add(Key(result.Id));
+							}
+							continue;
+						}
+						// A refinery blueprint: one ore in, one or more products out.
+						MyBlueprintDefinitionBase.Item[] ores = blueprint.Prerequisites.Where(p => Category(Key(p.Id)) == ItemCategory.Ore && (double)p.Amount > 0.0).ToArray();
+						if (ores.Length != 1)
+						{
+							continue;
+						}
+						string ore = Key(ores[0].Id);
+						foreach (MyBlueprintDefinitionBase.Item result in blueprint.Results)
+						{
+							string product = Key(result.Id);
+							double perOre = (double)result.Amount / (double)ores[0].Amount;
+							if (!s_refinedFrom.TryGetValue(product, out List<KeyValuePair<string, double>> sources))
+							{
+								sources = new List<KeyValuePair<string, double>>();
+								s_refinedFrom[product] = sources;
+							}
+							int existing = sources.FindIndex(s => s.Key == ore);
+							if (existing < 0)
+							{
+								sources.Add(new KeyValuePair<string, double>(ore, perOre));
+							}
+							else if (perOre > sources[existing].Value)
+							{
+								sources[existing] = new KeyValuePair<string, double>(ore, perOre);
+							}
+						}
+					}
+				}
+			}
+			foreach (List<KeyValuePair<string, double>> sources in s_refinedFrom.Values)
+			{
+				sources.Sort((a, b) => b.Value.CompareTo(a.Value));
+			}
+		}
+		return s_refinedFrom.TryGetValue(key, out List<KeyValuePair<string, double>> found) ? found : new List<KeyValuePair<string, double>>();
+	}
+
+	/// <summary>True for items only refineries make (ingots, gravel), so autocraft can't queue them in an assembler.</summary>
+	public static bool RefineryOnly(string key)
+	{
+		return RefinedFrom(key).Count > 0 && !s_assemblerMade.Contains(key);
+	}
+
 	private static HashSet<string> s_refinable;
 
 	/// <summary>True for ores some refinery blueprint turns into ingots (not ice, for example).</summary>
