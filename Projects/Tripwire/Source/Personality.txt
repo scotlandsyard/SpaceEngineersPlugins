@@ -1,0 +1,21 @@
+# Tripwire's chat lines, read by Shared/Personality.cs (see Shared/README.md).
+# [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
+# Placeholder lines until the character is written through the personality workflow.
+
+[menu_opened]
+- Logbook's open. Let's see who's been knocking.
+
+[!under_attack]
+- Someone's taking {grid} apart. I'd hurry.
+
+[damaged]
+- {grid} is taking hits.
+
+[visit_news]
+- {grid} kept a diary while you were gone: {count} entries.
+
+[datapad_saved]
+- Written down. Paper trails win arguments.
+
+[rollcall]
+- Tripwire, on watch. {command} if you want the logbook.

@@ -26,6 +26,7 @@ The plugins talk over a private mod message channel (`0x54494D5F53574954`, "TIM_
 | OreScout | OreScout | Marker library |
 | Sacrificial Stockpile Manager | Stockpile Manager | Main window |
 | Script to Plugin | Script to Plugin | Main window |
+| Tripwire | Tripwire | Main window (alerts and script logs) |
 | Wilson | Wilson | Main window |
 
 To add a plugin:
