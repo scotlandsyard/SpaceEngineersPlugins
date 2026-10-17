@@ -1,0 +1,18 @@
+# Quiet Skies' chat lines, read by Shared/Personality.cs (see Shared/README.md).
+# [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
+# Placeholder lines until the character is written through the personality workflow.
+
+[menu_opened]
+- Too many blips? Let's turn some down.
+
+[signals_hidden]
+- {kind} markers are off your HUD. Still in the G list if you want them.
+
+[signals_nearby]
+- {kind} markers only show within {km} km now.
+
+[signals_shown]
+- {kind} markers are back on your HUD.
+
+[rollcall]
+- Quiet Skies, keeping the HUD tidy. {command} for the signal filter.

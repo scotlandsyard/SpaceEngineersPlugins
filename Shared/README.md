@@ -24,6 +24,7 @@ The plugins talk over a private mod message channel (`0x54494D5F53574954`, "TIM_
 | BaR Maid | BaR Maid | Main window |
 | Fat Albert | Fat Albert | Main window |
 | OreScout | OreScout | Marker library |
+| Quiet Skies | Quiet Skies | Main window (signal marker filter) |
 | Sacrificial Stockpile Manager | Stockpile Manager | Main window |
 | Script to Plugin | Script to Plugin | Main window |
 | Tripwire | Tripwire | Main window (alerts and script logs) |
