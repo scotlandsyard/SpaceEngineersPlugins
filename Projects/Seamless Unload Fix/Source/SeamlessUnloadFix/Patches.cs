@@ -79,6 +79,7 @@ internal static class Patches
 			Log("Leftover definitions patch failed:\n" + e);
 		}
 		SeamlessFixes.Apply(s_harmony);
+		CrashGuards.Apply(s_harmony);
 	}
 
 	internal static void Remove()

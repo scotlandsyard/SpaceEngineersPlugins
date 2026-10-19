@@ -27,6 +27,15 @@ If Seamless Switcher is loaded (any build), two more fixes switch on by themselv
 
 Each of these checks that the part of Seamless it needs exists, and turns itself off with a log line if not.
 
+### Crashes right after a transfer
+
+For a few seconds after a Seamless transfer, the client's player and identity lists don't match the new server yet. Two game handlers don't expect that and crash the game. Two guards stop that:
+
+- **Faction discovered**: a "faction discovered" message that arrives before the new server has created your player no longer crashes (`NullReferenceException` in `MyCharacterDiscoveryComponent.OnFactionDiscovered`). The discovery is still recorded; only its HUD notification is skipped.
+- **Identity removed**: when the new server removes an identity (a player or NPC record) your client never received, it's removed without crashing (`NullReferenceException` in `MyPlayerCollection.RemoveIdentityInternal`).
+
+Both act only in the state that would otherwise crash, and write a log line when they do. They work with or without Seamless Switcher.
+
 ## What you see
 
 Usually nothing. When it had to step in, a chat line from **Seamless Unload Fix** says so once you're in the next world. Details go to the game log (`%AppData%\SpaceEngineers\SpaceEngineers_<date>.log`) on lines starting with `[SeamlessUnloadFix]`. At start-up the log lists which fixes are on.
