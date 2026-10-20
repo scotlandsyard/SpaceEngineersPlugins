@@ -318,7 +318,8 @@ internal static class Personality
 		["OreScout"] = new Color(255, 215, 0),
 		["Wilson"] = new Color(222, 184, 135),
 		["Quiet Skies"] = new Color(135, 206, 235),
-		["Tim"] = new Color(0, 206, 180)
+		["Tim"] = new Color(0, 206, 180),
+		["Drill Sergeant"] = new Color(150, 168, 82)
 	};
 
 	/// <summary>For a character not in the palette.</summary>

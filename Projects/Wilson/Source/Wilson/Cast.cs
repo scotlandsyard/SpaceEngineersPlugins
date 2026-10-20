@@ -44,7 +44,8 @@ internal static class Cast
 		new Member("stockpile", "Stockpile Manager", "Sacrificial Stockpile Manager", "/ssm"),
 		new Member("scripttoplugin", "Script to Plugin", "Script to Plugin", "/stp"),
 		new Member("orescout", "OreScout", "OreScout", "/scout"),
-		new Member("quietskies", "Quiet Skies", "Quiet Skies", "/skies")
+		new Member("quietskies", "Quiet Skies", "Quiet Skies", "/skies"),
+		new Member("drillsergeant", "Drill Sergeant", "Drill Sergeant", "/sarge")
 	};
 
 	public static Member ByChatName(string name)

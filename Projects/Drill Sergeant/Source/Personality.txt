@@ -1,0 +1,18 @@
+# Drill Sergeant's chat lines, read by Shared/Personality.cs (see Shared/README.md).
+# [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
+# Placeholder lines until the character is written through the personality workflow.
+
+[menu_opened]
+- Fall in. Let's see the rigs.
+
+[rig_started]
+- {rig}, you're on the clock. Dig.
+
+[cargo_full]
+- {rig} is stuffed to the gills. Empty it, soldier.
+
+[!rig_finished]
+- {rig} has dug everything it can reach. Outstanding.
+
+[rollcall]
+- Drill Sergeant, present. {command} for the rigs.

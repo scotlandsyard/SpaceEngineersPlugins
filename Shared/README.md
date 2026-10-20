@@ -22,6 +22,7 @@ The plugins talk over a private mod message channel (`0x54494D5F53574954`, "TIM_
 | Plugin | Name in the dropdown | Window |
 |---|---|---|
 | BaR Maid | BaR Maid | Main window |
+| Drill Sergeant | Drill Sergeant | Main window (rigs, setup) |
 | Fat Albert | Fat Albert | Main window |
 | OreScout | OreScout | Marker library |
 | Quiet Skies | Quiet Skies | Main window (signal marker filter) |
@@ -126,6 +127,7 @@ Each character's name shows in its own colour, picked so none is a colour the ga
 | Wilson | Fence-post tan | 222, 184, 135 |
 | Quiet Skies | Sky blue | 135, 206, 235 |
 | Tim | Teal | 0, 206, 180 |
+| Drill Sergeant | Olive drab | 150, 168, 82 |
 | Any other | Apricot | 255, 180, 110 |
 
 Lines go through `MyHud.Chat.ShowMessage(sender, text, senderColor, messageColor)`, which only adds them to this screen's chat list (the ModAPI `ShowMessage` uses the same list, without a colour).
