@@ -124,6 +124,7 @@ Each character's name shows in its own colour, picked so none is a colour the ga
 | Script to Plugin | Electric cyan | 0, 229, 255 |
 | OreScout | Gold | 255, 215, 0 |
 | Wilson | Fence-post tan | 222, 184, 135 |
+| Quiet Skies | Sky blue | 135, 206, 235 |
 | Tim | Teal | 0, 206, 180 |
 | Any other | Apricot | 255, 180, 110 |
 

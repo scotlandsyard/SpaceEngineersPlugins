@@ -317,6 +317,7 @@ internal static class Personality
 		["Script to Plugin"] = new Color(0, 229, 255),
 		["OreScout"] = new Color(255, 215, 0),
 		["Wilson"] = new Color(222, 184, 135),
+		["Quiet Skies"] = new Color(135, 206, 235),
 		["Tim"] = new Color(0, 206, 180)
 	};
 

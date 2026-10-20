@@ -43,7 +43,8 @@ internal static class Cast
 		new Member("fatalbert", "Fat Albert", "Fat Albert", "/fat"),
 		new Member("stockpile", "Stockpile Manager", "Sacrificial Stockpile Manager", "/ssm"),
 		new Member("scripttoplugin", "Script to Plugin", "Script to Plugin", "/stp"),
-		new Member("orescout", "OreScout", "OreScout", "/scout")
+		new Member("orescout", "OreScout", "OreScout", "/scout"),
+		new Member("quietskies", "Quiet Skies", "Quiet Skies", "/skies")
 	};
 
 	public static Member ByChatName(string name)
