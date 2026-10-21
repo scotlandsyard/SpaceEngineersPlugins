@@ -45,7 +45,8 @@ internal static class Cast
 		new Member("scripttoplugin", "Script to Plugin", "Script to Plugin", "/stp"),
 		new Member("orescout", "OreScout", "OreScout", "/scout"),
 		new Member("quietskies", "Quiet Skies", "Quiet Skies", "/skies"),
-		new Member("drillsergeant", "Drill Sergeant", "Drill Sergeant", "/sarge")
+		new Member("drillsergeant", "Drill Sergeant", "Drill Sergeant", "/sarge"),
+		new Member("radartech", "Radar", "Radar Tech", "/radar")
 	};
 
 	public static Member ByChatName(string name)

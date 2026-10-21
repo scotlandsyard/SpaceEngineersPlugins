@@ -1,0 +1,21 @@
+# Radar's chat lines, read by Shared/Personality.cs (see Shared/README.md).
+# [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
+# Placeholder lines until the character is written through the personality workflow.
+
+[menu_opened]
+- Radar here. What are we ranging?
+
+[readout_on]
+- Readout's up. Put the crosshair on it and I'll call the range.
+
+[readout_off]
+- Readout off. Ping me if you need a range.
+
+[ping_hit]
+- {target}, {distance}.
+
+[ping_none]
+- Nothing out to {range}.
+
+[rollcall]
+- Radar, on the scope. {command} for the range finder.
