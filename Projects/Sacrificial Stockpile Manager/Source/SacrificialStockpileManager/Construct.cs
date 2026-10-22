@@ -59,6 +59,9 @@ internal class LiveBlock
 
 	public int Surfaces;
 
+	/// <summary>SHEPHERD tags in the block's name, or null (see <see cref="ShepherdTag"/>).</summary>
+	public ShepherdTag Tag;
+
 	public string Name => Block.CustomName;
 }
 
@@ -117,6 +120,15 @@ internal class Construct
 	public string ReachNote;
 
 	public double ReachChecked = double.MinValue;
+
+	/// <summary>The SHEPHERD script leading on this construct, or null when there is none (refreshed with the blocks).</summary>
+	public ShepherdLink Shepherd;
+
+	/// <summary>Whether the script was in charge at the last refresh, for the chat lines about it starting and stopping.</summary>
+	public bool? ShepherdWasActive;
+
+	/// <summary>The status-screen lines already commented on, so only new ones get a chat line.</summary>
+	public readonly HashSet<string> ShepherdSeen = new HashSet<string>();
 
 	/// <summary>The grids of the construct when it was last discovered, to notice docking, undocking and merging.</summary>
 	public string GridSignature;
@@ -385,7 +397,8 @@ internal class Construct
 				// The game lets you use blocks shared with your faction or with everyone, and blocks nobody owns. The
 				// plugin only manages your own unless the grid's "include shared blocks" setting is on.
 				NotYours = block.OwnerId != me && !includeShared,
-				Surfaces = block is IngameSurfaceProvider provider ? provider.SurfaceCount : 0
+				Surfaces = block is IngameSurfaceProvider provider ? provider.SurfaceCount : 0,
+				Tag = ShepherdTag.Parse(block.CustomName)
 			};
 			if (block is IMyAssembler)
 			{
@@ -418,6 +431,7 @@ internal class Construct
 			gridIds.Add(block.CubeGrid.EntityId);
 		}
 		Blocks = blocks;
+		Shepherd = ShepherdLink.Find(this, SsmSession.Now);
 
 		Snapshot = new GridSnapshot
 		{

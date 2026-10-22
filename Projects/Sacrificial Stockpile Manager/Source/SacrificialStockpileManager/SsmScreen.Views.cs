@@ -1,6 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Text;
+using Sandbox.Graphics.GUI;
 using Sandbox.ModAPI;
 using VRageMath;
 
@@ -193,6 +195,7 @@ public partial class SsmScreen
 		int notYours = grid.Blocks.Count(b => b.NotYours);
 		rows.Add(Row("set:shared", shared ? WarningColor : (Color?)null, "Blocks shared with me", shared ? "Included: faction-shared, shared-with-all and unowned blocks are managed too" : notYours > 0 ? $"Left alone: only your own blocks are touched ({notYours} aren't yours)" : "Left alone: only your own blocks are touched"));
 		rows.Add(Row("set:name", null, "Chat name (all grids)", $"{TimShared.Personality.DisplayName}  (type /ssm name <name> in chat)"));
+		ShepherdRows(rows, live?.Shepherd, rules, grid.DockedTo != null);
 
 		Vector3D player = MyAPIGateway.Session?.Player?.GetPosition() ?? Vector3D.Zero;
 		string distance = FormatDistance(Vector3D.Distance(player, grid.Position));
@@ -239,6 +242,93 @@ public partial class SsmScreen
 		return rows;
 	}
 
+	private static readonly string[] ShepherdJobNames = { "Sorting", "Docked ships", "Reactor and generator fuel", "Refineries", "Production output", "Crafting its A quotas", "Bottles" };
+
+	/// <summary>The SHEPHERD rows of the Overview: the script's state, who does each job, the export, and what its status screen says.</summary>
+	private static void ShepherdRows(List<RowData> rows, ShepherdLink shepherd, GridRules rules, bool dockedView)
+	{
+		if (shepherd == null)
+		{
+			return;
+		}
+		rows.Add(Row("shep:state", shepherd.Active ? GoodColor : WarningColor, "SHEPHERD script", shepherd.StateText));
+		if (dockedView)
+		{
+			// Who does what is set where the script's jobs run: the Overview of the grid this ship is docked to.
+			rows.Add(Row("shep:docked", MutedColor, "", "Its jobs are shared out in the Overview of the grid this ship is docked to"));
+			return;
+		}
+		if (shepherd.Active)
+		{
+			foreach (ShepherdJob job in (ShepherdJob[])Enum.GetValues(typeof(ShepherdJob)))
+			{
+				if (!ShepherdJobApplies(shepherd, job))
+				{
+					continue;
+				}
+				bool mine = ShepherdLink.IsMine(job, rules);
+				rows.Add(Row("set:shep:" + job, mine ? (Color?)null : GoodColor, "  " + ShepherdJobNames[(int)job], mine ? "Stockpile Manager (double-click to leave it to SHEPHERD)" : "Left to SHEPHERD (double-click to keep it for Stockpile Manager)"));
+			}
+		}
+		rows.Add(Row("set:shep:export", null, "  Export setup to SHEPHERD", "Double-click: tag containers and write quotas into its Custom Data (asks first)"));
+		for (int i = 0; i < shepherd.Problems.Count; i++)
+		{
+			rows.Add(Row("shep:p" + i, MutedColor, i == 0 ? "  It says" : "", shepherd.Problems[i]));
+		}
+	}
+
+	/// <summary>Jobs the script's settings switch off (a fill % or bottle sweep of 0) aren't listed.</summary>
+	private static bool ShepherdJobApplies(ShepherdLink shepherd, ShepherdJob job)
+	{
+		switch (job)
+		{
+		case ShepherdJob.Fuel:
+			return shepherd.Config.ReactorFillPct > 0 || shepherd.Config.GasGenFillPct > 0;
+		case ShepherdJob.Refineries:
+			return shepherd.Config.RefineryFillPct > 0;
+		case ShepherdJob.Bottles:
+			return shepherd.Config.BottleSweepMinutes > 0.0;
+		default:
+			return true;
+		}
+	}
+
+	/// <summary>Phase 2 of working with a SHEPHERD script: shows what Export would change and does it on Yes.</summary>
+	private void ConfirmShepherdExport()
+	{
+		Construct live = Live;
+		GridSnapshot grid = Grid;
+		if (live?.Shepherd == null || grid == null || grid.DockedTo != null)
+		{
+			ShowMessage("Export works on a loaded grid with a SHEPHERD programmable block, from that grid's own Overview.", WarningColor);
+			return;
+		}
+		if (!live.InReach)
+		{
+			ShowMessage("Out of reach: the server would refuse the changes. Come closer first.", WarningColor);
+			return;
+		}
+		GridRules rules = Store.EditGridRules(grid);
+		ShepherdExport.Plan plan = ShepherdExport.Build(live, rules);
+		if (plan.Problem != null || plan.Empty)
+		{
+			ShowMessage(plan.Problem ?? "Nothing to export: every block already has a SHEPHERD tag, and there are no quotas to hand over.", WarningColor);
+			return;
+		}
+		MyGuiSandbox.AddScreen(MyGuiSandbox.CreateMessageBox(MyMessageBoxStyleEnum.Info, MyMessageBoxButtonsType.YES_NO, messageCaption: new StringBuilder("Export setup to SHEPHERD"), messageText: new StringBuilder(ShepherdExport.Describe(plan)), callback: answer =>
+		{
+			if (answer != MyGuiScreenMessageBox.ResultEnum.YES)
+			{
+				return;
+			}
+			ShepherdExport.Apply(live, rules, plan);
+			TimShared.Personality.SayAs(SsmSession.ShepherdGuest, "export_done", "grid", grid.Name);
+			ShowMessage($"Exported to {plan.Block.CustomName}. Its status screen shows what it made of it; the Log view lists every change.", GoodColor);
+			_rowsSignature = null;
+			RefreshAll();
+		}));
+	}
+
 	private void ChangeSelectedSetting()
 	{
 		string key = SelectedKey;
@@ -262,9 +352,35 @@ public partial class SsmScreen
 		{
 			return;
 		}
+		if (setting == "shep:export")
+		{
+			ConfirmShepherdExport();
+			return;
+		}
 		GridRules rules = Store.EditGridRules(grid);
 		string text;
 		bool on;
+		if (setting.StartsWith("shep:", StringComparison.Ordinal))
+		{
+			if (!Enum.TryParse(setting.Substring(5), out ShepherdJob job))
+			{
+				return;
+			}
+			// "On" here means Stockpile Manager does the job.
+			on = !rules.ShepherdMine.Remove(job.ToString());
+			if (on)
+			{
+				rules.ShepherdMine.Add(job.ToString());
+			}
+			text = ShepherdJobNames[(int)job] + (on ? ": Stockpile Manager's job" : ": left to SHEPHERD");
+			Store.SaveSettings();
+			Live?.AddLog(text);
+			Session?.RunNow(Live);
+			ShowMessage($"{text} on {grid.Name}.", on ? (Color?)null : GoodColor);
+			_rowsSignature = null;
+			RefreshAll();
+			return;
+		}
 		switch (setting)
 		{
 		case "automation":

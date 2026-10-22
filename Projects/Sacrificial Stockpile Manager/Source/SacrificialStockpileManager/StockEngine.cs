@@ -113,6 +113,9 @@ internal class StockEngine
 
 	private readonly double _now;
 
+	/// <summary>The SHEPHERD script in charge of this construct, or null; jobs left to it are skipped (see <see cref="Left"/>).</summary>
+	private readonly ShepherdLink _shepherd;
+
 	private readonly bool _isServer;
 
 	private readonly List<Inv> _inventories = new List<Inv>();
@@ -141,15 +144,33 @@ internal class StockEngine
 
 	private bool Budget => _transfers < MaxTransfersPerPass;
 
+	/// <summary>Whether a job on this block is left to the SHEPHERD script (it runs, manages the block, and the player hasn't kept the job).</summary>
+	private bool Left(ShepherdJob job, LiveBlock block)
+	{
+		return _shepherd != null && _shepherd.Handles(job, block, _coreRules);
+	}
+
+	/// <summary>Whether a whole job is left to the SHEPHERD script.</summary>
+	private bool Left(ShepherdJob job)
+	{
+		return _shepherd != null && _shepherd.Handles(job, _coreRules);
+	}
+
 	private StockEngine(Construct construct, bool move, double now)
 	{
 		_construct = construct;
 		_move = move;
 		_now = now;
 		_isServer = MyAPIGateway.Multiplayer?.IsServer ?? true;
+		_shepherd = construct.Shepherd?.Active == true ? construct.Shepherd : null;
 		foreach (LiveBlock block in construct.Blocks)
 		{
 			if (block.Role == Effective.Manual || block.Block.Closed)
+			{
+				continue;
+			}
+			// A SHEPHERD script's own containers (category and reserve tags) are its business: never a source or a destination.
+			if (_shepherd != null && block.Tag?.Owned == true && _shepherd.Units.Contains(block.Unit))
 			{
 				continue;
 			}
@@ -207,20 +228,27 @@ internal class StockEngine
 			engine.DrainOutputs();
 		}
 		engine.FillMinimums();
-		engine.RestockDockedShips();
+		if (!engine.Left(ShepherdJob.Docked))
+		{
+			engine.RestockDockedShips();
+		}
 		engine.TrimMaximums();
 		// Ores for short ingot quotas first, then the player's own list (see RefineByNeed).
 		construct.RefinePlan = RefineByNeed.Compute(construct.Snapshot, rules);
-		if (construct.RefinePlan.Priority.Count > 0)
+		if (construct.RefinePlan.Priority.Count > 0 && !engine.Left(ShepherdJob.Refineries))
 		{
 			engine.PrioritizeOres(construct.RefinePlan.Priority);
 		}
 		engine.ClearStockBlocks();
 		engine.DrainIntakes();
 		engine.SortStorage();
-		if (rules.FillBottles)
+		if (rules.FillBottles && !engine.Left(ShepherdJob.Bottles))
 		{
 			engine.FillBottles();
+		}
+		if (construct.Shepherd != null)
+		{
+			engine.Warnings.AddRange(construct.Shepherd.Conflicts(construct, rules));
 		}
 		return engine;
 	}
@@ -480,7 +508,7 @@ internal class StockEngine
 	{
 		foreach (Inv destination in _inventories)
 		{
-			if (destination.IsOutput)
+			if (destination.IsOutput || FedByShepherd(destination.Block))
 			{
 				continue;
 			}
@@ -692,7 +720,7 @@ internal class StockEngine
 	{
 		foreach (Inv source in _inventories)
 		{
-			if (source.IsOutput)
+			if (source.IsOutput || FedByShepherd(source.Block))
 			{
 				continue;
 			}
@@ -717,6 +745,12 @@ internal class StockEngine
 		}
 	}
 
+	/// <summary>A reactor, generator or refinery the SHEPHERD script keeps filled: its limits are left to the script.</summary>
+	private bool FedByShepherd(LiveBlock block)
+	{
+		return Left(ShepherdJob.Fuel, block) || Left(ShepherdJob.Refineries, block);
+	}
+
 	private void ClearStockBlocks()
 	{
 		foreach (Inv source in _inventories)
@@ -738,7 +772,7 @@ internal class StockEngine
 	{
 		foreach (Inv source in _inventories)
 		{
-			if (!source.IsOutput && source.Block.Role == Effective.Intake)
+			if (!source.IsOutput && source.Block.Role == Effective.Intake && !Left(ShepherdJob.Sort, source.Block))
 			{
 				foreach (string key in source.Amounts.Keys.ToList())
 				{
@@ -757,6 +791,10 @@ internal class StockEngine
 		}
 		foreach (Inv source in _storage)
 		{
+			if (Left(ShepherdJob.Sort, source.Block))
+			{
+				continue;
+			}
 			foreach (string key in source.Amounts.Keys.ToList())
 			{
 				int tier = Tier(source.Block, key);
@@ -789,7 +827,8 @@ internal class StockEngine
 			{
 				return;
 			}
-			if (!(input.Block.Block is MyAssembler assembler) || input.Amounts.Count == 0)
+			// The script's own assemblers are fed by it.
+			if (!(input.Block.Block is MyAssembler assembler) || input.Amounts.Count == 0 || (_shepherd != null && (input.Block.Tag?.Main == true || input.Block.Tag?.Coop == true)))
 			{
 				continue;
 			}
@@ -839,7 +878,7 @@ internal class StockEngine
 		foreach (Inv source in _inventories)
 		{
 			// A docked ship's production output belongs to the ship.
-			if (source.Finished && !source.Block.Docked)
+			if (source.Finished && !source.Block.Docked && !Left(ShepherdJob.Output, source.Block))
 			{
 				foreach (string key in source.Amounts.Keys.ToList())
 				{

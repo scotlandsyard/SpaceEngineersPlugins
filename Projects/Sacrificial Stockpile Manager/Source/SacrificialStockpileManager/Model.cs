@@ -155,6 +155,12 @@ public class GridRules
 
 	public List<ItemLimit> Quotas = new List<ItemLimit>();
 
+	/// <summary>
+	/// Jobs (<see cref="ShepherdJob"/> names) the player keeps for Stockpile Manager while a SHEPHERD script runs on
+	/// the grid. Every other job it does is left to it.
+	/// </summary>
+	public List<string> ShepherdMine = new List<string>();
+
 	public ItemLimit Quota(string item)
 	{
 		return Quotas.FirstOrDefault(q => q.Item == item);

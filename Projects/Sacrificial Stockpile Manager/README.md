@@ -7,6 +7,7 @@ A client-side Pulsar plugin for inventory management and auto-restocking. It tak
 - Keeps any block between a minimum and a maximum of an item: lockers, reactors, generators, turrets, refineries.
 - Keeps grid-wide quotas by queuing the shortfall in assemblers (autocraft).
 - Shows status pages on LCD screens.
+- Works alongside [SHEPHERD](https://steamcommunity.com/sharedfiles/filedetails/?id=3824156985), an inventory script for a programmable block: where SHEPHERD runs, Stockpile Manager leaves its jobs to it and shows its state (see [Working with SHEPHERD](#working-with-shepherd)).
 
 ## Opening the menu
 
@@ -81,6 +82,37 @@ Set in the Overview. All are off for a new grid except Clean production blocks, 
 
 **Bottles.** Bottles below 100% in storage or intakes go to a tank of the same gas with Auto-Refill on, power and gas in it. The tank fills them as they arrive, and full bottles go back to storage. Gas generators aren't used, because they refill bottles only on the server and a client can't see when a bottle in one is full. Stock blocks with bottle minimums get the fullest bottles first.
 
+## Working with SHEPHERD
+
+[SHEPHERD](https://steamcommunity.com/sharedfiles/filedetails/?id=3824156985) ([source](https://github.com/chrumck/SHEPHERD)) is an inventory script for a programmable block. It runs on the server, so it keeps a grid sorted and stocked whenever the server has the grid loaded, even while you're away. Stockpile Manager is the window you work from while you play. The two are meant to be used together.
+
+When a grid has a working SHEPHERD block (owned by you, or shared with your faction with `factionShare` on), Stockpile Manager steps back from the jobs SHEPHERD does, so the two never move the same items back and forth:
+
+| Job | Left to SHEPHERD means |
+|---|---|
+| Sorting | SHEPHERD empties every cargo container, cockpit and connector into its tagged containers; Stockpile Manager stops sorting and draining intakes there |
+| Docked ships | SHEPHERD unloads them; Stockpile Manager stops restocking them for their quotas (Unload docked ships still works when you press it) |
+| Reactor and generator fuel | SHEPHERD fills them to `reactorFillPct` / `gasGenFillPct`; their minimums and maximums here are left alone |
+| Refineries | SHEPHERD feeds them (`refineryFillPct`) and steers them for ingot quotas; refinery priority and refine by ingot need are left alone |
+| Production output | SHEPHERD empties refineries and assemblers |
+| Crafting its A quotas | Items with an A quota in SHEPHERD's Custom Data are left to it (Items view: "Left to SHEPHERD: 500MA in [Reserve]"); other quotas are still crafted here on the Main and Co-op assemblers |
+| Bottles | SHEPHERD refills them every `bottleSweepMinutes` |
+
+A job SHEPHERD's settings switch off (a fill % or bottle sweep of 0) stays Stockpile Manager's. The Overview shows the SHEPHERD block, what its `[SHEPHERD]` status screen says, and a row per job: double-click one to keep it for Stockpile Manager, or to leave it to SHEPHERD again. If the block is off, damaged or unpowered, or its status screen hasn't changed for 90 seconds, Stockpile Manager does every job again until it's back. The LCD Overview page shows SHEPHERD's state too.
+
+Whatever you choose, while SHEPHERD runs: containers tagged `[SHEPHERD:...]` or `[SHEPHERD-RESERVE...]` are SHEPHERD's (Stockpile Manager never moves items into or out of them), and assemblers tagged `[SHEPHERD-Main]` or `[SHEPHERD-Coop]` only get SHEPHERD's orders. Blocks tagged `[SHEPHERD-Off]` are left to Stockpile Manager: give that tag to lockers you keep stocked here (Stock role or minimums), or SHEPHERD empties them. The Overview warns about each one, and about quotas both keep for the same item.
+
+**Export setup to SHEPHERD** (double-click its row in the Overview) hands the grid's setup over in one go, after showing you what it will change:
+
+- Storage blocks that accept categories get `[SHEPHERD:Ores,Ingots,...]`, with their priority as `:#N`. An accepted single item gets a category of its own in `[Categories]`, and accepted bottles a `Bottles` category. General storage containers get `[SHEPHERD:*]`.
+- Stock blocks become reserve containers, `[SHEPHERD-RESERVE:name]`, with their limits as quota lines: a minimum only becomes an `M` line, a maximum only an `L` line, both the maximum.
+- Manual blocks get `[SHEPHERD-Off]`.
+- With Autocraft on, the grid's quotas go into `[Reserve:Quotas]` as A lines (`MA` up to the quota; with Disassemble surplus on, `LA` above the maximum), and the Main and Co-op assemblers get `[SHEPHERD-Main]` and `[SHEPHERD-Coop]`.
+
+Then it runs the block with `configReload` and leaves every job to SHEPHERD. Only the grid itself and blocks you own are changed, and blocks that already have a SHEPHERD tag are skipped. Refinery priority, block type limits and docked ships aren't exported.
+
+**Shepherd speaks.** With the Chat setting on, Shepherd has a voice of its own while it minds a grid: a weathered hill shepherd, in slate gray. It speaks when it's found running on a grid, when its status screen shows a new problem, when its crafting meets a quota, and after an export. Stockpile Manager says a word when SHEPHERD stops and the jobs come back to it.
+
 ## Block roles
 
 | Role | Auto for | Behaviour |
@@ -107,7 +139,7 @@ Overview, Ores, Ingots, Components, Ammo, Tools & bottles, All items, Containers
 
 ## Where settings are stored
 
-Everything is stored on your computer in the plugin's local storage, one pair of files per world (`SacrificialStockpileManager_<world>_Settings.xml` and `..._Grids.xml`, keyed by the world's name). None of your settings are written to Custom Data or block names, so other players don't see them. The one exception is the shared assembler mode (see Assembler modes), which is written to the Custom Data of assemblers you own, and which BaR Maid reads and writes as well. LCD text is visible to everyone.
+Everything is stored on your computer in the plugin's local storage, one pair of files per world (`SacrificialStockpileManager_<world>_Settings.xml` and `..._Grids.xml`, keyed by the world's name). None of your settings are written to Custom Data or block names, so other players don't see them. The one exception is the shared assembler mode (see Assembler modes), which is written to the Custom Data of assemblers you own, and which BaR Maid reads and writes as well. The other is Export setup to SHEPHERD, which only writes block names and a SHEPHERD block's Custom Data when you press it. LCD text is visible to everyone.
 
 ## Multiplayer
 
@@ -119,6 +151,7 @@ Everything runs on your client. Nothing is needed on the server.
 - **Server delay:** the server takes a moment to confirm a move. Moves still on their way are counted for up to 6 seconds, so they aren't sent twice. An autocraft item isn't queued again for 15 seconds.
 - **Only while you're around.** Unlike a programmable block, the plugin only works while you're online and the grid is loaded near you. Grids out of range show their last known contents.
 - **Other players with the plugin.** If two players manage the same grid, both move items.
+- **SHEPHERD.** Finding a SHEPHERD block sends nothing: block names, Custom Data and screen text are already in your game. Export setup to SHEPHERD sends, once, the same requests as renaming blocks and editing Custom Data in the terminal, plus one Run of the programmable block (`configReload`); the server checks your access for each, and anyone who can open those blocks sees the new names and Custom Data.
 
 ## Switching between our plugins
 

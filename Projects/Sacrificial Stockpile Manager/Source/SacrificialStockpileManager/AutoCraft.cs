@@ -46,6 +46,8 @@ internal static class AutoCraft
 
 	private static string s_quotaMet;
 
+	private static bool s_quotaMetByShepherd;
+
 	private static string s_craftItem;
 
 	private static double s_craftAmount;
@@ -130,8 +132,8 @@ internal static class AutoCraft
 				Assemblers = construct.Blocks
 					.Where(b => b.Unit == entry.Key && (b.Kind == BlockKind.Assembler || (rules != null && rules.UseSurvivalKits && b.Kind == BlockKind.SurvivalKit)) && b.Role != Effective.Manual)
 					.Select(b => b.Block as MyAssembler)
-					// Assemblers are Manual until the player makes them Main or Co-op.
-					.Where(b => b != null && !b.Closed && !AssemblerModes.IsManual(b))
+					// Assemblers are Manual until the player makes them Main or Co-op. The ones a SHEPHERD script was given are its own.
+					.Where(b => b != null && !b.Closed && !AssemblerModes.IsManual(b) && !ShepherdAssembler(construct, b))
 					.ToList(),
 				// A docked ship's notes show when it's picked in the Grid list.
 				Notes = core ? construct.QuotaNotes : construct.UnitNotes[entry.Key] = new Dictionary<string, string>()
@@ -145,7 +147,11 @@ internal static class AutoCraft
 			// This runs after the quotas so a freshly switched assembler gets its queue before it's judged empty.
 			RestoreFinishedDisassemblers(construct, unit, now, cooldown);
 		}
-		if (s_quotaMet != null)
+		if (s_quotaMet != null && s_quotaMetByShepherd)
+		{
+			Personality.SayAs(SsmSession.ShepherdGuest, "quota_met", "item", s_quotaMet);
+		}
+		else if (s_quotaMet != null)
 		{
 			Personality.Say("quota_met", "item", s_quotaMet);
 		}
@@ -157,6 +163,30 @@ internal static class AutoCraft
 		{
 			Personality.Say("disassembling", "item", s_disassembleItem);
 		}
+	}
+
+	/// <summary>An assembler tagged [SHEPHERD-Main] or [SHEPHERD-Coop] while the script runs: only it queues there.</summary>
+	private static bool ShepherdAssembler(Construct construct, MyAssembler assembler)
+	{
+		ShepherdTag tag = construct.Find(assembler.EntityId)?.Tag;
+		return construct.Shepherd?.Active == true && (tag?.Main == true || tag?.Coop == true);
+	}
+
+	/// <summary>The Items note for a quota the SHEPHERD script makes itself, or null when the item is Stockpile Manager's.</summary>
+	private static string ShepherdNote(Construct construct, Unit unit, string key)
+	{
+		ShepherdLink shepherd = construct.Shepherd;
+		GridRules core = Store.GridRules(construct.Snapshot);
+		if (shepherd == null || !shepherd.Units.Contains(unit.Id) || !shepherd.Handles(ShepherdJob.Craft, core))
+		{
+			return null;
+		}
+		List<ShepherdQuota> quotas = shepherd.CraftQuotas(key);
+		if (quotas.Count == 0)
+		{
+			return null;
+		}
+		return "Left to SHEPHERD: " + string.Join(", ", quotas.Select(q => $"{q.Text} in [Reserve{(q.Pool.Length > 0 ? ":" + q.Pool : "")}]"));
 	}
 
 	private static void CheckQuotas(Construct construct, Unit unit, double now, double cooldown)
@@ -176,7 +206,12 @@ internal static class AutoCraft
 				bool sameQuota = construct.QuotaSeen.TryGetValue(shortKey, out double seenMin) && Math.Abs(seenMin - quota.Min) < 1e-6;
 				if (!isShort && sameQuota && construct.QuotaShort.TryGetValue(shortKey, out bool wasShort) && wasShort)
 				{
-					s_quotaMet ??= Items.Name(key);
+					if (s_quotaMet == null)
+					{
+						s_quotaMet = Items.Name(key);
+						// Met by the SHEPHERD script's crafting: it says so.
+						s_quotaMetByShepherd = ShepherdNote(construct, unit, key) != null;
+					}
 				}
 				construct.QuotaShort[shortKey] = isShort;
 				construct.QuotaSeen[shortKey] = quota.Min;
@@ -192,6 +227,13 @@ internal static class AutoCraft
 					}
 					have += inbound;
 				}
+			}
+				// An item the SHEPHERD script makes or takes apart is left to it, so the two don't queue against each other.
+			string shepherdNote = ShepherdNote(construct, unit, key);
+			if (shepherdNote != null)
+			{
+				unit.Notes[key] = (quota.HasMin && have < quota.Min ? $"Short {Items.Amount(quota.Min - have)}. " : "") + shepherdNote;
+				continue;
 			}
 			MyBlueprintDefinitionBase blueprint = Items.Blueprint(key);
 			if (quota.HasMax && have > quota.Max)
@@ -326,6 +368,10 @@ internal static class AutoCraft
 		if (unit.Id != construct.CoreUnit)
 		{
 			return $"{shortText}: made by refineries; only the station's own quotas steer its refinery priority";
+		}
+		if (construct.Shepherd != null && construct.Shepherd.Handles(ShepherdJob.Refineries, unit.Rules))
+		{
+			return $"{shortText}: made by refineries, which are left to SHEPHERD (give it an A quota for this ingot, or keep Refineries for Stockpile Manager in the Overview)";
 		}
 		RefineByNeed plan = construct.RefinePlan;
 		string ore = Puller(plan, key);

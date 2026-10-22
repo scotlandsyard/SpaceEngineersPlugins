@@ -247,6 +247,10 @@ internal static class Displays
 		text.Append('\n');
 		text.Append(Row("Automation", rules != null && rules.Automation ? "On" : "Off", columns)).Append('\n');
 		text.Append(Row("Autocraft", rules != null && rules.Autocraft ? "On" : "Off", columns)).Append('\n');
+		if (live?.Shepherd != null)
+		{
+			text.Append(Row("SHEPHERD", live.Shepherd.Active ? live.Shepherd.Health ?? "running" : "not running", columns)).Append('\n');
+		}
 		if (live != null)
 		{
 			text.Append(Row("Warnings", live.Warnings.Count.ToString(), columns)).Append('\n');

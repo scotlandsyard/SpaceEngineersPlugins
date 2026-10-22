@@ -58,6 +58,9 @@ public class SsmSession : MySessionComponentBase
 	/// <summary>Name shown in chat for the plugin's in-character lines (Shared/Personality.cs).</summary>
 	private const string CharacterName = "Stockpile Manager";
 
+	/// <summary>The guest voice for a SHEPHERD script found on a grid ([Shepherd:key] lines in Personality.txt).</summary>
+	internal const string ShepherdGuest = "Shepherd";
+
 	/// <summary>Storage at least this full counts as full, for the containers_full line.</summary>
 	private const double FullFill = 0.98;
 
@@ -565,8 +568,49 @@ public class SsmSession : MySessionComponentBase
 			return;
 		}
 		construct.Refresh();
+		CheckShepherd(construct);
 		bool viewed = construct.Key == ViewedKey || construct.Snapshot?.DockedShips?.Any(d => d.Key == ViewedKey) == true;
 		construct.NextRefresh = now + (viewed ? ViewedRefreshSeconds : RefreshSeconds);
+	}
+
+	/// <summary>
+	/// Chat lines about a SHEPHERD script on the grid: it speaks when it's found running (or starts again), and when
+	/// its status screen shows something new that needs the player; Stockpile Manager speaks when it stops and the
+	/// jobs come back to it.
+	/// </summary>
+	private static void CheckShepherd(Construct construct)
+	{
+		ShepherdLink shepherd = construct.Shepherd;
+		bool active = shepherd?.Active == true;
+		string grid = construct.Snapshot?.Name ?? "";
+		if (active && construct.ShepherdWasActive != true)
+		{
+			Personality.SayAs(ShepherdGuest, "found", "grid", grid);
+		}
+		else if (!active && construct.ShepherdWasActive == true)
+		{
+			Personality.Say("shepherd_stopped", "grid", grid);
+		}
+		bool firstLook = construct.ShepherdWasActive == null;
+		construct.ShepherdWasActive = active;
+		if (!active)
+		{
+			construct.ShepherdSeen.Clear();
+			return;
+		}
+		// Lines saying what it's doing right now aren't news; the rest are problems that need the player.
+		foreach (string line in shepherd.Problems)
+		{
+			if (line.StartsWith("crafting ", StringComparison.Ordinal) || line.StartsWith("disassembling ", StringComparison.Ordinal) || line.StartsWith("refining ", StringComparison.Ordinal))
+			{
+				continue;
+			}
+			if (construct.ShepherdSeen.Add(line) && !firstLook)
+			{
+				Personality.SayAs(ShepherdGuest, "problem", "problem", line, "grid", grid);
+			}
+		}
+		construct.ShepherdSeen.IntersectWith(shepherd.Problems);
 	}
 
 	/// <summary>Runs the engine on a construct straight away (after a settings change in the menu).</summary>
