@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
+using Sandbox.ModAPI;
 using TimShared;
 using VRage.Utils;
 
@@ -35,6 +36,22 @@ internal static class Settings
 	public static string DisplayName = "";
 
 	public static double ClampKm(double km) => Math.Max(MinKm, Math.Min(MaxKm, km));
+
+	/// <summary>
+	/// This world's view distance in km: how far the game draws, and the same limit a laser antenna's line of sight uses.
+	/// Nothing past it can be seen, so nothing past it is measured. On a server it's the server's setting.
+	/// </summary>
+	public static double VisualKm
+	{
+		get
+		{
+			int? metres = MyAPIGateway.Session?.SessionSettings?.ViewDistance;
+			return metres.HasValue && metres.Value > 0 ? metres.Value / 1000.0 : MaxKm;
+		}
+	}
+
+	/// <summary>The range actually used: the setting, but never past the view distance.</summary>
+	public static double EffectiveKm => Math.Min(RangeKm, VisualKm);
 
 	public static void Load()
 	{

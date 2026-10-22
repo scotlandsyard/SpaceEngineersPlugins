@@ -139,7 +139,7 @@ public class RadarTechSession : MySessionComponentBase
 				_tick = 0;
 				bool ping = s_pingPending;
 				s_pingPending = false;
-				Rangefinder.Start(Settings.RangeKm * 1000, reading => Show(reading, ping));
+				Rangefinder.Start(Settings.EffectiveKm * 1000, reading => Show(reading, ping));
 			}
 			Hud.Update();
 		}
@@ -288,7 +288,7 @@ public class RadarTechSession : MySessionComponentBase
 	private static void ShowStatus()
 	{
 		string last = Last == null ? "no reading yet" : Rangefinder.Describe(Last, Settings.ShowClosing);
-		MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Readout {(Settings.Readout ? "on" : "off")} ({Settings.Hotkey}), range {FormatKm(Settings.RangeKm)} km. Last: {last}.");
+		MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Readout {(Settings.Readout ? "on" : "off")} ({Settings.Hotkey}), range {FormatKm(Settings.RangeKm)} km{(Settings.RangeKm > Settings.VisualKm ? $", held to this world's view distance of {FormatKm(Settings.VisualKm)} km" : "")}. Last: {last}.");
 	}
 
 	internal static string FormatKm(double km)

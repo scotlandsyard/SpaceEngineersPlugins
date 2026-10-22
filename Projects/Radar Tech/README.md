@@ -17,7 +17,7 @@ The readout looks like this:
 - **Ping**: one reading, shown under the crosshair for five seconds and said in chat.
 - **Distance** is from you (your character, or the cockpit you sit in), not from the camera, so third person reads the same as first person.
 - **Skipped**: your own ship, anything docked to it, and your character.
-- **Range**: 1 to 50 km, 20 by default.
+- **Range**: 1 to 50 km, 20 by default, but never past the world's **view distance** (15 km unless the world or server changes it). That's how far the game draws: what you can't see, Radar can't measure. A higher setting is held to the view distance, and `/radar status` says so.
 
 ### Controls
 
@@ -31,7 +31,7 @@ The readout looks like this:
 | `/radar` | Opens the window |
 | `/radar on`, `/radar off` | Turns the readout on or off |
 | `/radar ping` | One reading |
-| `/radar range <km>` | Sets the range, 1 to 50 km |
+| `/radar range <km>` | Sets the range, 1 to 50 km (held to the view distance) |
 | `/radar status` | Shows the settings and the last reading |
 | `/radar chat off\|quiet\|normal\|chatty` | How much Radar comments in chat |
 | `/radar name <name>` | The name Radar's chat lines show under; on its own puts it back |

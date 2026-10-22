@@ -58,13 +58,13 @@ public class RadarTechScreen : MyGuiScreenBase
 		_readout.IsCheckedChanged = box => RadarTechSession.SetReadout(box.IsChecked);
 		Add(_readout, _mainControls);
 
-		AddLabel(Left, -0.11f, $"Range in km ({Settings.MinKm:0} to {Settings.MaxKm:0})", _mainControls);
+		AddLabel(Left, -0.11f, $"Range in km (up to {RadarTechSession.FormatKm(Settings.VisualKm)}, the view distance)", _mainControls);
 		MyGuiControlTextbox range = new MyGuiControlTextbox(new Vector2(Field, -0.11f), RadarTechSession.FormatKm(Settings.RangeKm), 6)
 		{
 			Size = new Vector2(0.08f, 0.045f),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
 		};
-		range.SetToolTip("How far it measures. Anything further away reads as nothing.");
+		range.SetToolTip($"How far it measures, {Settings.MinKm:0} to {Settings.MaxKm:0} km. It never reaches past this world's view distance ({RadarTechSession.FormatKm(Settings.VisualKm)} km): what you can't see, it can't measure.");
 		range.TextChanged += box =>
 		{
 			string text = (box.Text ?? "").Trim().Replace(',', '.');
@@ -180,7 +180,7 @@ public class RadarTechScreen : MyGuiScreenBase
 		"PING\n" +
 		"One measurement, shown under the crosshair for five seconds and said in chat. Handy when you don't want the readout on all the time.\n\n" +
 		"WHAT IT CAN SEE\n" +
-		"The same as a camera block's raycast: only what your game has loaded, and only the first thing in the line. It never sees through rock or a ship, and it never finds anything your game doesn't already know about. Your own ship, anything docked to it, and your character are skipped. Range is 1 to 50 km (20 by default).\n\n" +
+		"The same as a camera block's raycast: only what your game has loaded, and only the first thing in the line. It never sees through rock or a ship, and it never finds anything your game doesn't already know about. Your own ship, anything docked to it, and your character are skipped. Range is 1 to 50 km (20 by default), but never past the world's view distance (15 km unless the world or server changes it), the distance the game draws to: what you can't see, it can't measure. If your range is set higher, it's held to the view distance and /radar status says so.\n\n" +
 		"TOOLBAR\n" +
 		"In a cockpit or remote control, the toolbar has Radar Tech: readout on/off, Radar Tech: ping and Radar Tech: window.\n\n" +
 		"HOTKEY\n" +
