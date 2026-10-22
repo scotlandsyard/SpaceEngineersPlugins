@@ -355,10 +355,20 @@ internal static class Personality
 		["Wilson"] = new Color(222, 184, 135),
 		["Quiet Skies"] = new Color(135, 206, 235),
 		["Tim"] = new Color(0, 206, 180),
-		["Drill Sergeant"] = new Color(150, 168, 82),
-		// Guest, voiced by Stockpile Manager (SayAs).
-		["Shepherd"] = new Color(112, 128, 144)
+		["Drill Sergeant"] = new Color(150, 168, 82)
 	};
+
+	/// <summary>
+	/// Gives a guest (SayAs) its own name colour. The plugin that voices the guest calls it, so the guest's name is
+	/// only compiled into that plugin, not into every plugin that links this file.
+	/// </summary>
+	public static void SetGuestColor(string guest, Color color)
+	{
+		if (!string.IsNullOrEmpty(guest))
+		{
+			s_colors[guest] = color;
+		}
+	}
 
 	/// <summary>For a character not in the palette.</summary>
 	private static readonly Color s_otherColor = new Color(255, 180, 110);

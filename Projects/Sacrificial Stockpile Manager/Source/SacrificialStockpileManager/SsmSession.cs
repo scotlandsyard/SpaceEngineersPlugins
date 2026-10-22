@@ -137,6 +137,8 @@ public class SsmSession : MySessionComponentBase
 			Personality.DisplayName = Store.DisplayName;
 			Personality.Changed += OnPersonalityChanged;
 			Personality.Register(CharacterName);
+			// Slate gray, Shepherd's colour in chat (listed in Shared/README.md).
+			Personality.SetGuestColor(ShepherdGuest, new Color(112, 128, 144));
 			_started = true;
 		}
 		catch (Exception ex)
