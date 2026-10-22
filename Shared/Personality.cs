@@ -72,6 +72,9 @@ internal static class Personality
 
 	private static string s_director;
 
+	/// <summary>Guest characters this plugin has spoken for (SayAs), so the director's "say" for them is answered here.</summary>
+	private static readonly HashSet<string> s_guests = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
 	/// <summary>When anyone of ours last showed a line.</summary>
 	private static DateTime s_lastLineAt;
 
@@ -222,6 +225,7 @@ internal static class Personality
 		{
 		}
 		s_events.Clear();
+		s_guests.Clear();
 		s_director = null;
 	}
 
@@ -233,23 +237,47 @@ internal static class Personality
 	public static void Say(string key, params string[] values)
 	{
 		// Greetings are retired: with Wilson the crew answers his roll call, and without him nobody greets.
-		if (!s_registered || Level == Chattiness.Off || string.IsNullOrEmpty(key) || key.Equals("greeting", StringComparison.OrdinalIgnoreCase))
+		// A key with a colon is a guest's ([Guest:key]); only SayAs uses those.
+		if (!s_registered || Level == Chattiness.Off || string.IsNullOrEmpty(key) || key.IndexOf(':') >= 0 || key.Equals("greeting", StringComparison.OrdinalIgnoreCase))
 		{
 			return;
 		}
-		bool known = s_events.TryGetValue(key, out Event ev);
+		SayFor(null, key, values);
+	}
+
+	/// <summary>
+	/// Like Say, but the line is a guest character's: someone who isn't a plugin of ours, voiced by this plugin (SSM
+	/// voices SHEPHERD while it sees a Shepherd programmable block). Lines come from this plugin's Personality.txt
+	/// under [Guest:key] (or [!Guest:key] for important), and show under the guest's name in the guest's own colour.
+	/// The plugin's Level, the family cycle and the cooldowns apply as for its own lines (cooldowns per guest and key).
+	/// With a director loaded, the event goes to it under the guest's name, and its "say" for the guest is answered here.
+	/// </summary>
+	public static void SayAs(string guest, string key, params string[] values)
+	{
+		if (!s_registered || Level == Chattiness.Off || string.IsNullOrEmpty(guest) || string.IsNullOrEmpty(key) || guest.Equals(s_name, StringComparison.OrdinalIgnoreCase))
+		{
+			return;
+		}
+		s_guests.Add(guest);
+		SayFor(guest, key, values);
+	}
+
+	/// <summary>Say for this plugin's own character (guest null) or for a guest.</summary>
+	private static void SayFor(string guest, string key, string[] values)
+	{
+		bool known = s_events.TryGetValue(guest == null ? key : guest + ":" + key, out Event ev);
 		if (s_director != null)
 		{
 			// On Quiet, the director only hears about the events this plugin would speak up for itself.
 			if (Level != Chattiness.Quiet || (known && ev.Important))
 			{
-				Send("event", key, values, known && ev.Important);
+				Send("event", key, values, known && ev.Important, guest);
 			}
 			return;
 		}
 		if (known)
 		{
-			TrySpeak(ev, values, force: false);
+			TrySpeak(ev, values, force: false, guest);
 		}
 	}
 
@@ -270,7 +298,7 @@ internal static class Personality
 		}
 	}
 
-	private static void TrySpeak(Event ev, string[] values, bool force)
+	private static void TrySpeak(Event ev, string[] values, bool force, string guest = null)
 	{
 		if (ev.Lines.Count == 0)
 		{
@@ -296,14 +324,22 @@ internal static class Personality
 		}
 		ev.Last = index;
 		ev.NextAllowed = now + EventCooldown;
-		Speak(Fill(ev.Lines[index], values));
+		Speak(Fill(ev.Lines[index], values), guest);
 	}
 
-	private static void Speak(string text)
+	private static void Speak(string text, string guest = null)
 	{
 		s_lastLineAt = DateTime.UtcNow;
-		Show(s_name, DisplayName, text);
-		Send("spoke");
+		if (guest != null)
+		{
+			// A guest always shows under its own name; it can't be renamed.
+			Show(guest, guest, text);
+		}
+		else
+		{
+			Show(s_name, DisplayName, text);
+		}
+		Send("spoke", sender: guest);
 	}
 
 	// ---- Names and colours ----
@@ -319,7 +355,9 @@ internal static class Personality
 		["Wilson"] = new Color(222, 184, 135),
 		["Quiet Skies"] = new Color(135, 206, 235),
 		["Tim"] = new Color(0, 206, 180),
-		["Drill Sergeant"] = new Color(150, 168, 82)
+		["Drill Sergeant"] = new Color(150, 168, 82),
+		// Guest, voiced by Stockpile Manager (SayAs).
+		["Shepherd"] = new Color(112, 128, 144)
 	};
 
 	/// <summary>For a character not in the palette.</summary>
@@ -380,7 +418,7 @@ internal static class Personality
 
 	/// <summary>
 	/// Personality.txt: a [key] line starts an event ([!key] marks it important, said even on Quiet), and each
-	/// line after it is one thing the character may say. Blank lines and lines starting with # are skipped, and a
+	/// line after it is one thing the character may say. [Guest:key] holds a guest's lines (SayAs). Blank lines and lines starting with # are skipped, and a
 	/// leading "- " is dropped so pasted bullet lists work.
 	/// </summary>
 	private static void LoadLines()
@@ -432,10 +470,12 @@ internal static class Personality
 	/// <summary>
 	/// Every message carries: kind, our own name, the kind's own arguments (event key and values), our Level as text
 	/// ("Off", "Quiet", "Normal" or "Chatty"), our display name, and whether the event is important ("1" or "0").
+	/// For a guest (sender), the guest's name stands in for ours and for the display name; to a director a guest
+	/// looks like any other character, with this plugin's Level.
 	/// </summary>
-	private static void Send(string kind, string key = null, string[] values = null, bool important = false)
+	private static void Send(string kind, string key = null, string[] values = null, bool important = false, string sender = null)
 	{
-		MyAPIGateway.Utilities.SendModMessage(Channel, new object[] { kind, s_name, key, values, s_level.ToString(), DisplayName, important ? "1" : "0" });
+		MyAPIGateway.Utilities.SendModMessage(Channel, new object[] { kind, sender ?? s_name, key, values, s_level.ToString(), sender ?? DisplayName, important ? "1" : "0" });
 	}
 
 	private static void OnMessage(object message)
@@ -453,11 +493,22 @@ internal static class Personality
 
 	private static void Handle(object message)
 	{
-		if (!(message is object[] parts) || parts.Length < 2 || !(parts[0] is string kind) || !(parts[1] is string name) || name.Equals(s_name, StringComparison.OrdinalIgnoreCase))
+		// Our own messages, and the ones we sent for a guest, come back to us too.
+		if (!(message is object[] parts) || parts.Length < 2 || !(parts[0] is string kind) || !(parts[1] is string name) || name.Equals(s_name, StringComparison.OrdinalIgnoreCase) || s_guests.Contains(name))
 		{
 			return;
 		}
-		bool forUs = parts.Length > 2 && parts[2] is string target && target.Equals(s_name, StringComparison.OrdinalIgnoreCase);
+		string target = parts.Length > 2 ? parts[2] as string : null;
+		bool forUs = target != null && target.Equals(s_name, StringComparison.OrdinalIgnoreCase);
+		if (kind == "say" && target != null && s_guests.Contains(target))
+		{
+			// The director picked one of our guests: its own line for that event, if it has one. No roll call fallback.
+			if (Level != Chattiness.Off && parts.Length > 3 && parts[3] is string guestKey && s_events.TryGetValue(target + ":" + guestKey, out Event guestEvent) && guestEvent.Lines.Count > 0)
+			{
+				TrySpeak(guestEvent, parts.Length > 4 ? parts[4] as string[] : null, force: true, target);
+			}
+			return;
+		}
 		switch (kind)
 		{
 		case "director":

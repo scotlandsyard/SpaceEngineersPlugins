@@ -112,6 +112,8 @@ An important line (`[!key]`) can break the cycle, but never within 30 seconds of
 
 **Greetings are retired.** `Say("greeting")` does nothing: with Wilson loaded the crew answers his roll call instead, and without him nobody greets. Plugins can drop their greeting timers and `[greeting]` lines at their next change.
 
+**Guests.** A plugin can also voice a character that isn't one of our plugins: `Personality.SayAs("Shepherd", "found", ...)` (Stockpile Manager voices SHEPHERD, the inventory sorter script, while it sees one on a grid). The guest's lines go in the plugin's own `Personality.txt` under `[Shepherd:found]` (`[!Shepherd:found]` for important); plain `Say` never uses them. They show under the guest's name (it can't be renamed) in its own colour, with the plugin's level, the family cycle and cooldowns per guest and key. With Wilson loaded the event goes to him under the guest's name, so the guest shows up in his roster like any character, and the plugin answers his "say" for it. A guest has no roll call fallback: it only answers if it has `[Guest:rollcall]` lines.
+
 **Roll call.** About ten seconds after the world loads, Wilson calls the roll and asks each loaded character for its `[rollcall]` line, with `{command}` filled in (Wilson's `Cast.cs` knows each plugin's command). A plugin with no `[rollcall]` lines yet answers with a plain built-in line. A character on Quiet answers too; one that's Off doesn't.
 
 ### Colours
@@ -129,6 +131,7 @@ Each character's name shows in its own colour, picked so none is a colour the ga
 | Quiet Skies | Sky blue | 135, 206, 235 |
 | Tim | Teal | 0, 206, 180 |
 | Drill Sergeant | Olive drab | 150, 168, 82 |
+| Shepherd (guest of Stockpile Manager) | Slate gray | 112, 128, 144 |
 | Any other | Apricot | 255, 180, 110 |
 
 Lines go through `MyHud.Chat.ShowMessage(sender, text, senderColor, messageColor)`, which only adds them to this screen's chat list (the ModAPI `ShowMessage` uses the same list, without a colour).
