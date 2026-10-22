@@ -84,7 +84,7 @@ Set in the Overview. All are off for a new grid except Clean production blocks, 
 
 ## Working with SHEPHERD
 
-[SHEPHERD](https://steamcommunity.com/sharedfiles/filedetails/?id=3824156985) ([source](https://github.com/chrumck/SHEPHERD)) is an inventory script for a programmable block. It runs on the server, so it keeps a grid sorted and stocked whenever the server has the grid loaded, even while you're away. Stockpile Manager is the window you work from while you play. The two are meant to be used together.
+[SHEPHERD](https://steamcommunity.com/sharedfiles/filedetails/?id=3824156985) ([source](https://github.com/chrumck/SHEPHERD)), by chrumck, is an inventory script for a programmable block. Stockpile Manager took a lot of inspiration from it. It runs on the server, so it keeps a grid sorted and stocked whenever the server has the grid loaded, even while you're away. Stockpile Manager is the window you work from while you play. The two are meant to be used together.
 
 When a grid has a working SHEPHERD block (owned by you, or shared with your faction with `factionShare` on), Stockpile Manager steps back from the jobs SHEPHERD does, so the two never move the same items back and forth:
 
