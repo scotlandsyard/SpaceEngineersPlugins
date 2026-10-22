@@ -117,6 +117,7 @@ public class SsmSession : MySessionComponentBase
 			}
 			Instance = this;
 			Store.Load();
+			ShepherdLink.Reset();
 			_menuAction = new MyTerminalAction<MyTerminalBlock>(MenuActionId, new StringBuilder("Stockpile Manager"), block => OpenMenu(block), "Textures\\GUI\\Icons\\Actions\\Start.dds")
 			{
 				ValidForGroups = false

@@ -306,8 +306,19 @@ internal sealed class ShepherdConfig
 /// </summary>
 internal sealed class ShepherdLink
 {
-	/// <summary>A status screen whose text hasn't changed for this long means the script isn't running.</summary>
+	/// <summary>
+	/// A status screen whose text hasn't changed for this long means the script isn't running. The script redraws its
+	/// screens one at a time and pauses redraws during busy runs, so a grid with many of its screens gets 3 s per screen.
+	/// </summary>
 	private const double StaleSeconds = 90.0;
+
+	private const double StaleSecondsPerScreen = 3.0;
+
+	/// <summary>No stall verdict this soon after a screen is first seen: the script's first cycle after a start takes a minute or two.</summary>
+	private const double StaleGraceSeconds = 180.0;
+
+	// When each status screen was first seen this session.
+	private static readonly Dictionary<long, double> s_firstSeen = new Dictionary<long, double>();
 
 	// Custom Data parsed per block, kept while the text is the same string.
 	private static readonly Dictionary<long, KeyValuePair<string, ShepherdConfig>> s_configs = new Dictionary<long, KeyValuePair<string, ShepherdConfig>>();
@@ -318,6 +329,14 @@ internal sealed class ShepherdLink
 	public IMyProgrammableBlock Block;
 
 	public long Unit;
+
+	/// <summary>Forgets what was seen, when a world loads or unloads (game times start over).</summary>
+	public static void Reset()
+	{
+		s_configs.Clear();
+		s_screens.Clear();
+		s_firstSeen.Clear();
+	}
 
 	public ShepherdConfig Config;
 
@@ -338,8 +357,11 @@ internal sealed class ShepherdLink
 	/// <summary>The units it manages: its own, and those docked to it unless a [SHEPHERD-Split] connector cuts them off.</summary>
 	public HashSet<long> Units = new HashSet<long>();
 
-	/// <summary>Running and in charge: Stockpile Manager steps back from its jobs.</summary>
-	public bool Active => Working && !Stale && Health != "standing by";
+	/// <summary>
+	/// Running and in charge: Stockpile Manager steps back from its jobs. HALTED (its crash breaker tripped) does no
+	/// work but keeps redrawing, so it counts as not running; learning moves nothing on purpose and still counts.
+	/// </summary>
+	public bool Active => Working && !Stale && Health != "standing by" && Health != "HALTED";
 
 	public string Name => Block?.CustomName ?? "";
 
@@ -357,7 +379,11 @@ internal sealed class ShepherdLink
 				return $"{Name}: its status screen stopped updating (script stopped?); Stockpile Manager does every job";
 			}
 			string version = Version != null ? " " + Version : "";
-			return Health == null ? $"{Name}{version}: running (no [SHEPHERD] status screen to read)" : $"{Name}{version}: {Health}";
+			if (Health == "HALTED")
+			{
+				return $"{Name}{version}: HALTED after repeated crashes (see its [SHEPHERD-LOG] screen); Stockpile Manager does every job";
+			}
+			return Health == null ? $"{Name}: assumed running. Add an LCD named [SHEPHERD] so Stockpile Manager can tell when it stops or halts" : $"{Name}{version}: {Health}";
 		}
 	}
 
@@ -522,13 +548,19 @@ internal sealed class ShepherdLink
 				Problems = lines.Skip(rule + 1).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
 			}
 			long id = screen.Block.EntityId;
+			if (!s_firstSeen.ContainsKey(id))
+			{
+				s_firstSeen[id] = now;
+			}
 			if (!s_screens.TryGetValue(id, out KeyValuePair<string, double> seen) || seen.Key != text)
 			{
 				s_screens[id] = new KeyValuePair<string, double>(text, now);
 			}
-			else
+			else if (now - s_firstSeen[id] > StaleGraceSeconds)
 			{
-				Stale = now - seen.Value > StaleSeconds;
+				// Its screens: blocks without an inventory whose names carry a SHEPHERD tag (status, log, debug, levels, stock).
+				int screens = construct.Blocks.Count(b => b.Input == null && b.Tag != null);
+				Stale = now - seen.Value > Math.Max(StaleSeconds, StaleSecondsPerScreen * screens);
 			}
 			return;
 		}

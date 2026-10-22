@@ -19,7 +19,7 @@ namespace SacrificialStockpileManager;
 /// </summary>
 internal static class ShepherdExport
 {
-	/// <summary>The reserve pool the grid's quotas go into. It has no container: the script still counts its A quotas grid-wide.</summary>
+	/// <summary>The reserve pool the grid's quotas go into. It has no container: the script counts its A quotas grid-wide (and from 1.0.5 doesn't warn about an all-A pool without one).</summary>
 	public const string QuotaPool = "Quotas";
 
 	private static readonly string[] CategoryTokens = { "Ores", "Ingots", "Components", "Ammo", "Tools", "Bottles", "Consumables", "Others" };
@@ -130,20 +130,25 @@ internal static class ShepherdExport
 		}
 		if (rules.Autocraft)
 		{
-			List<KeyValuePair<string, string>> quotas = new List<KeyValuePair<string, string>> { new KeyValuePair<string, string>("docked", "true") };
+			List<KeyValuePair<string, string>> quotas = new List<KeyValuePair<string, string>>();
+			int rangesCut = 0;
 			foreach (ItemLimit quota in rules.Quotas.Where(q => !q.Item.StartsWith("Ore/", StringComparison.Ordinal)))
 			{
-				string line = QuotaLine(quota, rules.Disassemble);
+				string line = QuotaLine(quota, rules.Disassemble, ref rangesCut);
 				if (line != null)
 				{
 					quotas.Add(new KeyValuePair<string, string>(quota.Item, line));
 				}
 			}
-			if (quotas.Count > 1)
+			if (quotas.Count > 0)
 			{
 				plan.Sections["Reserve:" + QuotaPool] = quotas;
-				plan.QuotaLines = quotas.Count - 1;
+				plan.QuotaLines = quotas.Count;
 				AddAssemblers(plan, own);
+			}
+			if (rangesCut > 0)
+			{
+				plan.Notes.Add($"the maximum of {rangesCut} quota(s) that also have a lower quota amount (SHEPHERD keeps one target per line, so those are made up to the quota and not disassembled)");
 			}
 		}
 		else if (rules.Quotas.Count > 0)
@@ -203,13 +208,26 @@ internal static class ShepherdExport
 		return limit.HasMin ? Number(limit.Min) + "M" : null;
 	}
 
-	/// <summary>A grid quota as an A line: made up to the quota (MA); with Disassemble surplus on, a maximum is taken apart above (LA, or A when they're equal).</summary>
-	private static string QuotaLine(ItemLimit quota, bool disassemble)
+	/// <summary>
+	/// A grid quota as an A line. MA crafts up to the amount and never disassembles; LA disassembles above it and never
+	/// crafts; A does both at one amount. So a quota is made up to (MA), a maximum alone with Disassemble surplus on is
+	/// taken apart above (LA), and a quota equal to its maximum does both (A). A quota with a higher maximum has no
+	/// single line: it keeps the MA, and <paramref name="rangesCut"/> counts it for the confirm box.
+	/// </summary>
+	private static string QuotaLine(ItemLimit quota, bool disassemble, ref int rangesCut)
 	{
 		bool canDisassemble = disassemble && quota.HasMax && !quota.Item.StartsWith("Ingot/", StringComparison.Ordinal);
 		if (quota.HasMin && quota.Min > 0.0)
 		{
-			return canDisassemble && Math.Abs(quota.Max - quota.Min) < 1e-6 ? Number(quota.Min) + "A" : Number(quota.Min) + "MA";
+			if (canDisassemble && Math.Abs(quota.Max - quota.Min) < 1e-6)
+			{
+				return Number(quota.Min) + "A";
+			}
+			if (canDisassemble)
+			{
+				rangesCut++;
+			}
+			return Number(quota.Min) + "MA";
 		}
 		return canDisassemble ? Number(quota.Max) + "LA" : null;
 	}
