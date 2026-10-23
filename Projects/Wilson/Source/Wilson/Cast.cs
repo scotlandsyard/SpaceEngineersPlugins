@@ -46,7 +46,8 @@ internal static class Cast
 		new Member("orescout", "OreScout", "OreScout", "/scout"),
 		new Member("quietskies", "Quiet Skies", "Quiet Skies", "/skies"),
 		new Member("drillsergeant", "Drill Sergeant", "Drill Sergeant", "/sarge"),
-		new Member("radartech", "Radar", "Radar Tech", "/radar")
+		new Member("radartech", "Radar", "Radar Tech", "/radar"),
+		new Member("digby", "Digby", "Digby", "/digby")
 	};
 
 	public static Member ByChatName(string name)

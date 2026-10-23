@@ -22,6 +22,7 @@ The plugins talk over a private mod message channel (`0x54494D5F53574954`, "TIM_
 | Plugin | Name in the dropdown | Window |
 |---|---|---|
 | BaR Maid | BaR Maid | Main window |
+| Digby | Digby | Main window (dig plan, library) |
 | Drill Sergeant | Drill Sergeant | Main window (rigs, setup) |
 | Fat Albert | Fat Albert | Main window |
 | OreScout | OreScout | Marker library |

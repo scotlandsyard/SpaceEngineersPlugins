@@ -1,0 +1,18 @@
+# Digby's chat lines, read by Shared/Personality.cs (see Shared/README.md).
+# [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
+# Placeholder lines until the character is written through the personality workflow.
+
+[menu_opened]
+- Where are we digging today?
+
+[plan_made]
+- Plan's ready: {length} of tunnel. Mind your head.
+
+[pad_written]
+- Plan's on the datapad. Hand it round.
+
+[no_datapad]
+- No datapad on you. I can't make one; bring me a blank.
+
+[rollcall]
+- Digby, tunnel planning. {command} for the dig planner.
