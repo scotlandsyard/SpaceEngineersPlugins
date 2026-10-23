@@ -111,7 +111,7 @@ Whatever you choose, while SHEPHERD runs: containers tagged `[SHEPHERD:...]` or 
 
 Then it runs the block with `configReload` and leaves every job to SHEPHERD. Only the grid itself and blocks you own are changed, and blocks that already have a SHEPHERD tag are skipped. Refinery priority, block type limits and docked ships aren't exported.
 
-**Shepherd speaks.** With the Chat setting on, Shepherd has a voice of its own while it minds a grid: a weathered hill shepherd, in slate gray. It speaks when it's found running on a grid, when its status screen shows a new problem, when its crafting meets a quota, and after an export. Stockpile Manager says a word when SHEPHERD stops and the jobs come back to it.
+**Shepherd (SSM) speaks.** With the Chat setting on, Stockpile Manager gives SHEPHERD a voice of its own while it minds a grid: a weathered hill shepherd, in slate gray, under the name Shepherd (SSM) so it isn't taken for the script itself. It speaks when it's found running on a grid, when its status screen shows a new problem, when its crafting meets a quota, and after an export. Stockpile Manager says a word when SHEPHERD stops and the jobs come back to it.
 
 ## Block roles
 

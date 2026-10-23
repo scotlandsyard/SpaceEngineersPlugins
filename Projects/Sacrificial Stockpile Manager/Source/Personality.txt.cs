@@ -97,10 +97,10 @@ internal static partial class EmbeddedText
 - The herdsman of {grid} sleeps, or worse. Fear not, steward: the sacred ledgers never close.
 - Silence from the pasture on {grid}. I shall tend its reliquaries alone until the Shepherd wakes.
 
-# Shepherd: a guest voice, heard when a SHEPHERD script runs on a grid (Personality.SayAs, [Shepherd:key]).
+# Shepherd (SSM): a guest voice, heard when a SHEPHERD script runs on a grid (Personality.SayAs, [Shepherd (SSM):key]).
 # A weathered hill shepherd: few words, dry and patient, minds the flock day and night, teases the high priest.
 
-[Shepherd:found]
+[Shepherd (SSM):found]
 - Evening. Shepherd here, minding the flock on {grid}. You go on, the Reverend and I will sort the rest.
 - {grid}'s flock is mine to mind. Strays go to their pens, and I don't need you watching to do it.
 - Shepherd on {grid}. I'll keep them moving while you're away. The priest can keep his sermons.
@@ -108,20 +108,20 @@ internal static partial class EmbeddedText
 - That's my crook on {grid}. I work when the server's awake, which is more than some can say.
 - Morning, chief. {grid} is my hillside. Leave the herding to me and the paperwork to the Reverend.
 
-[Shepherd:problem]
+[Shepherd (SSM):problem]
 - Trouble in the fold on {grid}: {problem}
 - Something needs your hands on {grid}, chief: {problem}
 - I can't mend this one myself: {problem}
 - A gate's stuck on {grid}: {problem}
 - Have a look when you can. {problem}
 
-[Shepherd:quota_met]
+[Shepherd (SSM):quota_met]
 - Enough {item} in the pens now. I'll stop the lambing.
 - That's the {item} counted and folded. No need for more.
 - {item} is up to strength. The flock's content.
 - Got all the {item} you asked for. Didn't take a sermon either.
 
-[Shepherd:export_done]
+[Shepherd (SSM):export_done]
 - Got your notes on {grid}. Tags on the gates, numbers in my book. I'll take it from here.
 - So the Reverend wrote it all down for me. Fair enough. {grid}'s flock is in my care now.
 - Pens marked, tallies read on {grid}. You can rest, chief. I'll be up all night anyway.

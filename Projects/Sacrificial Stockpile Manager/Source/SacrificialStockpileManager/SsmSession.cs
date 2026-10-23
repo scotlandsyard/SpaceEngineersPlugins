@@ -58,8 +58,8 @@ public class SsmSession : MySessionComponentBase
 	/// <summary>Name shown in chat for the plugin's in-character lines (Shared/Personality.cs).</summary>
 	private const string CharacterName = "Stockpile Manager";
 
-	/// <summary>The guest voice for a SHEPHERD script found on a grid ([Shepherd:key] lines in Personality.txt).</summary>
-	internal const string ShepherdGuest = "Shepherd";
+	/// <summary>The guest voice for a SHEPHERD script found on a grid ([Shepherd (SSM):key] lines in Personality.txt).</summary>
+	internal const string ShepherdGuest = "Shepherd (SSM)";
 
 	/// <summary>Storage at least this full counts as full, for the containers_full line.</summary>
 	private const double FullFill = 0.98;
