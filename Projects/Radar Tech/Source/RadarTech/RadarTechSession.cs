@@ -34,12 +34,11 @@ public class RadarTechSession : MySessionComponentBase
 	/// <summary>How long a ping's answer stays under the crosshair.</summary>
 	private const int PingTicks = 300;
 
-	/// <summary>Time to contact below which the readout turns amber.</summary>
-	private const double WarnSeconds = 10;
-
 	private static readonly Color HitColor = Color.White;
 
-	private static readonly Color WarnColor = new Color(255, 190, 80);
+	private static readonly Color CautionColor = new Color(255, 220, 60);
+
+	private static readonly Color DangerColor = new Color(255, 70, 50);
 
 	private static readonly Color MutedColor = new Color(150, 160, 170);
 
@@ -172,8 +171,20 @@ public class RadarTechSession : MySessionComponentBase
 		{
 			return;
 		}
-		Color color = !reading.Hit ? MutedColor : reading.Closing > 0.5 && reading.Distance / reading.Closing < WarnSeconds ? WarnColor : HitColor;
-		Hud.Show("Radar: " + Rangefinder.Describe(reading, Settings.ShowClosing), color);
+		string text = "Radar: " + Rangefinder.Describe(reading, Settings.ShowClosing);
+		Color color = reading.Hit ? HitColor : MutedColor;
+		double contact = reading.Hit && reading.Closing > 0.5 ? reading.Distance / reading.Closing : double.MaxValue;
+		if (contact < Settings.DangerSeconds)
+		{
+			color = DangerColor;
+			text += "  |  COLLISION IMMINENT";
+		}
+		else if (contact < Settings.CautionSeconds)
+		{
+			color = CautionColor;
+			text += "  |  slow down";
+		}
+		Hud.Show(text, color);
 	}
 
 	/// <summary>False after the world unloaded while a measurement was still running.</summary>
@@ -228,6 +239,19 @@ public class RadarTechSession : MySessionComponentBase
 		s_pingPending = true;
 	}
 
+	/// <summary>Seconds to contact for the yellow (slow down) and red (collision imminent) readout; 0 turns one off.</summary>
+	internal static void SetWarnings(double caution, double danger)
+	{
+		Settings.CautionSeconds = Settings.ClampSeconds(caution);
+		Settings.DangerSeconds = Settings.ClampSeconds(danger);
+		Settings.Save();
+	}
+
+	internal static bool TryParseSeconds(string text, out double seconds)
+	{
+		return double.TryParse((text ?? "").Trim().Replace(',', '.'), NumberStyles.Float, CultureInfo.InvariantCulture, out seconds) && seconds >= 0;
+	}
+
 	internal static void SetRange(double km)
 	{
 		Settings.RangeKm = Settings.ClampKm(km);
@@ -273,6 +297,17 @@ public class RadarTechSession : MySessionComponentBase
 				MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Use /radar range <km>, {Settings.MinKm:0} to {Settings.MaxKm:0}.");
 			}
 			return;
+		case "warn":
+			if (words.Length > 3 && TryParseSeconds(words[2], out double caution) && TryParseSeconds(words[3], out double danger))
+			{
+				SetWarnings(caution, danger);
+				ShowStatus();
+			}
+			else
+			{
+				MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Use /radar warn <slow down> <imminent>, seconds to contact (0 turns one off). Now {Settings.CautionSeconds:0} and {Settings.DangerSeconds:0}.");
+			}
+			return;
 		case "chat":
 			SetChatLevel(words.Length > 2 ? words[2] : null);
 			return;
@@ -282,13 +317,13 @@ public class RadarTechSession : MySessionComponentBase
 			Chatter.SetDisplayName(messageText.Substring(start));
 			return;
 		}
-		MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /radar on, off, ping, status, range <km>, or /radar on its own for the window.");
+		MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /radar on, off, ping, status, range <km>, warn <s> <s>, or /radar on its own for the window.");
 	}
 
 	private static void ShowStatus()
 	{
 		string last = Last == null ? "no reading yet" : Rangefinder.Describe(Last, Settings.ShowClosing);
-		MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Readout {(Settings.Readout ? "on" : "off")} ({Settings.Hotkey}), range {FormatKm(Settings.RangeKm)} km{(Settings.RangeKm > Settings.VisualKm ? $", held to this world's view distance of {FormatKm(Settings.VisualKm)} km" : "")}. Last: {last}.");
+		MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Readout {(Settings.Readout ? "on" : "off")} ({Settings.Hotkey}), range {FormatKm(Settings.RangeKm)} km{(Settings.RangeKm > Settings.VisualKm ? $", held to this world's view distance of {FormatKm(Settings.VisualKm)} km" : "")}, warnings at {Settings.CautionSeconds:0} s and {Settings.DangerSeconds:0} s to contact. Last: {last}.");
 	}
 
 	internal static string FormatKm(double km)

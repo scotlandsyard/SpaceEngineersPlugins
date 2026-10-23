@@ -76,7 +76,14 @@ internal static class Rangefinder
 		IMyEntity self = MyAPIGateway.Session.IsCameraUserControlledSpectator ? null : MyAPIGateway.Session.ControlledObject?.Entity;
 		IMyEntity selfTop = self?.GetTopMostParent();
 		Vector3D origin = self?.GetPosition() ?? from;
-		// In third person the camera sits behind you: reach far enough that the range still counts from you.
+		if (self is IMyShipController && !(MyAPIGateway.Session.CameraController is IMyCameraBlock))
+		{
+			// In a cockpit, along the ship's aim: the game's ship reticle marks the cockpit's forward (MyShipController.DrawHud),
+			// which in third person or free look isn't the middle of the screen.
+			from = origin;
+			dir = self.WorldMatrix.Forward;
+		}
+		// In third person on foot the camera sits behind you: reach far enough that the range still counts from you.
 		double length = rangeMetres + Vector3D.Distance(from, origin);
 		Vector3D to = from + dir * length;
 

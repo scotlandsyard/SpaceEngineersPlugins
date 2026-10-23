@@ -13,16 +13,16 @@ The readout looks like this:
 
 `Radar: Asteroid 4.21 km  |  closing 85 m/s  |  0:49 to contact`
 
-- **Readout**: measures six times a second while it's on. *Closing* is how fast the gap is shrinking; *opening* means it's growing. The line turns amber when you'd reach the target in under 10 seconds at your current speed. It hides with the rest of the HUD (Tab).
+- **Readout**: measures six times a second while it's on. *Closing* is how fast the gap is shrinking; *opening* means it's growing. At your current speed, the line turns yellow with *slow down* when you'd reach the target within 60 seconds, and red with *COLLISION IMMINENT* within 10. Both times can be changed (0 turns one off). It hides with the rest of the HUD (Tab).
 - **Ping**: one reading, shown under the crosshair for five seconds and said in chat.
-- **Distance** is from you (your character, or the cockpit you sit in), not from the camera, so third person reads the same as first person.
+- **Distance** is from you (your character, or the cockpit you sit in), not from the camera, so third person reads the same as first person. In a cockpit it measures along the ship's aim (the reticle the game draws in front of the ship), even in third person or free look, and the line sits under that reticle. On foot it measures along the camera.
 - **Skipped**: your own ship, anything docked to it, and your character.
 - **Range**: 1 to 50 km, 20 by default, but never past the world's **view distance** (15 km unless the world or server changes it). That's how far the game draws: what you can't see, Radar can't measure. A higher setting is held to the view distance, and `/radar status` says so.
 
 ### Controls
 
 - **Hotkey**: Ctrl+Alt+R turns the readout on and off, on foot too. Change it in the window.
-- **Window**: `/radar`, the *Radar Tech: window* toolbar action, or `/tim` / the plugin switcher. Readout on/off, range, closing speed on/off, hotkey, the last reading, a Ping button and a Help page.
+- **Window**: `/radar`, the *Radar Tech: window* toolbar action, or `/tim` / the plugin switcher. Readout on/off, range, closing speed on/off, warning times, hotkey, the last reading, a Ping button and a Help page.
 - **Toolbar actions** on cockpits and remote controls: *Radar Tech: readout on/off*, *Radar Tech: ping*, *Radar Tech: window*.
 - **Chat**:
 
@@ -32,6 +32,7 @@ The readout looks like this:
 | `/radar on`, `/radar off` | Turns the readout on or off |
 | `/radar ping` | One reading |
 | `/radar range <km>` | Sets the range, 1 to 50 km (held to the view distance) |
+| `/radar warn <s> <s>` | Warning times in seconds to contact: yellow (slow down), then red (collision imminent). 0 turns one off. Default 60 and 10 |
 | `/radar status` | Shows the settings and the last reading |
 | `/radar chat off\|quiet\|normal\|chatty` | How much Radar comments in chat |
 | `/radar name <name>` | The name Radar's chat lines show under; on its own puts it back |
@@ -46,7 +47,7 @@ Nothing. Radar Tech only reads what's already on your PC, and sends no requests.
 
 ### Files
 
-`RadarTech_Settings.txt` in `%AppData%\SpaceEngineers\Storage`: readout on/off, range, closing speed, hotkey and the chat setting.
+`RadarTech_Settings.txt` in `%AppData%\SpaceEngineers\Storage`: readout on/off, range, closing speed, warning times, hotkey and the chat setting.
 
 ## The script
 

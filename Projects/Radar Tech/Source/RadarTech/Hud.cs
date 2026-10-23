@@ -1,5 +1,7 @@
 using System;
 using System.Linq;
+using Sandbox.Game.Gui;
+using Sandbox.Graphics;
 using Sandbox.Graphics.GUI;
 using Sandbox.ModAPI;
 using VRage.Input;
@@ -42,6 +44,7 @@ internal static class Hud
 		if (s_screen != null)
 		{
 			s_screen.Hidden = MyAPIGateway.Session?.Config?.HudState == 0;
+			s_screen.FollowCrosshair();
 		}
 	}
 
@@ -112,6 +115,8 @@ internal static class Hud
 	/// </summary>
 	private class HudScreen : MyGuiScreenBase
 	{
+		private const float LineBelow = 0.045f;
+
 		private MyGuiControlLabel _line;
 
 		private bool _hidden;
@@ -136,8 +141,24 @@ internal static class Hud
 		{
 			base.RecreateControls(constructor);
 			// Just under the crosshair, centred.
-			_line = new MyGuiControlLabel(new Vector2(0f, 0.045f), null, "", null, 0.75f, "White", MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP);
+			_line = new MyGuiControlLabel(new Vector2(0f, LineBelow), null, "", null, 0.75f, "White", MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP);
 			Controls.Add(_line);
+		}
+
+		/// <summary>
+		/// Keeps the line under the game's crosshair, which in a cockpit in third person or free look marks the ship's aim
+		/// rather than the middle of the screen. Same conversion as the game's MyHudWeaponHitIndicator.
+		/// </summary>
+		public void FollowCrosshair()
+		{
+			Vector2? hud = MyHud.Crosshair?.Position;
+			if (!hud.HasValue)
+			{
+				return;
+			}
+			float x = (hud.Value.X - 0.5f) * MyGuiManager.GetSafeFullscreenRectangle().Width / MyGuiManager.GetSafeGuiRectangle().Width;
+			float y = hud.Value.Y / MyGuiManager.GetHudSize().Y - 0.5f;
+			_line.Position = new Vector2(x, y + LineBelow);
 		}
 
 		public bool Hidden

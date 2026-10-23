@@ -18,7 +18,7 @@ public class RadarTechScreen : MyGuiScreenBase
 
 	private const float Field = 0.02f;
 
-	private const float ButtonsY = 0.235f;
+	private const float ButtonsY = 0.265f;
 
 	private readonly List<MyGuiControlBase> _mainControls = new List<MyGuiControlBase>();
 
@@ -31,7 +31,7 @@ public class RadarTechScreen : MyGuiScreenBase
 	private int _frames;
 
 	public RadarTechScreen()
-		: base(new Vector2(0.5f, 0.5f), MyGuiConstants.SCREEN_BACKGROUND_COLOR, new Vector2(0.72f, 0.6f))
+		: base(new Vector2(0.5f, 0.5f), MyGuiConstants.SCREEN_BACKGROUND_COLOR, new Vector2(0.72f, 0.66f))
 	{
 		EnabledBackgroundFade = true;
 		m_closeOnEsc = true;
@@ -98,9 +98,15 @@ public class RadarTechScreen : MyGuiScreenBase
 		};
 		Add(key, _mainControls);
 
-		AddLabel(Left, 0.08f, "Last reading:", _mainControls);
-		_last = AddLabel(Left, 0.115f, "", _mainControls);
-		AddLabel(Left, 0.175f, "It measures only what your game has loaded, and stops at the first thing in the way.", _mainControls).ColorMask = new Vector4(0.7f, 0.7f, 0.7f, 1f);
+		AddLabel(Left, 0.07f, "Warn at (seconds to contact)", _mainControls);
+		AddSecondsBox(Field, 0.07f, Settings.CautionSeconds, "Slow down: the line turns yellow when you'd reach the target within this many seconds at your current speed. 0 turns it off.", value => RadarTechSession.SetWarnings(value, Settings.DangerSeconds));
+		AddLabel(Field + 0.09f, 0.07f, "yellow", _mainControls).ColorMask = new Vector4(1f, 0.86f, 0.24f, 1f);
+		AddSecondsBox(Field + 0.17f, 0.07f, Settings.DangerSeconds, "Collision imminent: the line turns red within this many seconds. 0 turns it off.", value => RadarTechSession.SetWarnings(Settings.CautionSeconds, value));
+		AddLabel(Field + 0.26f, 0.07f, "red", _mainControls).ColorMask = new Vector4(1f, 0.27f, 0.2f, 1f);
+
+		AddLabel(Left, 0.13f, "Last reading:", _mainControls);
+		_last = AddLabel(Left, 0.165f, "", _mainControls);
+		AddLabel(Left, 0.215f, "It measures only what your game has loaded, and stops at the first thing in the way.", _mainControls).ColorMask = new Vector4(0.7f, 0.7f, 0.7f, 1f);
 
 		AddButton(-0.2f, ButtonsY, "Ping", () =>
 		{
@@ -166,6 +172,24 @@ public class RadarTechScreen : MyGuiScreenBase
 		return label;
 	}
 
+	private void AddSecondsBox(float x, float y, double value, string tip, Action<double> set)
+	{
+		MyGuiControlTextbox box = new MyGuiControlTextbox(new Vector2(x, y), RadarTechSession.FormatKm(value), 5)
+		{
+			Size = new Vector2(0.08f, 0.045f),
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+		};
+		box.SetToolTip(tip);
+		box.TextChanged += b =>
+		{
+			if (RadarTechSession.TryParseSeconds(b.Text, out double seconds))
+			{
+				set(seconds);
+			}
+		};
+		Add(box, _mainControls);
+	}
+
 	private void AddButton(float x, float y, string text, Action onClick, List<MyGuiControlBase> page)
 	{
 		MyGuiControlButton button = new MyGuiControlButton(new Vector2(x, y), MyGuiControlButtonStyleEnum.Default, null, null, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER, null, new StringBuilder(text), 0.8f, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER, MyGuiControlHighlightType.WHEN_CURSOR_OVER, (MyGuiControlButton _) => onClick());
@@ -174,9 +198,9 @@ public class RadarTechScreen : MyGuiScreenBase
 
 	private const string HelpText =
 		"WHAT IT DOES\n" +
-		"Radar Tech is a range finder. It measures the distance from you to whatever is under your crosshair: an asteroid, a planet's surface, a ship, a station or a character. It works on foot and in a cockpit, in first and third person; the distance is always from you (your character or the cockpit), not from the camera.\n\n" +
+		"Radar Tech is a range finder. It measures the distance from you to whatever is under your crosshair: an asteroid, a planet's surface, a ship, a station or a character. It works on foot and in a cockpit, in first and third person; the distance is always from you (your character or the cockpit), not from the camera. In a cockpit it measures along the ship's aim, the reticle the game shows in front of the ship, even in third person or while looking around, and the line sits under that reticle.\n\n" +
 		"THE READOUT\n" +
-		"Turned on, it measures six times a second and shows one line just under the crosshair, such as: Asteroid 4.21 km | closing 85 m/s | 0:49 to contact. Closing speed is how fast the gap is shrinking; opening means it's growing. The line turns amber when you'd reach it in under 10 seconds at your current speed. It hides with the rest of the HUD.\n\n" +
+		"Turned on, it measures six times a second and shows one line just under the crosshair, such as: Asteroid 4.21 km | closing 85 m/s | 0:49 to contact. Closing speed is how fast the gap is shrinking; opening means it's growing. At your current speed, the line turns yellow with 'slow down' when you'd reach it within a minute, and red with 'COLLISION IMMINENT' within 10 seconds. Set both times in the window (Warn at) or with /radar warn; 0 turns one off. It hides with the rest of the HUD.\n\n" +
 		"PING\n" +
 		"One measurement, shown under the crosshair for five seconds and said in chat. Handy when you don't want the readout on all the time.\n\n" +
 		"WHAT IT CAN SEE\n" +
@@ -186,7 +210,7 @@ public class RadarTechScreen : MyGuiScreenBase
 		"HOTKEY\n" +
 		"Ctrl+Alt+R turns the readout on and off, on foot too. Change it in the window. It does nothing while chat or a menu is open.\n\n" +
 		"COMMANDS\n" +
-		"/radar opens this window. /radar on and /radar off turn the readout on and off. /radar ping takes one reading. /radar range 30 sets the range in km. /radar status shows the settings and the last reading. /radar chat off, quiet, normal or chatty sets how much Radar comments. /radar name and a name changes what Radar's chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins.\n\n" +
+		"/radar opens this window. /radar on and /radar off turn the readout on and off. /radar ping takes one reading. /radar range 30 sets the range in km. /radar warn 60 10 sets the yellow and red warning times in seconds to contact. /radar status shows the settings and the last reading. /radar chat off, quiet, normal or chatty sets how much Radar comments. /radar name and a name changes what Radar's chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins.\n\n" +
 		"WHAT THE SERVER SEES\n" +
 		"Nothing. Radar Tech only reads what's already on your PC. A toolbar action saved in a cockpit's toolbar is stored with the ship, like any other toolbar slot.\n\n" +
 		"FILES\n" +

@@ -21,6 +21,12 @@ internal static class Settings
 
 	public const string DefaultKey = "Ctrl+Alt+R";
 
+	public const double DefaultCaution = 60.0;
+
+	public const double DefaultDanger = 10.0;
+
+	public const double MaxWarnSeconds = 600.0;
+
 	/// <summary>The readout under the crosshair, measuring several times a second.</summary>
 	public static bool Readout;
 
@@ -29,6 +35,12 @@ internal static class Settings
 	/// <summary>Closing speed and time to contact after the distance.</summary>
 	public static bool ShowClosing = true;
 
+	/// <summary>Seconds to contact at which the line turns yellow (slow down). 0 turns this stage off.</summary>
+	public static double CautionSeconds = DefaultCaution;
+
+	/// <summary>Seconds to contact at which the line turns red (collision imminent). 0 turns this stage off.</summary>
+	public static double DangerSeconds = DefaultDanger;
+
 	public static string Hotkey = DefaultKey;
 
 	public static Personality.Chattiness Chattiness = Personality.Chattiness.Normal;
@@ -36,6 +48,8 @@ internal static class Settings
 	public static string DisplayName = "";
 
 	public static double ClampKm(double km) => Math.Max(MinKm, Math.Min(MaxKm, km));
+
+	public static double ClampSeconds(double seconds) => Math.Max(0, Math.Min(MaxWarnSeconds, seconds));
 
 	/// <summary>
 	/// This world's view distance in km: how far the game draws, and the same limit a laser antenna's line of sight uses.
@@ -90,6 +104,14 @@ internal static class Settings
 		{
 			ShowClosing = c;
 		}
+		if (values.TryGetValue("CautionSeconds", out string caution) && double.TryParse(caution, NumberStyles.Float, CultureInfo.InvariantCulture, out double cs))
+		{
+			CautionSeconds = ClampSeconds(cs);
+		}
+		if (values.TryGetValue("DangerSeconds", out string danger) && double.TryParse(danger, NumberStyles.Float, CultureInfo.InvariantCulture, out double ds))
+		{
+			DangerSeconds = ClampSeconds(ds);
+		}
 		if (values.TryGetValue("Hotkey", out string key) && key.Length > 0)
 		{
 			Hotkey = key;
@@ -113,6 +135,8 @@ internal static class Settings
 				writer.WriteLine("Readout=" + Readout);
 				writer.WriteLine("RangeKm=" + RangeKm.ToString(CultureInfo.InvariantCulture));
 				writer.WriteLine("ShowClosing=" + ShowClosing);
+				writer.WriteLine("CautionSeconds=" + CautionSeconds.ToString(CultureInfo.InvariantCulture));
+				writer.WriteLine("DangerSeconds=" + DangerSeconds.ToString(CultureInfo.InvariantCulture));
 				writer.WriteLine("Hotkey=" + Hotkey);
 				writer.WriteLine("Personality=" + Chattiness);
 				writer.WriteLine("DisplayName=" + DisplayName);
