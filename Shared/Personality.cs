@@ -355,7 +355,8 @@ internal static class Personality
 		["Wilson"] = new Color(222, 184, 135),
 		["Quiet Skies"] = new Color(135, 206, 235),
 		["Tim"] = new Color(0, 206, 180),
-		["Drill Sergeant"] = new Color(150, 168, 82)
+		["Drill Sergeant"] = new Color(150, 168, 82),
+		["Radar"] = new Color(0, 255, 127)
 	};
 
 	/// <summary>

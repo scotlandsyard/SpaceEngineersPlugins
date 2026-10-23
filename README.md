@@ -78,6 +78,6 @@ Code used by more than one project lives once in [`Shared/`](Shared/) and is lin
 
 ## Licence
 
-Copyright (C) 2026 scotlandsyard. Everything in this repository is free software under the [GNU General Public License v3.0](LICENSE): you may use, change and share it, and if you share a plugin built from this code, you must share its source under the same licence.
+Copyright (C) 2026 scotlandsyard. Everything in this repository is free software: you can redistribute it and/or modify it under the terms of the [GNU General Public License](LICENSE) as published by the Free Software Foundation, either version 3 of the License, or (at your option) any later version (SPDX: `GPL-3.0-or-later`). In short: you may use, change and share it, and if you share a plugin built from this code, you must share its source under the same licence.
 
 If you build something with this code, I'd love to see it: please link back to this repository, or open an issue to tell me about it. That part is a request, not a condition.
