@@ -133,6 +133,7 @@ Each character's name shows in its own colour, picked so none is a colour the ga
 | Tim | Teal | 0, 206, 180 |
 | Drill Sergeant | Olive drab | 150, 168, 82 |
 | Radar | Spring green | 0, 255, 127 |
+| Digby | Earth brown | 165, 105, 60 |
 | Shepherd (guest of Stockpile Manager) | Slate gray | 112, 128, 144 |
 | Any other | Apricot | 255, 180, 110 |
 
