@@ -1,0 +1,66 @@
+TITLE
+=====
+Radar Tech - Camera Range Finder
+
+DESCRIPTION (Steam BBCode, paste everything below the line)
+-----------------------------------------------------------
+[h1]Radar Tech - Camera Range Finder[/h1]
+
+Point your ship at an asteroid, a planet, a ship or a station and know how far away it is, how fast you're closing, and when you'll get there. Screens turn [b]yellow[/b] when it's time to slow down and [b]red[/b] when a collision is imminent.
+
+Vanilla-friendly: it only uses camera block raycasts, the same as any other camera script. No mods needed.
+
+[h2]What it shows[/h2]
+[list]
+[*]What the cameras hit: asteroid, planet surface, large grid, small grid, character or object
+[*]The distance to it
+[*]Closing or opening speed, and time to contact
+[*]A GPS line for the point hit (copy it from the screen's text into your GPS list)
+[*]How old the reading is, and how much charge the cameras have
+[*][b]SLOW DOWN[/b] (yellow) and [b]COLLISION IMMINENT[/b] (red) warnings, by time to contact
+[/list]
+
+[h2]Setup[/h2]
+[olist]
+[*]Put [b][Radar][/b] in the name of one or more [b]camera blocks[/b]. Point them where you want to measure, usually straight ahead.
+[*]Put [b][Radar][/b] in the name of the [b]screens[/b] to show it on: LCD panels, or cockpits and other blocks with screens (the first screen by default). The programmable block's own screen always shows it.
+[*]For closing speed and time to contact, the ship needs a [b]cockpit, flight seat or remote control[/b].
+[*]Load the script into a programmable block, then run it with one of the arguments below (or put them on a toolbar).
+[/olist]
+
+[h2]Arguments[/h2]
+[table]
+[tr][th]Argument[/th][th]Does[/th][/tr]
+[tr][td]ping[/td][td]One reading[/td][/tr]
+[tr][td]on / off / toggle[/td][td]Keep measuring, as often as the cameras' charge allows[/td][/tr]
+[tr][td]range 15[/td][td]How far each reading reaches, in km (10 by default)[/td][/tr]
+[tr][td]warn 60 10[/td][td]Warning times in seconds to contact: yellow, then red. 0 turns one off[/td][/tr]
+[/table]
+
+[h2]Custom Data[/h2]
+Written to the programmable block's Custom Data on the first run, in the [b][Radar][/b] section:
+[list]
+[*][b]Tag[/b]: the name tag for cameras and screens ([Radar])
+[*][b]RangeKm[/b]: how far each reading reaches (10)
+[*][b]CockpitScreen[/b]: which screen of a tagged cockpit or other block with several screens, 0 is the first (0)
+[*][b]SlowDownSeconds[/b]: seconds to contact for the yellow warning, 0 for none (60)
+[*][b]ImminentSeconds[/b]: seconds to contact for the red warning, 0 for none (10)
+[/list]
+Recompile after editing Custom Data.
+
+[h2]Camera charge[/h2]
+Camera blocks need charge to measure: about [b]2 km of range per second[/b] each, so a 10 km reading needs 5 seconds of charge. With several tagged cameras the script takes turns, so readings come faster. The screen shows the best charge as a percentage of one full reading.
+
+Between readings the time to contact keeps counting down from the last one. A reading more than 30 seconds old gives no warning, so leave it on ("on") when you're flying in close.
+
+[h2]Good to know[/h2]
+[list]
+[*]Only the first thing in the line counts. It never sees through rock or a ship.
+[*]A programmable block can't read the world's view distance, so set the range yourself. The server's camera rules still apply.
+[*]It can't tell a station from a ship: they show as large grid or small grid.
+[*]Light on servers that limit scripts: it runs every 10 game ticks, looks for its blocks once every 10 seconds, and only rewrites screens when the text changes.
+[*]Warnings change the screens' text colour, and put each screen's own colour back afterwards.
+[/list]
+
+[h2]Credits and license[/h2]
+Part of the Radar Tech project, which also has a client plugin version. Source on GitHub: github.com/scotlandsyard/SpaceEngineersPlugins (Projects/Radar Tech). Licensed GPL-3.0.

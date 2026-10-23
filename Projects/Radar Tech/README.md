@@ -60,10 +60,17 @@ Nothing. Radar Tech only reads what's already on your PC, and sends no requests.
 | `ping` | One reading |
 | `on`, `off`, `toggle` | Keep measuring, as often as the cameras' charge allows |
 | `range <km>` | Sets how far each reading reaches (10 km by default) |
+| `warn <s> <s>` | Warning times in seconds to contact: yellow *SLOW DOWN*, then red *COLLISION IMMINENT* (60 and 10 by default, 0 turns one off) |
 
-The screens show what was hit, the distance, closing speed and time to contact, a GPS line for the point hit (copy it from the screen's text into your GPS list), how long ago the reading was, and the cameras' charge.
+The screens show what was hit, the distance, closing or opening speed and time to contact, a GPS line for the point hit (copy it from the screen's text into your GPS list), how long ago the reading was, and the cameras' charge.
 
-Camera blocks need charge to measure: about 2 km of range per second each, so a 10 km reading needs 5 seconds of charge. With several tagged cameras the script takes turns, so readings come faster. Settings are in the `[Radar]` section of the programmable block's Custom Data: `Tag`, `RangeKm`, and `CockpitScreen` (which screen of a block with several, 0 is the first).
+Like the plugin in a cockpit, it measures along the cameras' forward. Between readings the time to contact counts down from the last one, and the screens turn yellow (*SLOW DOWN*) or red (*COLLISION IMMINENT*) when you'd reach the target within the warning times; a reading over 30 seconds old warns of nothing. The text colour goes back to each screen's own when the warning ends.
+
+What a programmable block can't do, compared with the plugin: it can't read the world's view distance, so the range is whatever you set (the game's camera rules still apply); it can't tell a station from a ship (it says *Large grid* or *Small grid*); closing speed needs a cockpit or remote control on the ship to know your own speed; and readings come as often as the cameras' charge allows, not six times a second.
+
+It's built to be light for servers that limit scripts: it runs six times a second (every 10 game ticks), finds its blocks once every 10 seconds, and only rewrites the screens when the text changes (about once a second).
+
+Camera blocks need charge to measure: about 2 km of range per second each, so a 10 km reading needs 5 seconds of charge. With several tagged cameras the script takes turns, so readings come faster. Settings are in the `[Radar]` section of the programmable block's Custom Data: `Tag`, `RangeKm`, `CockpitScreen` (which screen of a block with several, 0 is the first), `SlowDownSeconds` and `ImminentSeconds`.
 
 `Deploy-Script.ps1` copies the script into the game's local script folder, so it shows under *Browse Scripts* in a programmable block. `Script.csproj` is only a compile check against the game's assemblies.
 

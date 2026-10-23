@@ -20,17 +20,18 @@ namespace RadarTechScript
     partial class Program : MyGridProgram
     {
         #region Script
-        // Radar Tech 1.0.0
+        // Radar Tech 1.0.1
         // A range finder: camera blocks measure the distance to whatever they point at (an asteroid, a
         // planet's surface, a ship or a station) and show it on screens, with closing speed and time to contact.
         // Setup: put [Radar] in the name of one or more camera blocks and of the screens to show it on
         // (text panels, or cockpits and other blocks with screens). The programmable block's own screen
         // always shows it too.
-        // Arguments: ping (one reading), on, off, toggle (keep measuring), range <km>.
+        // Arguments: ping (one reading), on, off, toggle (keep measuring), range <km>,
+        // warn <slow down s> <imminent s> (yellow and red warnings by time to contact; 0 turns one off).
         // Settings: the [Radar] section of this block's Custom Data (written on first run).
         // Guide: README.md in the Radar Tech project on GitHub.
 
-        const string Version = "1.0.0";
+        const string Version = "1.0.1";
         const string Section = "Radar";
 
         // Settings
@@ -38,10 +39,20 @@ namespace RadarTechScript
         double rangeKm = 10;
         bool auto = false;
         int screenIndex = 0;
+        double cautionSeconds = 60;
+        double dangerSeconds = 10;
+
+        static readonly Color CautionColor = new Color(255, 220, 60);
+        static readonly Color DangerColor = new Color(255, 70, 50);
 
         readonly MyIni ini = new MyIni();
         readonly List<IMyCameraBlock> cameras = new List<IMyCameraBlock>();
         readonly List<IMyTextSurface> screens = new List<IMyTextSurface>();
+        // Each screen's own text colour, put back when the warning ends.
+        readonly Dictionary<IMyTextSurface, Color> screenColors = new Dictionary<IMyTextSurface, Color>();
+        readonly List<IMyTerminalBlock> blocks = new List<IMyTerminalBlock>();
+        string lastText = "";
+        int warnLevel = -1;
         IMyShipController controller;
         int nextCamera;
         int refreshTicks;
@@ -86,6 +97,15 @@ namespace RadarTechScript
                 case "on": auto = true; break;
                 case "off": auto = false; break;
                 case "toggle": auto = !auto; break;
+                case "warn":
+                    double caution, danger;
+                    if (words.Length > 2 && double.TryParse(words[1], out caution) && double.TryParse(words[2], out danger) && caution >= 0 && danger >= 0)
+                    {
+                        cautionSeconds = Math.Min(caution, 600);
+                        dangerSeconds = Math.Min(danger, 600);
+                        SaveSettings();
+                    }
+                    break;
                 case "range":
                     double km;
                     if (words.Length > 1 && double.TryParse(words[1], out km) && km > 0)
@@ -104,7 +124,9 @@ namespace RadarTechScript
             tag = ini.Get(Section, "Tag").ToString(tag);
             rangeKm = ini.Get(Section, "RangeKm").ToDouble(rangeKm);
             screenIndex = ini.Get(Section, "CockpitScreen").ToInt32(screenIndex);
-            if (!ini.ContainsSection(Section)) SaveSettings();
+            cautionSeconds = Math.Max(0, ini.Get(Section, "SlowDownSeconds").ToDouble(cautionSeconds));
+            dangerSeconds = Math.Max(0, ini.Get(Section, "ImminentSeconds").ToDouble(dangerSeconds));
+            if (!ini.ContainsKey(Section, "SlowDownSeconds")) SaveSettings();
         }
 
         void SaveSettings()
@@ -112,7 +134,9 @@ namespace RadarTechScript
             ini.Set(Section, "Tag", tag);
             ini.Set(Section, "RangeKm", rangeKm);
             ini.Set(Section, "CockpitScreen", screenIndex);
-            ini.SetSectionComment(Section, " Radar Tech " + Version + ". Tag: the name tag for cameras and screens. RangeKm: how far each reading reaches.\n CockpitScreen: which screen of a tagged cockpit or other block with several screens (0 is the first).");
+            ini.Set(Section, "SlowDownSeconds", cautionSeconds);
+            ini.Set(Section, "ImminentSeconds", dangerSeconds);
+            ini.SetSectionComment(Section, " Radar Tech " + Version + ". Tag: the name tag for cameras and screens. RangeKm: how far each reading reaches.\n CockpitScreen: which screen of a tagged cockpit or other block with several screens (0 is the first).\n SlowDownSeconds, ImminentSeconds: seconds to contact at which the screens turn yellow, then red (0 turns one off).");
             Me.CustomData = ini.ToString();
         }
 
@@ -121,8 +145,8 @@ namespace RadarTechScript
             cameras.Clear();
             screens.Clear();
             controller = null;
-            var blocks = new List<IMyTerminalBlock>();
-            GridTerminalSystem.GetBlocksOfType(blocks, b => b.IsSameConstructAs(Me));
+            blocks.Clear();
+            GridTerminalSystem.GetBlocksOfType(blocks, b => (b is IMyCameraBlock || b is IMyShipController || b is IMyTextSurfaceProvider) && b.IsSameConstructAs(Me));
             foreach (var b in blocks)
             {
                 var cam = b as IMyCameraBlock;
@@ -143,7 +167,10 @@ namespace RadarTechScript
             {
                 s.ContentType = ContentType.TEXT_AND_IMAGE;
                 s.Font = "Monospace";
+                if (!screenColors.ContainsKey(s)) screenColors[s] = s.FontColor == CautionColor || s.FontColor == DangerColor ? Color.White : s.FontColor;
             }
+            lastText = "";
+            warnLevel = -1;
             setupError = cameras.Count == 0 ? "No camera with " + tag + " in its name." : "";
         }
 
@@ -239,9 +266,38 @@ namespace RadarTechScript
                 foreach (var c in cameras) charge = Math.Max(charge, c.AvailableScanRange);
                 sb.Append(", charge ").Append(Math.Min(100, charge / (rangeKm * 10)).ToString("0")).Append('%');
             }
+            int level = WarnLevel();
+            if (level == 2) sb.Insert(0, "COLLISION IMMINENT\n");
+            else if (level == 1) sb.Insert(0, "SLOW DOWN\n");
             string text = sb.ToString();
-            foreach (var s in screens) s.WriteText(text);
+            // Screens only change when the text or the warning does: about once a second, so each run stays light.
+            if (text != lastText || level != warnLevel)
+            {
+                foreach (var s in screens)
+                {
+                    s.WriteText(text);
+                    if (level != warnLevel) s.FontColor = level == 2 ? DangerColor : level == 1 ? CautionColor : screenColors[s];
+                }
+                lastText = text;
+                warnLevel = level;
+            }
             Echo(text);
+        }
+
+        /// <summary>Seconds to contact now: the last reading's time, less the time since it was taken.</summary>
+        double Contact()
+        {
+            return lastDistance / lastClosing - (DateTime.Now - lastAt).TotalSeconds;
+        }
+
+        /// <summary>0 clear, 1 slow down (yellow), 2 collision imminent (red). A reading over 30 s old warns of nothing.</summary>
+        int WarnLevel()
+        {
+            if (!hasReading || last.IsEmpty() || lastClosing <= 0.5 || (DateTime.Now - lastAt).TotalSeconds > 30) return 0;
+            double t = Contact();
+            if (t < dangerSeconds) return 2;
+            if (t < cautionSeconds) return 1;
+            return 0;
         }
         #endregion // Script
     }
