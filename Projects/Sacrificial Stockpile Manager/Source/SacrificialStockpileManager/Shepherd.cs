@@ -4,7 +4,6 @@ using System.Linq;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
-using VRage.Game.ModAPI.Ingame.Utilities;
 using IngameSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 
 namespace SacrificialStockpileManager;
@@ -125,207 +124,37 @@ internal sealed class ShepherdTag
 	}
 }
 
-/// <summary>One line of a [Reserve] or [Reserve:Name] section: an item kept at an amount, maybe with automatic production.</summary>
-internal sealed class ShepherdQuota
-{
-	public string Pool;
-
-	public string Item;
-
-	/// <summary>"", "M", "L" or "All".</summary>
-	public string Mode;
-
-	public double Target;
-
-	/// <summary>The trailing A: the script makes the shortfall (and with Exact or L, disassembles the surplus).</summary>
-	public bool Auto;
-
-	/// <summary>The script assembles or refines what's short of it.</summary>
-	public bool Makes => Auto && Mode != "L" && Mode != "All" && !Item.StartsWith("Ore/", StringComparison.Ordinal);
-
-	/// <summary>The script disassembles what's above it (never ingots).</summary>
-	public bool TakesApart => Auto && (Mode == "" || Mode == "L") && !Item.StartsWith("Ingot/", StringComparison.Ordinal) && !Item.StartsWith("Ore/", StringComparison.Ordinal);
-
-	public string Text => Mode == "All" ? "All" : Items.Amount(Target) + Mode + (Auto ? "A" : "");
-
-	/// <summary>Reads a quota value the way the script does: amount, then M or L, then A; or All.</summary>
-	public static ShepherdQuota Parse(string pool, string item, string value)
-	{
-		string s = (value ?? "").Trim();
-		if (s.Length == 0)
-		{
-			return null;
-		}
-		if (s.Equals("All", StringComparison.OrdinalIgnoreCase))
-		{
-			return new ShepherdQuota { Pool = pool, Item = item, Mode = "All" };
-		}
-		bool auto = char.ToUpperInvariant(s[s.Length - 1]) == 'A';
-		if (auto)
-		{
-			s = s.Substring(0, s.Length - 1);
-		}
-		string mode = "";
-		char last = s.Length > 0 ? char.ToUpperInvariant(s[s.Length - 1]) : ' ';
-		if (last == 'M' || last == 'L')
-		{
-			mode = last.ToString();
-			s = s.Substring(0, s.Length - 1);
-		}
-		if (!double.TryParse(s.Trim(), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double target) || target < 0.0)
-		{
-			return null;
-		}
-		return new ShepherdQuota { Pool = pool, Item = item, Mode = mode, Target = target, Auto = auto };
-	}
-}
-
-/// <summary>The parts of a SHEPHERD programmable block's Custom Data that decide what the script does.</summary>
-internal sealed class ShepherdConfig
-{
-	public int ReactorFillPct = 15;
-
-	public int GasGenFillPct = 50;
-
-	public int RefineryFillPct = 30;
-
-	public double BottleSweepMinutes = 3.0;
-
-	public int Priority;
-
-	public bool FactionShare;
-
-	public bool DockedProduction;
-
-	public bool DockedFuel;
-
-	/// <summary>[Categories]: item key to category, for items moved out of their built-in category.</summary>
-	public readonly Dictionary<string, string> Categories = new Dictionary<string, string>();
-
-	public readonly List<ShepherdQuota> Quotas = new List<ShepherdQuota>();
-
-	/// <summary>True when the text looks like a SHEPHERD block's Custom Data (it writes every [Settings] key at startup).</summary>
-	public static bool Looks(string customData)
-	{
-		return !string.IsNullOrEmpty(customData) && customData.IndexOf("[Settings]", StringComparison.Ordinal) >= 0 && customData.IndexOf("refineryFillPct", StringComparison.Ordinal) >= 0 && customData.IndexOf("sortPassSeconds", StringComparison.Ordinal) >= 0;
-	}
-
-	public static ShepherdConfig Parse(string customData)
-	{
-		ShepherdConfig config = new ShepherdConfig();
-		MyIni ini = new MyIni();
-		if (!ini.TryParse(customData ?? ""))
-		{
-			return config;
-		}
-		config.ReactorFillPct = Int(ini, "reactorFillPct", config.ReactorFillPct);
-		config.GasGenFillPct = Int(ini, "gasGenFillPct", config.GasGenFillPct);
-		config.RefineryFillPct = Int(ini, "refineryFillPct", config.RefineryFillPct);
-		config.Priority = Int(ini, "priority", 0);
-		config.BottleSweepMinutes = double.TryParse(Value(ini, "Settings", "bottleSweepMinutes"), System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double minutes) && minutes >= 0.0 ? minutes : config.BottleSweepMinutes;
-		config.FactionShare = Bool(ini, "factionShare");
-		config.DockedProduction = Bool(ini, "dockedProduction");
-		config.DockedFuel = Bool(ini, "dockedFuel");
-		List<MyIniKey> keys = new List<MyIniKey>();
-		List<string> sections = new List<string>();
-		ini.GetSections(sections);
-		foreach (string section in sections)
-		{
-			bool categories = section == "Categories";
-			string pool = null;
-			if (section.StartsWith("Reserve", StringComparison.OrdinalIgnoreCase))
-			{
-				string after = section.Substring(7);
-				pool = after.Length == 0 ? "" : after[0] == ':' ? after.Substring(1) : null;
-			}
-			if (!categories && pool == null)
-			{
-				continue;
-			}
-			keys.Clear();
-			ini.GetKeys(section, keys);
-			foreach (MyIniKey key in keys)
-			{
-				string item = key.Name.StartsWith("MyObjectBuilder_", StringComparison.Ordinal) ? key.Name.Substring(16) : key.Name;
-				string value = Value(ini, section, key.Name);
-				if (categories)
-				{
-					if (item.IndexOf('/') > 0 && !string.IsNullOrWhiteSpace(value))
-					{
-						config.Categories[item] = value.Trim();
-					}
-				}
-				else if (key.Name != "docked")
-				{
-					ShepherdQuota quota = ShepherdQuota.Parse(pool, item, value);
-					if (quota != null)
-					{
-						config.Quotas.Add(quota);
-					}
-				}
-			}
-		}
-		return config;
-	}
-
-	/// <summary>The value with an inline ; comment taken off, as the script reads it.</summary>
-	private static string Value(MyIni ini, string section, string key)
-	{
-		string value = ini.Get(section, key).ToString(null);
-		if (value == null)
-		{
-			return null;
-		}
-		int semi = value.IndexOf(';');
-		return (semi >= 0 ? value.Substring(0, semi) : value).Trim();
-	}
-
-	private static int Int(MyIni ini, string key, int fallback)
-	{
-		return int.TryParse(Value(ini, "Settings", key), out int value) ? value : fallback;
-	}
-
-	private static bool Bool(MyIni ini, string key)
-	{
-		return bool.TryParse(Value(ini, "Settings", key), out bool value) && value;
-	}
-
-	/// <summary>The quota lines that make or take apart an item, from every pool.</summary>
-	public IEnumerable<ShepherdQuota> AutoQuotas(string item)
-	{
-		return Quotas.Where(q => q.Auto && q.Item == item);
-	}
-}
-
 /// <summary>
-/// A SHEPHERD script found on a loaded construct: which programmable block runs it, what its status screen says,
-/// its settings, and which of the construct's units (mechanical groups) it manages. Everything is read from what the
-/// game already has on this computer (block names, Custom Data, screen text), so finding it sends nothing to the
-/// server. The block's detail pane isn't used: a multiplayer client only receives it while the block is open in the
-/// terminal.
+/// A SHEPHERD script on a loaded construct: whether it's doing its jobs, read from its [SHEPHERD] status panels (a
+/// moving clock and a running health word), the settings of the player's SHEPHERD block, and which of the construct's
+/// units (mechanical groups) it manages. Which block leads is SHEPHERD's own business and isn't worked out here.
+/// Everything is read from what the game already has on this computer (block names, Custom Data, screen text), so
+/// finding it sends nothing to the server. The block's detail pane isn't used: a multiplayer client only receives
+/// it while the block is open in the terminal.
 /// </summary>
 internal sealed class ShepherdLink
 {
 	/// <summary>
-	/// A status screen whose text hasn't changed for this long means the script isn't running. The script redraws its
-	/// screens one at a time and pauses redraws during busy runs, so a grid with many of its screens gets 3 s per screen.
+	/// A panel whose text hasn't changed for this long is frozen. The script redraws its screens one at a time and
+	/// pauses redraws during busy runs, so a grid with many of its screens gets 3 s per screen.
 	/// </summary>
 	private const double StaleSeconds = 90.0;
 
 	private const double StaleSecondsPerScreen = 3.0;
 
-	/// <summary>No stall verdict this soon after a screen is first seen: the script's first cycle after a start takes a minute or two.</summary>
+	/// <summary>No frozen verdict this soon after a panel is first seen.</summary>
 	private const double StaleGraceSeconds = 180.0;
 
-	// When each status screen was first seen this session.
+	// When each panel was first seen this session.
 	private static readonly Dictionary<long, double> s_firstSeen = new Dictionary<long, double>();
 
 	// Custom Data parsed per block, kept while the text is the same string.
 	private static readonly Dictionary<long, KeyValuePair<string, ShepherdConfig>> s_configs = new Dictionary<long, KeyValuePair<string, ShepherdConfig>>();
 
-	// Status screen text per block and when it last changed, to notice a script that stopped.
+	// Panel text per block and when it last changed.
 	private static readonly Dictionary<long, KeyValuePair<string, double>> s_screens = new Dictionary<long, KeyValuePair<string, double>>();
 
+	/// <summary>The player's SHEPHERD programmable block whose settings apply (the one named on the panel when it can tell), or null when only a panel was found.</summary>
 	public IMyProgrammableBlock Block;
 
 	public long Unit;
@@ -338,32 +167,40 @@ internal sealed class ShepherdLink
 		s_firstSeen.Clear();
 	}
 
-	public ShepherdConfig Config;
+	public ShepherdConfig Config = new ShepherdConfig();
 
-	/// <summary>The block is on, built and powered.</summary>
+	/// <summary>One of the player's SHEPHERD blocks is on, built and powered (true when only a panel was found).</summary>
 	public bool Working;
 
-	/// <summary>Its status screen stopped changing: the script isn't running (stopped, crashed, or scripts are off).</summary>
+	/// <summary>It has [SHEPHERD] panels, and every one is frozen: the script isn't running (stopped, removed, or scripts are off).</summary>
 	public bool Stale;
 
-	/// <summary>The health word on its status screen (working, idle, learning, standing by, HALTED, THROTTLED), or null without one.</summary>
+	/// <summary>The health word shown (working, idle, learning, standing by, HALTED), or null without a panel.</summary>
 	public string Health;
 
 	public string Version;
 
-	/// <summary>The lines under the rule on its status screen: what it's doing and what needs the player.</summary>
+	/// <summary>The name on the panel shown, else the block's.</summary>
+	public string PanelName;
+
+	/// <summary>The lines under the panel's last rule: what it's doing and what needs the player (informative only).</summary>
 	public List<string> Problems = new List<string>();
 
 	/// <summary>The units it manages: its own, and those docked to it unless a [SHEPHERD-Split] connector cuts them off.</summary>
 	public HashSet<long> Units = new HashSet<long>();
 
-	/// <summary>
-	/// Running and in charge: Stockpile Manager steps back from its jobs. HALTED (its crash breaker tripped) does no
-	/// work but keeps redrawing, so it counts as not running; learning moves nothing on purpose and still counts.
-	/// </summary>
-	public bool Active => Working && !Stale && Health != "standing by" && Health != "HALTED";
+	private bool _active;
 
-	public string Name => Block?.CustomName ?? "";
+	/// <summary>
+	/// Doing its jobs: Stockpile Manager steps back. True while any panel has a moving clock and says working, idle
+	/// or learning (learning moves nothing on purpose), or standing by (another SHEPHERD block does the work); false
+	/// when every panel is frozen or HALTED, or the player's SHEPHERD blocks are all off. Without a panel it's assumed
+	/// while a block works. HALTED clears on its own: at the next refresh after a panel shows a running word again,
+	/// the jobs go back to SHEPHERD.
+	/// </summary>
+	public bool Active => _active;
+
+	public string Name => PanelName ?? Block?.CustomName ?? "SHEPHERD";
 
 	/// <summary>What the Overview and the LCD say about it.</summary>
 	public string StateText
@@ -376,12 +213,16 @@ internal sealed class ShepherdLink
 			}
 			if (Stale)
 			{
-				return $"{Name}: its status screen stopped updating (script stopped?); Stockpile Manager does every job";
+				return $"{Name}: its status screen stopped updating (script stopped?); Stockpile Manager does every job until it moves again";
 			}
 			string version = Version != null ? " " + Version : "";
-			if (Health == "HALTED")
+			if (Health == ShepherdPanel.Halted)
 			{
-				return $"{Name}{version}: HALTED after repeated crashes (see its [SHEPHERD-LOG] screen); Stockpile Manager does every job";
+				return $"{Name}{version}: HALTED after repeated crashes (see its [SHEPHERD-LOG] screen); Stockpile Manager does every job until it runs again";
+			}
+			if (Health == ShepherdPanel.StandingBy)
+			{
+				return $"{Name}{version}: standing by, another SHEPHERD block does the work";
 			}
 			return Health == null ? $"{Name}: assumed running. Add an LCD named [SHEPHERD] so Stockpile Manager can tell when it stops or halts" : $"{Name}{version}: {Health}";
 		}
@@ -444,65 +285,59 @@ internal sealed class ShepherdLink
 	}
 
 	/// <summary>
-	/// Finds the SHEPHERD block that leads on this construct, if any. Among several, the script's own election
-	/// decides (highest priority, then station over ship, then large grid over small, then the lower entity id);
-	/// blocks that aren't working don't take part, as they don't broadcast.
+	/// Finds SHEPHERD on this construct: the player's programmable blocks with SHEPHERD's Custom Data ([Settings] with
+	/// refineryFillPct, and "SHEPHERD" in the script text when the client has it), and the player's [SHEPHERD] status
+	/// panels. Another player's SHEPHERD only manages its owner's blocks, so it's left out.
 	/// </summary>
 	public static ShepherdLink Find(Construct construct, double now)
 	{
-		List<IMyProgrammableBlock> blocks = new List<IMyProgrammableBlock>();
-		construct.Terminal.GetBlocksOfType(blocks, b => !b.Closed && ShepherdConfig.Looks(b.CustomData));
 		long me = MyAPIGateway.Session?.Player?.IdentityId ?? 0;
-		ShepherdLink best = null;
-		long bestRank = long.MinValue;
-		foreach (IMyProgrammableBlock block in blocks)
-		{
-			// A block that runs another script now keeps the old Custom Data; when the client has the script text, check it.
-			string program = (block as Sandbox.ModAPI.IMyProgrammableBlock)?.ProgramData;
-			if (!string.IsNullOrEmpty(program) && program.IndexOf(ShepherdTag.Keyword, StringComparison.Ordinal) < 0)
-			{
-				continue;
-			}
-			ShepherdConfig config = ConfigOf(block);
-			// The script manages its owner's blocks, and faction-shared ones with factionShare on.
-			if (block.OwnerId != me && !(config.FactionShare && SameFaction(block.OwnerId, me)))
-			{
-				continue;
-			}
-			MyCubeGridRank(block, out bool isStatic, out bool isLarge);
-			long rank = config.Priority * 4L + (isStatic ? 2 : 0) + (isLarge ? 1 : 0);
-			bool working = block.IsWorking;
-			// Working blocks first; then the script's own order.
-			long sortRank = (working ? 1L << 40 : 0) + rank;
-			if (best != null && (sortRank < bestRank || (sortRank == bestRank && block.EntityId > best.Block.EntityId)))
-			{
-				continue;
-			}
-			best = new ShepherdLink { Block = block, Config = config, Working = working };
-			bestRank = sortRank;
-		}
-		if (best == null)
+		List<IMyProgrammableBlock> blocks = new List<IMyProgrammableBlock>();
+		construct.Terminal.GetBlocksOfType(blocks, b => !b.Closed && b.OwnerId == me && ShepherdConfig.Looks(b.CustomData) && HasScript(b));
+		List<KeyValuePair<LiveBlock, ShepherdPanel>> panels = ReadPanels(construct, me, now, out List<bool> live);
+		if (blocks.Count == 0 && panels.Count == 0)
 		{
 			return null;
 		}
-		LiveBlock own = construct.Find(best.Block.EntityId);
-		best.Unit = own?.Unit ?? construct.CoreUnit;
-		best.ReadStatus(construct, now);
-		best.FindUnits(construct);
-		return best;
+		ShepherdLink link = new ShepherdLink();
+		// The panel to show: a running one first, then standing by, then any other moving one, then any.
+		int shown = Enumerable.Range(0, panels.Count)
+			.OrderByDescending(i => live[i] && panels[i].Value.Running)
+			.ThenByDescending(i => live[i] && panels[i].Value.Health == ShepherdPanel.StandingBy)
+			.ThenByDescending(i => live[i])
+			.DefaultIfEmpty(-1)
+			.First();
+		ShepherdPanel panel = shown >= 0 ? panels[shown].Value : null;
+		if (panel != null)
+		{
+			link.Health = panel.Health;
+			link.Version = panel.Version;
+			link.PanelName = panel.Name;
+			link.Problems = panel.Messages;
+		}
+		// Settings from the block named on that panel when there's one (names can repeat: a working one first), else
+		// from the first working block.
+		link.Block = blocks.Where(b => panel != null && b.CustomName.Trim() == panel.Name).OrderByDescending(b => b.IsWorking).FirstOrDefault()
+			?? blocks.OrderByDescending(b => b.IsWorking).FirstOrDefault();
+		if (link.Block != null)
+		{
+			link.Config = ConfigOf(link.Block);
+		}
+		link.Working = blocks.Count == 0 || blocks.Any(b => b.IsWorking);
+		link.Stale = panels.Count > 0 && !live.Any(l => l);
+		bool running = Enumerable.Range(0, panels.Count).Any(i => live[i] && (panels[i].Value.Running || panels[i].Value.Health == ShepherdPanel.StandingBy));
+		link._active = link.Working && (panels.Count == 0 || running);
+		LiveBlock home = link.Block != null ? construct.Find(link.Block.EntityId) : panels[Math.Max(0, shown)].Key;
+		link.Unit = home?.Unit ?? construct.CoreUnit;
+		link.FindUnits(construct);
+		return link;
 	}
 
-	private static void MyCubeGridRank(IMyTerminalBlock block, out bool isStatic, out bool isLarge)
+	/// <summary>A block that switched scripts keeps the old Custom Data; when the client has the script text, it must name SHEPHERD.</summary>
+	private static bool HasScript(IMyProgrammableBlock block)
 	{
-		IMyCubeGrid grid = block.CubeGrid;
-		isStatic = grid.IsStatic;
-		isLarge = grid.GridSizeEnum == VRage.Game.MyCubeSize.Large;
-	}
-
-	private static bool SameFaction(long owner, long me)
-	{
-		IMyFaction mine = MyAPIGateway.Session?.Factions?.TryGetPlayerFaction(me);
-		return mine != null && MyAPIGateway.Session.Factions.TryGetPlayerFaction(owner) == mine;
+		string program = (block as Sandbox.ModAPI.IMyProgrammableBlock)?.ProgramData;
+		return string.IsNullOrEmpty(program) || program.IndexOf(ShepherdTag.Keyword, StringComparison.Ordinal) >= 0;
 	}
 
 	private static ShepherdConfig ConfigOf(IMyTerminalBlock block)
@@ -518,12 +353,18 @@ internal sealed class ShepherdLink
 	}
 
 	/// <summary>
-	/// Reads the first [SHEPHERD] status screen drawn by this block (its second line is the block's name):
-	/// "SHEPHERD 1.0.3 · working", the name, a clock, then fill bars, a rule, and the lines that matter.
+	/// The player's [SHEPHERD] panels, and for each whether its clock moves. SHEPHERD redraws only the first panel on
+	/// its construct, so a second one stays frozen; any one moving is enough. A panel counts as frozen when its text
+	/// hasn't changed for max(90 s, 3 s x SHEPHERD screens), and never in its first 3 minutes.
 	/// </summary>
-	private void ReadStatus(Construct construct, double now)
+	private static List<KeyValuePair<LiveBlock, ShepherdPanel>> ReadPanels(Construct construct, long me, double now, out List<bool> live)
 	{
-		foreach (LiveBlock screen in construct.Blocks.Where(b => b.Tag?.Status == true && b.Block is IngameSurfaceProvider))
+		List<KeyValuePair<LiveBlock, ShepherdPanel>> panels = new List<KeyValuePair<LiveBlock, ShepherdPanel>>();
+		live = new List<bool>();
+		// Its screens: blocks without an inventory whose names carry a SHEPHERD tag (status, log, debug, levels, stock).
+		int screens = construct.Blocks.Count(b => b.Input == null && b.Tag != null);
+		double timeout = Math.Max(StaleSeconds, StaleSecondsPerScreen * screens);
+		foreach (LiveBlock screen in construct.Blocks.Where(b => b.Tag?.Status == true && b.Input == null && b.Block.OwnerId == me && b.Block is IngameSurfaceProvider))
 		{
 			IngameSurfaceProvider provider = (IngameSurfaceProvider)screen.Block;
 			if (provider.SurfaceCount == 0)
@@ -531,39 +372,29 @@ internal sealed class ShepherdLink
 				continue;
 			}
 			string text = provider.GetSurface(0).GetText() ?? "";
-			string[] lines = text.Replace("\r", "").Split('\n');
-			if (lines.Length < 2 || !lines[0].StartsWith(ShepherdTag.Keyword, StringComparison.Ordinal) || lines[1].Trim() != Name.Trim())
+			ShepherdPanel panel = ShepherdPanel.Parse(text);
+			if (panel == null)
 			{
 				continue;
-			}
-			int dot = lines[0].IndexOf('·');
-			if (dot > 0)
-			{
-				Version = lines[0].Substring(ShepherdTag.Keyword.Length, dot - ShepherdTag.Keyword.Length).Trim();
-				Health = lines[0].Substring(dot + 1).Trim();
-			}
-			int rule = Array.FindLastIndex(lines, l => l.StartsWith("───", StringComparison.Ordinal) && l.Trim('─').Length == 0);
-			if (rule >= 0)
-			{
-				Problems = lines.Skip(rule + 1).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
 			}
 			long id = screen.Block.EntityId;
 			if (!s_firstSeen.ContainsKey(id))
 			{
 				s_firstSeen[id] = now;
 			}
+			bool moving = true;
 			if (!s_screens.TryGetValue(id, out KeyValuePair<string, double> seen) || seen.Key != text)
 			{
 				s_screens[id] = new KeyValuePair<string, double>(text, now);
 			}
 			else if (now - s_firstSeen[id] > StaleGraceSeconds)
 			{
-				// Its screens: blocks without an inventory whose names carry a SHEPHERD tag (status, log, debug, levels, stock).
-				int screens = construct.Blocks.Count(b => b.Input == null && b.Tag != null);
-				Stale = now - seen.Value > Math.Max(StaleSeconds, StaleSecondsPerScreen * screens);
+				moving = now - seen.Value <= timeout;
 			}
-			return;
+			panels.Add(new KeyValuePair<LiveBlock, ShepherdPanel>(screen, panel));
+			live.Add(moving);
 		}
+		return panels;
 	}
 
 	/// <summary>Its own unit plus every unit reached through docked connectors, except across a [SHEPHERD-Split] connector.</summary>

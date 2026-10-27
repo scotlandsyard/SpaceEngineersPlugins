@@ -47,11 +47,70 @@ internal static class ShepherdExport
 
 		public int QuotaLines;
 
+		/// <summary>Accepted single items, each moved into a category of its own.</summary>
+		public int SingleItems;
+
+		/// <summary>Stock-block lines with only a maximum (L).</summary>
+		public int MaxOnly;
+
+		/// <summary>Quota lines lowered by what other pools already keep.</summary>
+		public int Lowered;
+
 		public readonly List<string> Notes = new List<string>();
 
 		public string Problem;
 
 		public bool Empty => Renames.Count == 0 && Categories.Count == 0 && Sections.Count == 0;
+	}
+
+	/// <summary>How long after configReload the [Categories] lines are checked again.</summary>
+	private const double RecheckSeconds = 5.0;
+
+	private sealed class Pending
+	{
+		public Construct Construct;
+
+		public IMyProgrammableBlock Block;
+
+		public Dictionary<string, string> Categories;
+
+		public double Due;
+	}
+
+	private static Pending s_pending;
+
+	/// <summary>
+	/// A few seconds after an export to SHEPHERD before 1.0.21, puts back any [Categories] line a save of its own
+	/// dropped, and reloads it once more. Called on every refresh of a construct.
+	/// </summary>
+	public static void CheckPending(Construct construct, double now)
+	{
+		Pending pending = s_pending;
+		if (pending == null || pending.Construct != construct || now < pending.Due)
+		{
+			return;
+		}
+		s_pending = null;
+		MyIni ini = new MyIni();
+		if (pending.Block.Closed || !ini.TryParse(pending.Block.CustomData ?? ""))
+		{
+			return;
+		}
+		List<KeyValuePair<string, string>> missing = pending.Categories.Where(c => ini.Get("Categories", c.Key).ToString(null) != c.Value).ToList();
+		if (missing.Count == 0)
+		{
+			return;
+		}
+		foreach (KeyValuePair<string, string> category in missing)
+		{
+			ini.Set("Categories", category.Key, category.Value);
+		}
+		pending.Block.CustomData = ini.ToString();
+		if (pending.Block is MyProgrammableBlock block && pending.Block.IsWorking)
+		{
+			block.Run("configReload", UpdateType.Terminal);
+		}
+		construct.AddLog($"SHEPHERD export: put back {missing.Count} [Categories] line(s) a save of its own had dropped, and reloaded it");
 	}
 
 	public static Plan Build(Construct construct, GridRules rules)
@@ -88,9 +147,10 @@ internal static class ShepherdExport
 					}
 					else
 					{
-						// A single item gets a category of its own.
-						string token = Token(Items.Name(accept));
+						// A single item gets a category of its own, named with its type (IronIngot, not Iron, which the ore would share).
+						string token = ItemToken(accept);
 						plan.Categories[accept] = token;
+						plan.SingleItems++;
 						tokens.Add(token);
 					}
 				}
@@ -109,6 +169,7 @@ internal static class ShepherdExport
 					.Select(l => new KeyValuePair<string, string>(l.Item, StockLine(l)))
 					.Where(l => l.Value != null)
 					.ToList();
+				plan.MaxOnly += lines.Count(l => l.Value.EndsWith("L", StringComparison.Ordinal));
 				string pool = Unique(pools, Token(block.Name));
 				Rename(plan, block, $"[SHEPHERD-RESERVE:{pool}]");
 				plan.Sections["Reserve:" + pool] = lines;
@@ -132,13 +193,43 @@ internal static class ShepherdExport
 		{
 			List<KeyValuePair<string, string>> quotas = new List<KeyValuePair<string, string>>();
 			int rangesCut = 0;
+			int lowered = 0;
+			int ingotsKept = 0;
+			// SHEPHERD adds up every pool's lines for an item, and SSM's grid quota already counts what the stock blocks
+			// keep, so each quota line is written less what the other pools keep (the stock blocks exported now, and
+			// pools already in its Custom Data that this export doesn't replace).
+			List<ShepherdQuota> others = plan.Sections
+				.SelectMany(section => section.Value.Select(line => ShepherdQuota.Parse(section.Key.Substring(8), line.Key, line.Value)))
+				.Concat((construct.Shepherd?.Config ?? new ShepherdConfig()).Quotas.Where(q => q.Pool != QuotaPool && !plan.Sections.ContainsKey("Reserve:" + q.Pool)))
+				.Where(q => q != null && q.Mode != "All")
+				.ToList();
+			bool refines = (construct.Shepherd?.Config ?? new ShepherdConfig()).RefineryFillPct > 0.0;
 			foreach (ItemLimit quota in rules.Quotas.Where(q => !q.Item.StartsWith("Ore/", StringComparison.Ordinal)))
 			{
-				string line = QuotaLine(quota, rules.Disassemble, ref rangesCut);
+				if (!refines && Items.RefineryOnly(quota.Item))
+				{
+					ingotsKept++;
+					continue;
+				}
+				double kept = others.Where(q => q.Item == quota.Item && q.Mode != "L").Sum(q => q.Target);
+				double held = others.Where(q => q.Item == quota.Item).Sum(q => q.Target);
+				string line = QuotaLine(quota, rules.Disassemble, kept, held, ref rangesCut);
+				if (held > 0.0)
+				{
+					lowered++;
+				}
 				if (line != null)
 				{
 					quotas.Add(new KeyValuePair<string, string>(quota.Item, line));
 				}
+			}
+			if (lowered > 0)
+			{
+				plan.Lowered = lowered;
+			}
+			if (ingotsKept > 0)
+			{
+				plan.Notes.Add($"{ingotsKept} ingot quota(s): SHEPHERD has refineryFillPct=0 and feeds no refinery, so Stockpile Manager's refine by ingot need keeps them");
 			}
 			if (quotas.Count > 0)
 			{
@@ -214,22 +305,31 @@ internal static class ShepherdExport
 	/// taken apart above (LA), and a quota equal to its maximum does both (A). A quota with a higher maximum has no
 	/// single line: it keeps the MA, and <paramref name="rangesCut"/> counts it for the confirm box.
 	/// </summary>
-	private static string QuotaLine(ItemLimit quota, bool disassemble, ref int rangesCut)
+	/// <param name="kept">What other pools keep of the item (plain and M lines): taken off the amount it's made up to.</param>
+	/// <param name="held">What other pools hold back from disassembly (L lines too): taken off the amount it's taken apart above.</param>
+	private static string QuotaLine(ItemLimit quota, bool disassemble, double kept, double held, ref int rangesCut)
 	{
-		bool canDisassemble = disassemble && quota.HasMax && !quota.Item.StartsWith("Ingot/", StringComparison.Ordinal);
+		// Ingots are never disassembled: an ingot LA would do nothing but show a standing line on SHEPHERD's panel.
+		bool canDisassemble = disassemble && quota.HasMax && !Items.RefineryOnly(quota.Item) && !quota.Item.StartsWith("Ingot/", StringComparison.Ordinal);
 		if (quota.HasMin && quota.Min > 0.0)
 		{
-			if (canDisassemble && Math.Abs(quota.Max - quota.Min) < 1e-6)
+			if (canDisassemble && Math.Abs(quota.Max - quota.Min) < 1e-6 && Math.Abs(kept - held) < 1e-6)
 			{
-				return Number(quota.Min) + "A";
+				return Amount(quota.Min - kept, "A");
 			}
 			if (canDisassemble)
 			{
 				rangesCut++;
 			}
-			return Number(quota.Min) + "MA";
+			return Amount(quota.Min - kept, "MA");
 		}
-		return canDisassemble ? Number(quota.Max) + "LA" : null;
+		return canDisassemble ? Amount(quota.Max - held, "LA") : null;
+	}
+
+	/// <summary>An amount with its letters, or null when nothing is left once the other pools are counted.</summary>
+	private static string Amount(double value, string letters)
+	{
+		return value > 1e-6 ? Number(value) + letters : null;
 	}
 
 	private static string Number(double value)
@@ -237,7 +337,17 @@ internal static class ShepherdExport
 		return value.ToString("0.##", CultureInfo.InvariantCulture);
 	}
 
-	/// <summary>A category or pool name from a display name: letters and digits only, as tag tokens can't hold brackets, commas or colons.</summary>
+	/// <summary>A category name for one item, with its type so items of different types don't share it: Ingot/Iron is IronIngot.</summary>
+	private static string ItemToken(string key)
+	{
+		int slash = key.IndexOf('/');
+		return slash < 0 ? Token(key) : Token(key.Substring(slash + 1)) + Token(key.Substring(0, slash));
+	}
+
+	/// <summary>
+	/// A category or pool name: letters and digits only. A tag ends at the first ], a category list splits at commas, a
+	/// trailing :#N is read as a priority, and a pool name is also a Custom Data section header.
+	/// </summary>
 	private static string Token(string name)
 	{
 		string token = new string((name ?? "").Where(char.IsLetterOrDigit).ToArray());
@@ -271,6 +381,18 @@ internal static class ShepherdExport
 		text.Append($"- {plan.Assemblers} assembler(s) get [SHEPHERD-Main] or [SHEPHERD-Coop]\n");
 		text.Append($"\nCustom Data of {plan.Block.CustomName}: {plan.QuotaLines} quota line(s) in [Reserve:{QuotaPool}], {plan.Reserves} reserve section(s), {plan.Categories.Count} category line(s). Sections with these names are replaced; everything else stays.\n");
 		text.Append("\nThen it runs the block with configReload, and every job is left to SHEPHERD (the Overview lets you keep some).");
+		if (plan.SingleItems > 0)
+		{
+			text.Append($"\n\n{plan.SingleItems} single accepted item(s) get a category of their own: SHEPHERD then sends each only to its own containers (then the catch-all), never to its usual category's containers.");
+		}
+		if (plan.MaxOnly > 0)
+		{
+			text.Append($"\n\n{plan.MaxOnly} Stock limit(s) have only a maximum: Stockpile Manager only caps those, but SHEPHERD's L line also pulls items in up to it.");
+		}
+		if (plan.Lowered > 0)
+		{
+			text.Append($"\n\n{plan.Lowered} quota(s) are also kept by reserve pools: SHEPHERD adds pools up, so their quota lines are lowered by what those pools keep.");
+		}
 		if (plan.Notes.Count > 0)
 		{
 			text.Append("\n\nNot exported: " + string.Join(", ", plan.Notes) + ".");
@@ -316,6 +438,11 @@ internal static class ShepherdExport
 			{
 				block.Run("configReload", UpdateType.Terminal);
 				construct.AddLog($"Ran {plan.Block.CustomName} with configReload");
+				// Before 1.0.21 a save SHEPHERD still had pending could rewrite [Categories] from memory and drop the new lines.
+				if (plan.Categories.Count > 0 && !ShepherdPanel.AtLeast(construct.Shepherd?.Version, 1, 0, 21))
+				{
+					s_pending = new Pending { Construct = construct, Block = plan.Block, Categories = plan.Categories, Due = SsmSession.Now + RecheckSeconds };
+				}
 			}
 		}
 		rules.ShepherdMine.Clear();

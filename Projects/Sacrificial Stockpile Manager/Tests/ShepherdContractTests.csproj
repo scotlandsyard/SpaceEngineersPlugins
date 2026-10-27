@@ -1,0 +1,25 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <!--
+    Checks how Stockpile Manager reads SHEPHERD (Source/SacrificialStockpileManager/ShepherdFormat.cs) against the sample
+    files SHEPHERD publishes in SHEPHERD.Tests/Fixtures, copied here from one release tag (Fixtures/<tag>). No game
+    files are needed. Run it with:
+      dotnet run -c Release
+    It prints each check and exits with 1 if any fails. When SHEPHERD releases new samples, copy them into a new
+    Fixtures/<tag> folder and change FixtureTag below.
+  -->
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net481</TargetFramework>
+    <LangVersion>latest</LangVersion>
+    <FixtureTag>v1.0.21</FixtureTag>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NETFramework.ReferenceAssemblies" Version="1.0.3" PrivateAssets="all" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="../Source/SacrificialStockpileManager/ShepherdFormat.cs" Link="ShepherdFormat.cs" />
+    <None Include="Fixtures/$(FixtureTag)/*" CopyToOutputDirectory="PreserveNewest" Link="Fixtures/%(Filename)%(Extension)" />
+  </ItemGroup>
+</Project>

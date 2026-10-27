@@ -586,6 +586,13 @@ public class SsmSession : MySessionComponentBase
 		ShepherdLink shepherd = construct.Shepherd;
 		bool active = shepherd?.Active == true;
 		string grid = construct.Snapshot?.Name ?? "";
+		ShepherdExport.CheckPending(construct, Now);
+		// In learn mode its panel previews what it will save, a line per item as the player moves things: no chat then.
+		if (shepherd?.Health == ShepherdPanel.Learning)
+		{
+			construct.ShepherdWasActive = active;
+			return;
+		}
 		if (active && construct.ShepherdWasActive != true)
 		{
 			Personality.SayAs(ShepherdGuest, "found", "grid", grid);
@@ -599,6 +606,11 @@ public class SsmSession : MySessionComponentBase
 		if (!active)
 		{
 			construct.ShepherdSeen.Clear();
+			return;
+		}
+		// A standing-by panel only names the block that leads.
+		if (shepherd.Health == ShepherdPanel.StandingBy)
+		{
 			return;
 		}
 		// Lines saying what it's doing right now aren't news; the rest are problems that need the player.

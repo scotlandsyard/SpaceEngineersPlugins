@@ -182,7 +182,8 @@ internal static class AutoCraft
 			return null;
 		}
 		List<ShepherdQuota> quotas = shepherd.CraftQuotas(key);
-		if (quotas.Count == 0)
+		// An A on an ingot means refining, and with refineryFillPct=0 SHEPHERD feeds no refinery: refine by need keeps it.
+		if (quotas.Count == 0 || (Items.RefineryOnly(key) && shepherd.Config.RefineryFillPct <= 0.0))
 		{
 			return null;
 		}
