@@ -53,6 +53,9 @@ internal static class ShepherdExport
 		/// <summary>Stock-block lines with only a maximum (L).</summary>
 		public int MaxOnly;
 
+		/// <summary>Stock-block lines with only a minimum (M) for an item another pool also keeps.</summary>
+		public int MinShared;
+
 		/// <summary>Quota lines lowered by what other pools already keep.</summary>
 		public int Lowered;
 
@@ -181,6 +184,13 @@ internal static class ShepherdExport
 				plan.Off++;
 			}
 		}
+		// From SHEPHERD 1.0.29 an M pool's surplus moves to another pool short of the item; SSM's Stock block keeps it.
+		List<ShepherdQuota> pooled = plan.Sections
+			.SelectMany(section => section.Value.Select(line => ShepherdQuota.Parse(section.Key.Substring(8), line.Key, line.Value)))
+			.Concat((construct.Shepherd?.Config ?? new ShepherdConfig()).Quotas.Where(q => q.Pool != QuotaPool && !plan.Sections.ContainsKey("Reserve:" + q.Pool)))
+			.Where(q => q != null && q.Mode != "All")
+			.ToList();
+		plan.MinShared = pooled.Count(q => q.Mode == "M" && pooled.Any(o => o.Item == q.Item && o.Pool != q.Pool));
 		if (bottles)
 		{
 			// The script files bottles under Tools; a container accepting bottles gets them through a category of their own.
@@ -198,11 +208,7 @@ internal static class ShepherdExport
 			// SHEPHERD adds up every pool's lines for an item, and SSM's grid quota already counts what the stock blocks
 			// keep, so each quota line is written less what the other pools keep (the stock blocks exported now, and
 			// pools already in its Custom Data that this export doesn't replace).
-			List<ShepherdQuota> others = plan.Sections
-				.SelectMany(section => section.Value.Select(line => ShepherdQuota.Parse(section.Key.Substring(8), line.Key, line.Value)))
-				.Concat((construct.Shepherd?.Config ?? new ShepherdConfig()).Quotas.Where(q => q.Pool != QuotaPool && !plan.Sections.ContainsKey("Reserve:" + q.Pool)))
-				.Where(q => q != null && q.Mode != "All")
-				.ToList();
+			List<ShepherdQuota> others = pooled;
 			bool refines = (construct.Shepherd?.Config ?? new ShepherdConfig()).RefineryFillPct > 0.0;
 			foreach (ItemLimit quota in rules.Quotas.Where(q => !q.Item.StartsWith("Ore/", StringComparison.Ordinal)))
 			{
@@ -388,6 +394,10 @@ internal static class ShepherdExport
 		if (plan.MaxOnly > 0)
 		{
 			text.Append($"\n\n{plan.MaxOnly} Stock limit(s) have only a maximum: Stockpile Manager only caps those, but SHEPHERD's L line also pulls items in up to it.");
+		}
+		if (plan.MinShared > 0)
+		{
+			text.Append($"\n\n{plan.MinShared} Stock limit(s) have only a minimum of an item another reserve also keeps: Stockpile Manager never takes items out of those, but from SHEPHERD 1.0.29 what's above the minimum can go to fill the other reserve.");
 		}
 		if (plan.Lowered > 0)
 		{
