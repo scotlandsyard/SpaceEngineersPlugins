@@ -295,7 +295,18 @@ internal sealed class ShepherdPanel
 		int rule = Array.FindLastIndex(lines, l => l.Trim().Length >= 3 && l.Trim().Trim('─').Length == 0);
 		if (rule >= 3)
 		{
-			panel.Messages = lines.Skip(rule + 1).Select(l => l.Trim()).Where(l => l.Length > 0).ToList();
+			// A long message is wrapped onto lines starting with two spaces, which no message does (1.0.45).
+			foreach (string line in lines.Skip(rule + 1).Where(l => l.Trim().Length > 0))
+			{
+				if (line.StartsWith("  ", StringComparison.Ordinal) && panel.Messages.Count > 0)
+				{
+					panel.Messages[panel.Messages.Count - 1] += " " + line.Trim();
+				}
+				else
+				{
+					panel.Messages.Add(line.Trim());
+				}
+			}
 		}
 		return panel;
 	}

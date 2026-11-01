@@ -4,6 +4,7 @@ using System.Linq;
 using Sandbox.Game.Entities.Blocks;
 using Sandbox.ModAPI;
 using VRage.Game.ModAPI;
+using IngameSurface = Sandbox.ModAPI.Ingame.IMyTextSurface;
 using IngameSurfaceProvider = Sandbox.ModAPI.Ingame.IMyTextSurfaceProvider;
 
 namespace SacrificialStockpileManager;
@@ -250,6 +251,9 @@ internal sealed class ShepherdLink
 			return block.Kind == BlockKind.Refinery && Config.RefineryFillPct > 0 && (home || Config.DockedProduction);
 		case ShepherdJob.Output:
 			return Construct.IsProductionKind(block.Kind) && (home || Config.DockedProduction);
+		case ShepherdJob.Sort:
+			// From 1.0.41 SHEPHERD never manages welders (Nanobot Build and Repair included), so a welder set to Intake here stays drained here.
+			return !(block.Block is IMyShipWelder);
 		default:
 			return true;
 		}
@@ -361,8 +365,9 @@ internal sealed class ShepherdLink
 	{
 		List<KeyValuePair<LiveBlock, ShepherdPanel>> panels = new List<KeyValuePair<LiveBlock, ShepherdPanel>>();
 		live = new List<bool>();
-		// Its screens: blocks without an inventory whose names carry a SHEPHERD tag (status, log, debug, levels, stock).
-		int screens = construct.Blocks.Count(b => b.Input == null && b.Tag != null);
+		// Its screens: blocks with a screen and no inventory whose names carry a SHEPHERD tag (status, log, debug, levels,
+		// stock). A [SHEPHERD] light shows its health as a colour and is never a panel (1.0.40).
+		int screens = construct.Blocks.Count(b => b.Input == null && b.Tag != null && b.Block is IngameSurfaceProvider provider && provider.SurfaceCount > 0);
 		double timeout = Math.Max(StaleSeconds, StaleSecondsPerScreen * screens);
 		foreach (LiveBlock screen in construct.Blocks.Where(b => b.Tag?.Status == true && b.Input == null && b.Block.OwnerId == me && b.Block is IngameSurfaceProvider))
 		{
@@ -371,7 +376,8 @@ internal sealed class ShepherdLink
 			{
 				continue;
 			}
-			string text = provider.GetSurface(0).GetText() ?? "";
+			// A text panel's own text is what SHEPHERD writes; its surface 0 reads empty on a client.
+			string text = ((screen.Block as IngameSurface) ?? provider.GetSurface(0))?.GetText() ?? "";
 			ShepherdPanel panel = ShepherdPanel.Parse(text);
 			if (panel == null)
 			{

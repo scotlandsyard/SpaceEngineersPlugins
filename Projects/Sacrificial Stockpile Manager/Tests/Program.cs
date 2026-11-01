@@ -68,6 +68,7 @@ internal static class Program
 				Check(panel.Name == name, $"{file} ({ending}): line 2 is the block's name '{name}'");
 				Check(System.Text.RegularExpressions.Regex.IsMatch(panel.Clock, @"^\d\d:\d\d:\d\d$"), $"{file} ({ending}): line 3 is a clock");
 				Check(System.Text.RegularExpressions.Regex.IsMatch(panel.Version, @"^\d+\.\d+\.\d+$"), $"{file} ({ending}): version '{panel.Version}' is MAJOR.MINOR.PATCH");
+				Check(health == "standing by" || panel.Messages.LastOrDefault() == "craft Component/SteelPlate: no Main assembler", $"{file} ({ending}): a wrapped message reads as one ('{panel.Messages.LastOrDefault()}')");
 			}
 		}
 		Check(ShepherdPanel.Parse("SHEPHERD v1.0.21 running\nBase PB") == null, "the Echo's first line is not a panel");

@@ -95,7 +95,7 @@ Stockpile Manager finds SHEPHERD by your programmable blocks that carry its sett
 | Reactor and generator fuel | SHEPHERD fills them to `reactorFillPct` / `gasGenFillPct`; their minimums and maximums here are left alone |
 | Refineries | SHEPHERD feeds them (`refineryFillPct`) and refines for its ingot quotas; refinery priority and refine by ingot need are left alone |
 | Production output | SHEPHERD empties refineries and assemblers |
-| Crafting its A quotas | Items with an A quota in SHEPHERD's Custom Data are left to it (Items view: "Left to SHEPHERD: 500MA in [Reserve]"); other quotas are still crafted here on the Main and Co-op assemblers. With `refineryFillPct=0`, ingot quotas stay with Stockpile Manager's refine by ingot need |
+| Crafting its A quotas | Items with an A quota in SHEPHERD's Custom Data are left to it. If you also have a quota for one here, Stockpile Manager doesn't craft it and the Items view says "Left to SHEPHERD: 500MA in [Reserve]"; other quotas are still crafted here on the Main and Co-op assemblers. With `refineryFillPct=0`, ingot quotas stay with Stockpile Manager's refine by ingot need |
 | Bottles | SHEPHERD refills them every `bottleSweepMinutes` |
 
 A job SHEPHERD's settings switch off (a fill % or bottle sweep of 0) stays Stockpile Manager's. Settings are read as SHEPHERD reads them: key names are case-sensitive, a `;` comment after a value is ignored, and a value that doesn't parse or is out of range counts as SHEPHERD's default. The Overview shows SHEPHERD's state and what its status screen says, with a row per job: double-click one to keep it for Stockpile Manager, or to leave it to SHEPHERD again. The LCD Overview page shows SHEPHERD's state too.

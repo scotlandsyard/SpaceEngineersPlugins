@@ -1,4 +1,4 @@
-SHEPHERD 1.0.21 · HALTED
+SHEPHERD 1.0.21 · idle
 Base PB
 11:46:15
 0 Assemblers Controlled
@@ -12,4 +12,5 @@ Others         ──no route──
 ─────────────────────────
 Spare          ░░░░░░░░░░ 0%
 ─────────────────────────
-craft Component/SteelPlate: no Main assembler
+craft Component/SteelPlate: no Main
+  assembler

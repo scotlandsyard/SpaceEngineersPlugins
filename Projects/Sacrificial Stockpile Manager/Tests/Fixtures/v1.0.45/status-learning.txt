@@ -1,4 +1,4 @@
-SHEPHERD 1.0.21 · idle
+SHEPHERD 1.0.21 · learning
 Base PB
 11:46:15
 0 Assemblers Controlled
@@ -12,4 +12,6 @@ Others         ──no route──
 ─────────────────────────
 Spare          ░░░░░░░░░░ 0%
 ─────────────────────────
-craft Component/SteelPlate: no Main assembler
+learning - nothing to save yet
+craft Component/SteelPlate: no Main
+  assembler

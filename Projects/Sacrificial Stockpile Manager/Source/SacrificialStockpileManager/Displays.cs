@@ -29,6 +29,9 @@ internal static class Displays
 
 	private const float DefaultFontSize = 0.6f;
 
+	/// <summary>Characters measured together to find one column's width.</summary>
+	private const int MeasureRun = 20;
+
 	private const int DisplaysPerCall = 4;
 
 	private static int s_cursor;
@@ -129,11 +132,14 @@ internal static class Displays
 		try
 		{
 			Vector2 size = surface.SurfaceSize;
-			Vector2 glyph = surface.MeasureStringInPixels(new StringBuilder("W"), surface.Font, surface.FontSize);
+			// Measured over a run of characters, since one glyph leaves out the spacing between them and a wide screen adds it up.
+			Vector2 glyph = surface.MeasureStringInPixels(new StringBuilder(new string('W', MeasureRun)), surface.Font, surface.FontSize);
+			glyph.X /= MeasureRun;
 			float usable = 1f - 2f * surface.TextPadding / 100f;
 			if (glyph.X > 0f)
 			{
-				columns = Math.Max(12, Math.Min(120, (int)(size.X * usable / glyph.X)));
+				// One column spare for rounding.
+				columns = Math.Max(12, Math.Min(120, (int)(size.X * usable / glyph.X) - 1));
 			}
 			if (glyph.Y > 0f)
 			{
