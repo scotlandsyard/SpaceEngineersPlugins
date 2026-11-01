@@ -47,7 +47,15 @@ public class SargeSession : MySessionComponentBase
 			}
 			Settings.Load();
 			RigStore.Load();
-			CreateActions();
+			try
+			{
+				// Optional extras: a failure here must never take the window, chat and rigs down with it.
+				CreateActions();
+			}
+			catch (Exception ex)
+			{
+				MyLog.Default.WriteLineAndConsole($"[DrillSergeant] Toolbar actions unavailable: {ex}");
+			}
 			MyAPIGateway.TerminalControls.CustomActionGetter += CustomActionGetter;
 			MyAPIGateway.Utilities.MessageEntered += OnMessageEntered;
 			PluginSwitcher.Register(Plugin.Name, OpenWindow);
@@ -193,7 +201,15 @@ public class SargeSession : MySessionComponentBase
 
 	private void AddAction(string id, string name, string icon, Func<Rig, string> run)
 	{
-		IMyTerminalAction action = MyAPIGateway.TerminalControls.CreateAction<IMyMotorStator>(id);
+		// IMyMotorBase, not IMyMotorStator: the game only maps interfaces that carry its MyTerminalInterface
+		// attribute, and the plain rotor class has none, so CreateAction<IMyMotorStator> returns null.
+		// MyMotorBase covers rotors and advanced rotors alike.
+		IMyTerminalAction action = MyAPIGateway.TerminalControls.CreateAction<IMyMotorBase>(id);
+		if (action == null)
+		{
+			MyLog.Default.WriteLineAndConsole($"[DrillSergeant] The game wouldn't create toolbar action {id}; toolbar actions are off.");
+			return;
+		}
 		action.Name = new StringBuilder(name);
 		action.Icon = $"Textures\\GUI\\Icons\\Actions\\{icon}.dds";
 		action.ValidForGroups = false;
