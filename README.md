@@ -14,7 +14,7 @@ There are two ways to get a plugin. Either way, you end up with a DLL to drop in
 
 1. Open [Releases](../../releases) and download the plugin's `.zip` (the DLL plus a README), or just its `.dll`. Each plugin has its own release.
 2. Windows blocks files downloaded from the internet, and Pulsar can't load a blocked DLL (its log shows `0x80131515`). Right-click the downloaded `.zip` or `.dll` > **Properties**, tick **Unblock** at the bottom and press **OK** (for the zip, do this before unzipping).
-3. Close the game. Copy the `.dll` into the `Legacy\Local` folder of your Pulsar install: `%AppData%\Pulsar\Legacy\Local` unless you installed Pulsar somewhere else.
+3. Close the game. Copy the `.dll` into the `Legacy\Local` folder of your Pulsar install: `%AppData%\Pulsar\Legacy\Local` unless you installed Pulsar somewhere else. If you start the game with **Pulsar Interim** rather than Legacy, use the copy in the zip's `net10` folder instead (Interim needs the .NET 10 build and hides the other one); keep only one of the two.
 4. Start the game with Pulsar, tick the plugin in the plugin list and restart when asked.
 
 If a plugin you've already copied in doesn't load, unblock the DLL itself the same way, or run this in PowerShell to unblock everything in the folder (change the path if Pulsar is elsewhere): `Get-ChildItem "$env:AppData\Pulsar\Legacy\Local" | Unblock-File`
@@ -26,11 +26,11 @@ Every line of code is in this repo, and the build uses only the .NET SDK and you
 1. Install the [.NET SDK](https://dotnet.microsoft.com/download) (the releases are built with .NET SDK 10) and have Space Engineers installed through Steam.
 2. Get the source: **Code > Download ZIP** above and unzip it, or `git clone` the repo.
 3. Open PowerShell in that folder and run `.\Build.ps1` to build every plugin, or `.\Build.ps1 "BaR Maid"` for one. If Windows blocks the script, run `powershell -ExecutionPolicy Bypass -File .\Build.ps1` instead.
-4. The DLLs land in the `Build` folder. Install them the same way as step 3 above. DLLs you build yourself aren't blocked.
+4. The DLLs land in the `Build` folder (Legacy) and `Build\net10` (Pulsar Interim). Install them the same way as step 3 above. DLLs you build yourself aren't blocked.
 
 `Build.ps1` finds the game through Steam. If it can't, pass the folder: `.\Build.ps1 -Bin64 "D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"`.
 
-**Checking a download against the source:** the builds are deterministic. Building the release's version of the source with the same game version gives a byte-for-byte identical DLL. `Build.ps1` prints each DLL's SHA256, and each release lists the SHA256 of its DLL, so you can compare them. A different .NET SDK version can produce a different hash with the same code. In that case, compare by building with the SDK version named in the release notes.
+**Checking a download against the source:** the builds are deterministic. Building the release's version of the source with the same game version gives a byte-for-byte identical DLL. `Build.ps1` prints each DLL's SHA256, and each release lists the SHA256 of both its DLLs, so you can compare them. A different .NET SDK version can produce a different hash with the same code. In that case, compare by building with the SDK version named in the release notes.
 
 ## Projects
 
@@ -71,9 +71,9 @@ Open an issue on [GitHub](https://github.com/scotlandsyard/SpaceEngineersPlugins
 `Build.ps1` (see [Install](#install)) is the simple way. To build one project yourself:
 
 1. Run `dotnet build -c Release` in the project's `Source` folder. If the game isn't in the default Steam location, add `-p:Bin64="D:\SteamLibrary\steamapps\common\SpaceEngineers\Bin64"`.
-2. The plugin DLL is written to `Source/bin/Release/net481/`.
+2. The plugin DLL is written to `Source/bin/Release/net481/` (Legacy) and `Source/bin/Release/net10.0/` (Pulsar Interim).
 
-The projects target .NET Framework 4.8.1 (x64) and reference the game's DLLs straight from its `Bin64` folder, without copying them. Release builds are deterministic and record no paths from the computer they were built on. `.gitattributes` fixes the line endings, so every checkout builds the same bytes.
+The projects target both .NET Framework 4.8.1 (x64, for Pulsar's Legacy launcher) and .NET 10 (for Pulsar Interim), and reference the game's DLLs straight from its `Bin64` folder, without copying them. Release builds are deterministic and record no paths from the computer they were built on. `.gitattributes` fixes the line endings, so every checkout builds the same bytes.
 
 Code used by more than one project lives once in [`Shared/`](Shared/) and is linked into each project that uses it.
 

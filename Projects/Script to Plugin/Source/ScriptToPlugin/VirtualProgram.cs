@@ -333,7 +333,11 @@ internal class VirtualProgram
 		// The object is made without running its constructor, so Me, Runtime and the rest are already set when the
 		// script's constructor runs. Static initialisers run here, so this is inside the instruction limits too.
 		IMyGridProgram instance = null;
+#if NETFRAMEWORK
 		if (!RunCore(() => instance = FormatterServices.GetUninitializedObject(type) as IMyGridProgram) || instance == null)
+#else
+		if (!RunCore(() => instance = System.Runtime.CompilerServices.RuntimeHelpers.GetUninitializedObject(type) as IMyGridProgram) || instance == null)
+#endif
 		{
 			if (!_crashed)
 			{

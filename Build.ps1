@@ -1,6 +1,6 @@
 <#
 .SYNOPSIS
-    Builds the plugins from source and puts the DLLs in the Build folder.
+    Builds the plugins from source and puts the DLLs in the Build folder (Legacy launcher) and Build\net10 (Pulsar Interim).
 
 .DESCRIPTION
     Needs the .NET SDK (https://dotnet.microsoft.com/download) and Space Engineers installed.
@@ -66,20 +66,28 @@ if ($Plugin) {
 }
 
 $out = Join-Path $root 'Build'
-New-Item -ItemType Directory -Force $out | Out-Null
+$out10 = Join-Path $out 'net10'
+New-Item -ItemType Directory -Force $out, $out10 | Out-Null
 $results = @()
 foreach ($p in $projects) {
-    $csproj = Get-ChildItem (Join-Path $p.FullName 'Source') -Filter *.csproj | Select-Object -First 1
+    # Script-only projects (Shipwright) have no Source folder.
+    $source = Join-Path $p.FullName 'Source'
+    if (-not (Test-Path $source)) { continue }
+    $csproj = Get-ChildItem $source -Filter *.csproj | Select-Object -First 1
     if (-not $csproj) { continue }
     Write-Host "`nBuilding $($p.Name)..."
     & dotnet build $csproj.FullName -c Release -nologo -v quiet "-p:Bin64=$Bin64"
     if ($LASTEXITCODE -ne 0) { throw "$($p.Name) failed to build." }
     $name = ([xml](Get-Content $csproj.FullName)).Project.PropertyGroup.AssemblyName | Where-Object { $_ } | Select-Object -First 1
-    $dll = Join-Path $csproj.DirectoryName "bin\Release\net481\$name.dll"
-    Copy-Item $dll $out -Force
-    $results += [pscustomobject]@{ Plugin = $p.Name; Dll = "$name.dll"; SHA256 = (Get-FileHash $dll -Algorithm SHA256).Hash }
+    # Each plugin builds twice: net481 for the Legacy launcher (Build\) and net10.0 for Pulsar Interim (Build\net10\).
+    foreach ($tf in 'net481', 'net10.0') {
+        $dll = Join-Path $csproj.DirectoryName "bin\Release\$tf\$name.dll"
+        $launcher = if ($tf -eq 'net481') { 'Legacy' } else { 'Interim' }
+        Copy-Item $dll $(if ($tf -eq 'net481') { $out } else { $out10 }) -Force
+        $results += [pscustomobject]@{ Plugin = $p.Name; Launcher = $launcher; Dll = "$name.dll"; SHA256 = (Get-FileHash $dll -Algorithm SHA256).Hash }
+    }
 }
 
-Write-Host "`nDone. The DLLs are in $out"
+Write-Host "`nDone. The DLLs are in $out (Legacy launcher) and $out10 (Pulsar Interim)."
 $results | Format-Table -AutoSize
-Write-Host 'Copy the ones you want into %AppData%\Pulsar\Legacy\Local, start the game with Pulsar and tick them in the plugin list.'
+Write-Host 'Copy the ones you want into %AppData%\Pulsar\Legacy\Local (the ones from Build\net10 if you start the game with Interim), start the game with Pulsar and tick them in the plugin list.'
