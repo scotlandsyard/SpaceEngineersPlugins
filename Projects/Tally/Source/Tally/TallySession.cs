@@ -49,7 +49,7 @@ public class TallySession : MySessionComponentBase
 
 		public bool Cargo = Settings.Cargo;
 
-		public int Modules = Settings.Modules;
+		public double YieldPercent = Settings.YieldPercent;
 	}
 
 	public override void BeforeStart()
@@ -216,7 +216,7 @@ public class TallySession : MySessionComponentBase
 			Sources.AddCargo(cargo, have);
 			from.Add($"the cargo of {cargo.DisplayName} and what's docked to it");
 		}
-		Bill bill = Materials.Compute(count, have, string.Join(" and ", from), options.Modules);
+		Bill bill = Materials.Compute(count, have, string.Join(" and ", from), options.YieldPercent);
 		bill.SourceKey = source.Key;
 		LastBill = bill;
 		Personality.Say("tallied", "blocks", bill.Blocks.ToString("N0"));

@@ -25,7 +25,8 @@ internal static class Settings
 
 	public static bool Cargo;
 
-	public static int Modules;
+	/// <summary>Refinery yield in percent typed in the window; 0 = this world's best refinery without modules.</summary>
+	public static double YieldPercent;
 
 	public static void Load()
 	{
@@ -41,8 +42,8 @@ internal static class Settings
 		StillNeeded = Get("StillNeeded") != "no";
 		Carried = Get("Carried") == "yes";
 		Cargo = Get("Cargo") == "yes";
-		int.TryParse(Get("Modules") ?? "0", NumberStyles.Integer, CultureInfo.InvariantCulture, out Modules);
-		Modules = Math.Max(0, Math.Min(Materials.MaxModules, Modules));
+		double.TryParse(Get("YieldPercent") ?? "0", NumberStyles.Float, CultureInfo.InvariantCulture, out YieldPercent);
+		YieldPercent = YieldPercent > 0 && YieldPercent <= 1000 ? YieldPercent : 0;
 	}
 
 	public static void Save()
@@ -55,7 +56,7 @@ internal static class Settings
 			["StillNeeded"] = StillNeeded ? "yes" : "no",
 			["Carried"] = Carried ? "yes" : "no",
 			["Cargo"] = Cargo ? "yes" : "no",
-			["Modules"] = Modules.ToString(CultureInfo.InvariantCulture)
+			["YieldPercent"] = YieldPercent.ToString(CultureInfo.InvariantCulture)
 		});
 	}
 

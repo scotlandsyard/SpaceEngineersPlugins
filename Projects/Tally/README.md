@@ -20,7 +20,7 @@ Open it with `/tally`, or from the plugin list at the top left of any of our plu
 
 - **Components**: each block's components from its definition.
 - **Ingots**: the assembler recipe for each component, divided by the world's assembler efficiency unless the recipe ignores it (as `MyAssembler` does).
-- **Ore**: the refinery recipe for each ingot, at the best refinery's base yield in the world, times 1.0905 per yield module (pick 0 to 4). Speed modules and refinery speed don't change amounts. Ore is always the ore of the same name (no stone or scrap recipes).
+- **Ore**: the refinery recipe for each ingot, at the refinery yield you type in percent, as the refinery's terminal shows it (modded refineries differ; vanilla is 100%, about 141% with four yield modules). Left empty, it uses the best refinery in the world without modules. Speed modules and refinery speed don't change amounts. Ore is always the ore of the same name (no stone or scrap recipes).
 - Amounts are rounded up. Items without a recipe in the world are listed as not broken down.
 
 The window shows Components, Ingots and Ore as a table you can sort by any column; ingots and ore are in kg.

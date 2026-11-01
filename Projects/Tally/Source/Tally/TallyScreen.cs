@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using Sandbox.Graphics.GUI;
@@ -51,7 +52,7 @@ public partial class TallyScreen : MyGuiScreenBase
 
 	private MyGuiControlCheckbox _cargo;
 
-	private MyGuiControlCombobox _modules;
+	private MyGuiControlTextbox _yield;
 
 	private MyGuiControlCombobox _pad;
 
@@ -154,14 +155,16 @@ public partial class TallyScreen : MyGuiScreenBase
 			box.IsCheckedChanged += _ => OptionsChanged();
 		}
 
-		RightLabel(-0.21f, "Yield modules:", page);
-		_modules = AddCombo(-0.31f, -0.21f, 0.1f, "Yield modules on the refinery that makes your ingots. Each one gives about 9% more ingots from the same ore, so less ore is needed.", page);
-		for (int i = 0; i <= Materials.MaxModules; i++)
+		RightLabel(-0.21f, "Refinery yield %:", page);
+		_yield = AddTextbox(-0.31f, -0.21f, 0.1f, "The yield of the refinery that makes your ingots, in percent, as its terminal shows it (Effectiveness), e.g. 141 for a vanilla refinery with four yield modules. Modded refineries differ. Leave it empty for this world's best refinery without modules.", page);
+		_yield.Text = Settings.YieldPercent > 0 ? Settings.YieldPercent.ToString("0.##", CultureInfo.InvariantCulture) : "";
+		_yield.TextChanged += box =>
 		{
-			_modules.AddItem(i, i.ToString());
-		}
-		_modules.SelectItemByKey(Settings.Modules);
-		_modules.ItemSelected += OptionsChanged;
+			if (TryYield(out _))
+			{
+				OptionsChanged();
+			}
+		};
 		page.Add(AddControl(new MyGuiControlLabel(new Vector2(-0.07f, -0.21f), null, "Datapad:", null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_RIGHT_AND_VERTICAL_CENTER)));
 		_pad = AddCombo(-0.06f, -0.21f, 0.48f, "Which datapad in your inventory gets the list. Auto uses an empty one, or the ones already holding this list. Tally can't make datapads.", page);
 
@@ -266,12 +269,27 @@ public partial class TallyScreen : MyGuiScreenBase
 		_pad.SelectItemByKey(selected > 0 && pads.Any(p => p.ItemId == selected) ? selected : 0);
 	}
 
+	/// <summary>The yield box: empty is 0 (this world's best refinery), else a percentage above 0 and up to 1000.</summary>
+	private bool TryYield(out double percent)
+	{
+		string text = _yield.Text.Trim().TrimEnd('%').Trim().Replace(',', '.');
+		if (text.Length == 0)
+		{
+			percent = 0;
+			return true;
+		}
+		return double.TryParse(text, NumberStyles.Float, CultureInfo.InvariantCulture, out percent) && percent > 0 && percent <= 1000;
+	}
+
 	private TallySession.Options ReadOptions()
 	{
 		Settings.StillNeeded = _stillNeeded.IsChecked;
 		Settings.Carried = _carried.IsChecked;
 		Settings.Cargo = _cargo.IsChecked;
-		Settings.Modules = (int)Math.Max(0, _modules.GetSelectedKey());
+		if (TryYield(out double yield))
+		{
+			Settings.YieldPercent = yield;
+		}
 		return new TallySession.Options();
 	}
 
@@ -295,6 +313,11 @@ public partial class TallyScreen : MyGuiScreenBase
 		if (source == null)
 		{
 			SetStatus("Pick a projector, blueprint or grid first. Refresh list looks again.");
+			return;
+		}
+		if (!TryYield(out _))
+		{
+			SetStatus("Type the refinery yield as a percentage (for example 100 or 141.4), or leave it empty for this world's best refinery.");
 			return;
 		}
 		TallySession.Options options = ReadOptions();

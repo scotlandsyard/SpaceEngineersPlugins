@@ -62,7 +62,7 @@ internal static class Text
 
 	public static string Settings(Bill bill)
 	{
-		return $"Assembler efficiency {Multiplier(bill.Assembler)}. Ore at {Percent(bill.Yield)} refinery yield with {bill.Modules} yield module(s).";
+		return $"Assembler efficiency {Multiplier(bill.Assembler)}. Ore at {Percent(bill.Yield)} refinery yield" + (bill.YieldTyped ? "." : " (this world's best refinery, no yield modules).");
 	}
 
 	public static List<string> Lines(Bill bill)

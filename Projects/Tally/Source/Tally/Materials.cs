@@ -49,9 +49,11 @@ internal class Bill
 
 	public float Assembler;
 
-	public float Yield;
+	/// <summary>Refinery yield used for the ore, 1 = 100%.</summary>
+	public double Yield;
 
-	public int Modules;
+	/// <summary>True when the yield was typed in; false when it is this world's best refinery without modules.</summary>
+	public bool YieldTyped;
 
 	public List<Line> Components = new List<Line>();
 
@@ -69,16 +71,11 @@ internal class Bill
 /// The maths, the same as Drydock's Materials tab: block components from the block definitions; components to
 /// ingots with the assembler recipe, divided by the world's assembler efficiency unless the recipe ignores it
 /// (MyAssembler.GetEfficiencyMultiplierForBlueprint); ingots to ore with the refinery recipe, times the refinery's
-/// MaterialEfficiency and its yield modules (MyRefinery). Everything comes from the definitions the game has loaded,
+/// MaterialEfficiency and its yield modules (MyRefinery), or the yield typed in the window. Everything comes from the definitions the game has loaded,
 /// mods included.
 /// </summary>
 internal static class Materials
 {
-	/// <summary>What one vanilla yield module multiplies a refinery's Effectiveness by.</summary>
-	public const double YieldModule = 1.0905077;
-
-	public const int MaxModules = 4;
-
 	private static Dictionary<string, MyBlueprintDefinitionBase> s_component;
 
 	private static Dictionary<string, MyBlueprintDefinitionBase> s_ingot;
@@ -182,7 +179,7 @@ internal static class Materials
 	/// Works out the bill from a component count. With <paramref name="have"/>, what you have is taken off at each
 	/// step: components you have aren't made, so their ingots aren't needed, and so on down to the ore.
 	/// </summary>
-	public static Bill Compute(Count count, Dictionary<MyDefinitionId, double> have, string haveFrom, int modules)
+	public static Bill Compute(Count count, Dictionary<MyDefinitionId, double> have, string haveFrom, double yieldPercent)
 	{
 		Load();
 		Bill bill = new Bill
@@ -195,8 +192,8 @@ internal static class Materials
 			Unknown = count.Unknown,
 			HaveFrom = have == null ? "" : haveFrom,
 			Assembler = MySession.Static?.AssemblerEfficiencyMultiplier ?? 1f,
-			Yield = s_refinery,
-			Modules = Math.Max(0, Math.Min(MaxModules, modules))
+			Yield = yieldPercent > 0 ? yieldPercent / 100.0 : s_refinery,
+			YieldTyped = yieldPercent > 0
 		};
 		double Has(MyDefinitionId id) => have != null && have.TryGetValue(id, out double amount) ? amount : 0.0;
 
@@ -245,7 +242,7 @@ internal static class Materials
 		}
 		bill.Ingots = raw.Select(r => new Line { Id = r.Key, Name = NameOf(r.Key), Needed = r.Value, Have = Has(r.Key) }).ToList();
 
-		double yield = Math.Max(bill.Yield, 1e-6) * Math.Pow(YieldModule, bill.Modules);
+		double yield = Math.Max(bill.Yield, 1e-6);
 		foreach (Line line in bill.Ingots)
 		{
 			if (!IsIngot(line.Id))
