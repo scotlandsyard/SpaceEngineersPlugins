@@ -254,6 +254,8 @@ public partial class SsmScreen : MyGuiScreenBase
 		_pageCombo = null;
 		_sourceCombo = null;
 		_helpText = null;
+		_tickCombo = null;
+		_removeTickedButton = null;
 
 		AddLabel(Left, Row1Y, "Grid");
 		_gridCombo = AddCombo(-0.36f, Row1Y, 0.43f, 12);
@@ -280,6 +282,12 @@ public partial class SsmScreen : MyGuiScreenBase
 		else if (s_view == View.Machine)
 		{
 			CreateMachineControls();
+			tableTop = -0.29f;
+			rows = 14;
+		}
+		else if (s_view == View.AllGrids)
+		{
+			CreateAllGridsControls();
 			tableTop = -0.29f;
 			rows = 14;
 		}
@@ -353,7 +361,9 @@ public partial class SsmScreen : MyGuiScreenBase
 			AddButton(-0.315f, "Open grid", OpenSelectedGrid);
 			AddButton(-0.105f, "GPS marker", MarkGps);
 			AddButton(0.105f, "Remove from list", ForgetGrid);
-			AddButton(0.315f, "Help", ShowHelp);
+			// Help is also in the View list.
+			_removeTickedButton = AddButton(0.315f, "Remove ticked", RemoveTicked);
+			UpdateRemoveTickedButton();
 			break;
 		case View.Overview:
 			// Remove from list lives in All grids; Help is in the View list.
@@ -1000,6 +1010,10 @@ public partial class SsmScreen : MyGuiScreenBase
 			return;
 		}
 		_rowsSignature = signature.ToString();
+		if (s_view == View.AllGrids)
+		{
+			UpdateRemoveTickedButton();
+		}
 
 		// Rebuild, keeping the selection and scroll position.
 		string selectedKey = _table.SelectedRow?.UserData as string;
@@ -1064,7 +1078,11 @@ public partial class SsmScreen : MyGuiScreenBase
 		{
 			return;
 		}
-		if (key.StartsWith("i:", StringComparison.Ordinal) && _itemCombo != null)
+		if (s_view == View.AllGrids && ClickedTickColumn())
+		{
+			ToggleTick(key);
+		}
+		else if (key.StartsWith("i:", StringComparison.Ordinal) && _itemCombo != null)
 		{
 			s_itemKey = key.Substring(2);
 			int index = _itemKeys.IndexOf(s_itemKey);

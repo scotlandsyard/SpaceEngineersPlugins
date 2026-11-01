@@ -23,6 +23,7 @@ internal static class SsmHelp
 		"- Storage means blocks acting as Storage or Stock (cargo containers unless you change their role), not counting docked ships. Machines, cockpits and tools are left out so they don't inflate the totals. The Blocks view shows every block's used and total size.",
 		"- GPS marker adds a marker where the grid was last seen (it moves the existing one if you press it again).",
 		"- Remove from list is for grids that were deleted or destroyed. It removes the grid and its settings (block settings, quotas, displays). A grid that is loaded can't be removed. If a removed grid still exists, it comes back with default settings the next time it's in range.",
+		"- To remove several at once, tick them (click a grid's first column, press Space, or pick from the Tick list: not loaded now, not seen in 7, 30 or 90 days, has no settings) and press Remove ticked. A confirm box lists them first; loaded and docked grids are skipped.",
 		"",
 		"# Automation (Overview)",
 		"Automation is off on every grid until you switch it on. While it's off, nothing is moved; the window only shows what is where and what would need doing. Double-click a setting in the Overview to switch it:",

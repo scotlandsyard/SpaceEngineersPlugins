@@ -18,14 +18,15 @@ public partial class SsmScreen
 		case View.AllGrids:
 			return new List<Column>
 			{
-				new Column { Name = "Grid", Width = 0.25f },
+				new Column { Name = "", Width = TickWidth },
+				new Column { Name = "Grid", Width = 0.23f },
 				new Column { Name = "Type", Width = 0.09f },
-				new Column { Name = "Last sync", Width = 0.13f },
+				new Column { Name = "Last sync", Width = 0.12f },
 				new Column { Name = "Distance", Width = 0.1f, RightAligned = true },
 				new Column { Name = "Used", Width = 0.12f, RightAligned = true },
 				new Column { Name = "Size", Width = 0.12f, RightAligned = true },
 				new Column { Name = "Fill", Width = 0.08f, RightAligned = true },
-				new Column { Name = "Items", Width = 0.11f, RightAligned = true }
+				new Column { Name = "Items", Width = 0.1f, RightAligned = true }
 			};
 		case View.Overview:
 			return new List<Column>
@@ -488,9 +489,9 @@ public partial class SsmScreen
 			rows.Add(new RowData
 			{
 				Key = "g:" + grid.Key,
-				Texts = new[] { grid.Name, grid.IsStation ? "Station" : "Ship", live ? "Live" : Displays.Ago(grid.LastSeenUtc), FormatDistance(distance), max > 0.0 ? Items.Litres(used) : "-", max > 0.0 ? Items.Litres(max) : "-", max > 0.0 ? $"{fill:P0}" : "", grid.Totals.Count.ToString() },
+				Texts = new[] { TickText(grid.Key), grid.Name, grid.IsStation ? "Station" : "Ship", live ? "Live" : Displays.Ago(grid.LastSeenUtc), FormatDistance(distance), max > 0.0 ? Items.Litres(used) : "-", max > 0.0 ? Items.Litres(max) : "-", max > 0.0 ? $"{fill:P0}" : "", grid.Totals.Count.ToString() },
 				// Live grids sort as the newest.
-				SortValues = new object[] { null, null, live ? double.MaxValue : (double)grid.LastSeenUtc.Ticks, distance, used, max, fill, (double)grid.Totals.Count },
+				SortValues = new object[] { null, null, null, live ? double.MaxValue : (double)grid.LastSeenUtc.Ticks, distance, used, max, fill, (double)grid.Totals.Count },
 				Color = grid.Key == s_gridKey ? GoodColor : live ? (Color?)null : MutedColor
 			});
 		}
@@ -513,7 +514,7 @@ public partial class SsmScreen
 			max += gridMax;
 		}
 		int live = grids.Count(g => Session?.FindConstruct(g.Key) != null);
-		return $"{grids.Count} grid(s), {live} loaded. Storage: {Items.Litres(used)} used of {Items.Litres(max)}, {Items.Litres(max - used)} free. Double-click a grid to open it.";
+		return $"{grids.Count} grid(s), {live} loaded. Storage: {Items.Litres(used)} used of {Items.Litres(max)}, {Items.Litres(max - used)} free. Double-click a grid to open it; tick grids to remove several.";
 	}
 
 	private void OpenSelectedGrid()

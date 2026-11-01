@@ -281,6 +281,19 @@ internal static class Store
 		return removed;
 	}
 
+	/// <summary>How many block and display settings <see cref="ForgetGrid"/> would remove with a grid.</summary>
+	public static int SettingsCount(GridSnapshot grid)
+	{
+		HashSet<long> blockIds = new HashSet<long>(grid.Blocks.Select(b => b.Id));
+		return s_settings.Blocks.Count(r => blockIds.Contains(r.BlockId)) + s_settings.Displays.Count(d => blockIds.Contains(d.BlockId));
+	}
+
+	/// <summary>Whether a grid has anything set: block or display settings, or grid quotas.</summary>
+	public static bool HasSettings(GridSnapshot grid)
+	{
+		return SettingsCount(grid) > 0 || (GridRules(grid)?.Quotas.Count ?? 0) > 0;
+	}
+
 	// ---- Saving ----
 
 	public static void SaveSettings()

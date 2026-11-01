@@ -27,7 +27,7 @@ The window closes with the X in its corner or with Esc. Tables update every half
 
 | View | What it shows | Buttons |
 |---|---|---|
-| All grids | Every grid: last sync (Live when loaded), distance, storage used, storage size, fill, kinds of item; totals under the table | Open grid, GPS marker, Remove from list, Help |
+| All grids | Every grid: last sync (Live when loaded), distance, storage used, storage size, fill, kinds of item; totals under the table | Open grid, GPS marker, Remove from list, Remove ticked (Tick list above the table) |
 | Overview | Grid settings (double-click to switch), status, storage used / size / free, item totals, warnings, recent actions | Change setting, Sort now, Unload docked ships, GPS marker |
 | Items & quotas | Every item on the grid with its quota, maximum, queued amount and autocraft / disassembly state | Set quota, Set maximum, Clear quota, Autocraft on/off; Find box |
 | Blocks | Every block with an inventory: role, fill %, used / size in litres, settings | Edit block, Turn on / off, Rescan, Help |
@@ -41,7 +41,7 @@ The window closes with the X in its corner or with Esc. Tables update every half
 
 **Storage** in All grids, the Overview and the LCD Overview page means blocks acting as Storage or Stock (cargo containers unless you change their role), not counting docked ships. Machines, cockpits and tools are left out so they don't inflate the totals.
 
-**Remove from list** is for grids that were deleted or destroyed. It removes the grid and its settings (block settings, quotas, LCD assignments; screens elsewhere that showed it go back to their own grid). A loaded grid can't be removed. A removed grid that still exists comes back, with default settings, the next time it's in range.
+**Remove from list** is for grids that were deleted or destroyed. It removes the grid and its settings (block settings, quotas, LCD assignments; screens elsewhere that showed it go back to their own grid). A loaded grid can't be removed. A removed grid that still exists comes back, with default settings, the next time it's in range. To remove several at once, tick them (click a grid's first column, press Space, or pick from the **Tick** list: not loaded now, not seen in 7, 30 or 90 days, has no settings) and press **Remove ticked**. A confirm box lists them first; loaded and docked grids are skipped.
 
 In Items & quotas and Block settings, pick an item by selecting its row or from the list under the table, type an amount (`500`, `2,500`, `2.5k`, `1.2M`) and press the button. A blank amount clears a minimum or maximum.
 
