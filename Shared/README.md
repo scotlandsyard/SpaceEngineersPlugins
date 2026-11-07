@@ -23,6 +23,7 @@ The plugins talk over a private mod message channel (`0x54494D5F53574954`, "TIM_
 |---|---|---|
 | BaR Maid | BaR Maid | Main window |
 | Digby | Digby | Main window (dig plan, library) |
+| Doorman | Doorman | Main window (doors, delays) |
 | Drill Sergeant | Drill Sergeant | Main window (rigs, setup) |
 | Fat Albert | Fat Albert | Main window |
 | OreScout | OreScout | Marker library |
@@ -134,6 +135,7 @@ Each character's name shows in its own colour, picked so none is a colour the ga
 | Drill Sergeant | Olive drab | 150, 168, 82 |
 | Radar | Spring green | 0, 255, 127 |
 | Digby | Earth brown | 165, 105, 60 |
+| Doorman | Livery red | 200, 60, 90 |
 | Shepherd (guest of Stockpile Manager) | Slate gray | 112, 128, 144 |
 | Any other | Apricot | 255, 180, 110 |
 
@@ -170,6 +172,16 @@ Saving can't lose a file:
 - XML files are read with `PluginStorage.ReadXml<T>(file, type)`, which does the read and the parse together, so a file that doesn't parse is noticed. Line-based files (key=value) read with `Read` can't fail to parse, only to open.
 
 Every plugin that keeps files uses these instead of the game's calls, from a type in its own root namespace. For the same reason, never look up a plugin by its assembly name: look for one of its types instead (`assembly.GetType("BaRMaid.BaRMaidSession", false)`).
+
+## ListSearch.cs
+
+The match behind the **Find** boxes that shorten long lists. Case-insensitive; the search splits on spaces, and every word must appear in at least one of the row's text fields. An empty search matches everything. It knows nothing about the game, so the window keeps its own box and text.
+
+How a plugin uses it:
+1. Link the file, and add a textbox labelled `ListSearch.Label` with `ListSearch.ToolTip`.
+2. Filter rows with `ListSearch.Matches(search, field, field, ...)`: every text column the row shows, plus an obvious hidden name if there is one. Leave out tick and mark columns.
+3. Keep the sort and the selected row when refilling on `TextChanged`, and invalidate any rows signature.
+4. Check every bulk action with `ListSearch.IsActive(search)`: one that acts on ticked or marked rows says in its confirm box how many are hidden, and one that acts on "all" acts on the visible rows only and says so. Ticks and marks survive filtering.
 
 ## Releasing a plugin that uses these files
 

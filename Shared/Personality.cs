@@ -357,7 +357,8 @@ internal static class Personality
 		["Tim"] = new Color(0, 206, 180),
 		["Drill Sergeant"] = new Color(150, 168, 82),
 		["Radar"] = new Color(0, 255, 127),
-		["Digby"] = new Color(165, 105, 60)
+		["Digby"] = new Color(165, 105, 60),
+		["Doorman"] = new Color(200, 60, 90)
 	};
 
 	/// <summary>
