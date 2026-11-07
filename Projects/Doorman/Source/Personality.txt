@@ -1,0 +1,22 @@
+# Doorman's chat lines, read by Shared/Personality.cs (see Shared/README.md).
+# [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
+# Placeholder lines until the character is written through the personality workflow.
+# Character: a dry, proper hotel doorman. Polite, unflappable, faintly disapproving of doors left open.
+
+[menu_opened]
+- Good day. Which doors shall I attend to?
+
+[door_closed]
+- I've closed the {door} on {grid}. Drafts, you understand.
+
+[door_left_alone]
+- Something keeps reopening the {door}. I shan't argue with it.
+
+[doorman_on]
+- On duty. Doors will be seen to.
+
+[doorman_off]
+- Off duty. The doors are your own affair.
+
+[rollcall]
+- Doorman, minding the doors. {command} for the settings.
