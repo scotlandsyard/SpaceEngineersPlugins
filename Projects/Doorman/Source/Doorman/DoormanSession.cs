@@ -39,17 +39,11 @@ public class DoormanSession : MySessionComponentBase
 				return;
 			}
 			Settings.Load();
-			_actions.Add(new MyTerminalAction<MyTerminalBlock>(ActionPrefix + "OpenWindow", new StringBuilder("Doorman: door settings"), _ => OpenWindow(), "Textures\\GUI\\Icons\\Actions\\Start.dds")
-			{
-				ValidForGroups = false
-			});
-			_actions.Add(new MyTerminalAction<MyTerminalBlock>(ActionPrefix + "Toggle", new StringBuilder("Doorman: auto-close On/Off"), _ =>
+			AddAction("OpenWindow", "Doorman: door settings", "Textures\\GUI\\Icons\\Actions\\Start.dds", OpenWindow);
+			AddAction("Toggle", "Doorman: auto-close On/Off", "Textures\\GUI\\Icons\\Actions\\Toggle.dds", () =>
 			{
 				SetEnabled(!Settings.Enabled);
 				MyAPIGateway.Utilities.ShowNotification("Doorman: " + (Settings.Enabled ? "closing doors" : "off"), 2500);
-			}, "Textures\\GUI\\Icons\\Actions\\Toggle.dds")
-			{
-				ValidForGroups = false
 			});
 			MyAPIGateway.TerminalControls.CustomActionGetter += CustomActionGetter;
 			MyAPIGateway.Utilities.MessageEntered += OnMessageEntered;
@@ -103,6 +97,18 @@ public class DoormanSession : MySessionComponentBase
 		{
 			MyLog.Default.WriteLineAndConsole($"[Doorman] Update: {ex}");
 		}
+	}
+
+	/// <summary>A toolbar action on cockpits and remote controls, made through the ModAPI so the toolbar can find it again by id.</summary>
+	private void AddAction(string id, string name, string icon, Action run)
+	{
+		IMyTerminalAction action = MyAPIGateway.TerminalControls.CreateAction<IMyShipController>(ActionPrefix + id);
+		action.Name = new StringBuilder(name);
+		action.Icon = icon;
+		action.Enabled = b => b is IMyShipController;
+		action.ValidForGroups = false;
+		action.Action = _ => run();
+		_actions.Add(action);
 	}
 
 	private void CustomActionGetter(IMyTerminalBlock block, List<IMyTerminalAction> actions)

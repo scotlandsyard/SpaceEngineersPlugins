@@ -43,6 +43,11 @@ internal static class Doors
 	/// <summary>A door left alone gets closed again once it has stayed shut this long.</summary>
 	private const double BackOffQuiet = 60.0;
 
+	/// <summary>A door left alone while it stays open is tried again after this, doubling up to <see cref="MaxRetryWait"/>.</summary>
+	private const double RetryWait = 60.0;
+
+	private const double MaxRetryWait = 600.0;
+
 	/// <summary>No new request for the same door before this.</summary>
 	private const double ResendAfter = 3.0;
 
@@ -50,8 +55,8 @@ internal static class Doors
 
 	private const int MaxClosesPerSecond = 5;
 
-	/// <summary>How far past the door block someone still counts as standing in the doorway.</summary>
-	private const double DoorwayMargin = 0.25;
+	/// <summary>How far past the door block's cells someone still counts as standing in the doorway.</summary>
+	private const double DoorwayMargin = 0.0;
 
 	internal class Door
 	{
@@ -80,6 +85,11 @@ internal static class Doors
 		public int Reopens;
 
 		public bool LeftAlone;
+
+		public double LeftAloneSince;
+
+		/// <summary>Times Doorman tried again on a door it left alone and it was reopened again; each doubles the wait.</summary>
+		public int Retries;
 
 		public string State = "";
 
@@ -141,6 +151,10 @@ internal static class Doors
 		s_grids.Clear();
 		s_nextRescan = 0;
 		ClosesSent = 0;
+		// Play time starts again in another world: a start time left from the last one would hold every close back.
+		s_secondStart = 0;
+		s_sentThisSecond = 0;
+		s_frame = 0;
 	}
 
 	public static void RescanSoon()
@@ -165,7 +179,7 @@ internal static class Doors
 		{
 			return;
 		}
-		if (now - s_secondStart >= 1.0)
+		if (now - s_secondStart >= 1.0 || now < s_secondStart)
 		{
 			s_secondStart = now;
 			s_sentThisSecond = 0;
@@ -346,10 +360,11 @@ internal static class Doors
 			door.Pending = false;
 			door.Sends = 0;
 			door.OpenSince = -1;
-			if (door.LeftAlone && now - door.ClosedSince >= BackOffQuiet)
+			if (now - door.ClosedSince >= BackOffQuiet)
 			{
 				door.LeftAlone = false;
 				door.Reopens = 0;
+				door.Retries = 0;
 			}
 			door.State = door.LeftAlone ? "Closed (left alone for now)" : "Closed";
 			return;
@@ -365,7 +380,11 @@ internal static class Doors
 				if (!door.LeftAlone && (shutFor < FastReopen || door.Reopens >= ReopensToBackOff))
 				{
 					door.LeftAlone = true;
-					Personality.Say("door_left_alone", "door", door.Name);
+					door.LeftAloneSince = now;
+					if (door.Retries == 0)
+					{
+						Personality.Say("door_left_alone", "door", door.Name);
+					}
 				}
 			}
 			else
@@ -377,6 +396,13 @@ internal static class Doors
 			door.ClosedByUs = false;
 		}
 
+		if (door.LeftAlone && now - door.LeftAloneSince >= Math.Min(MaxRetryWait, RetryWait * Math.Pow(2, door.Retries)))
+		{
+			// Left open since: maybe the timer or script has stopped. Try again; one quick reopen and it's left alone again, for longer.
+			door.LeftAlone = false;
+			door.Reopens = ReopensToBackOff - 1;
+			door.Retries++;
+		}
 		string skip = SkipReason(door);
 		if (skip != null)
 		{
@@ -466,16 +492,22 @@ internal static class Doors
 		return null;
 	}
 
-	/// <summary>A living character within this many metres of the door block's box.</summary>
+	/// <summary>
+	/// A living character whose middle is within this many metres of the door block's own cells, measured along the
+	/// door's axes (so a ship at an angle doesn't make the box bigger). 0 means inside the door's cells: the doorway.
+	/// </summary>
 	private static bool SomeoneNear(MyDoorBase block, double metres)
 	{
-		BoundingBoxD box = block.PositionComp.WorldAABB.Inflate(metres);
+		BoundingBoxD box = block.PositionComp.WorldAABB.Inflate(metres + 1.0);
+		Vector3D half = new Vector3D(block.BlockDefinition.Size) * block.CubeGrid.GridSize * 0.5 + new Vector3D(metres);
+		BoundingBoxD cells = new BoundingBoxD(-half, half);
+		MatrixD toDoor = block.PositionComp.WorldMatrixNormalizedInv;
 		s_inBox.Clear();
 		s_inBox.AddRange(MyAPIGateway.Entities.GetTopMostEntitiesInBox(ref box));
 		bool found = false;
 		foreach (IMyEntity entity in s_inBox)
 		{
-			if (entity is IMyCharacter character && !character.IsDead)
+			if (entity is IMyCharacter character && !character.IsDead && cells.Contains(Vector3D.Transform(character.WorldAABB.Center, toDoor)) != ContainmentType.Disjoint)
 			{
 				found = true;
 				break;
@@ -496,6 +528,7 @@ internal static class Doors
 				{
 					door.LeftAlone = false;
 					door.Reopens = 0;
+					door.Retries = 0;
 					door.Sends = 0;
 				}
 			}
