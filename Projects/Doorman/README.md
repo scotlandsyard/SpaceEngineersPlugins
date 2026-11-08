@@ -5,7 +5,7 @@ A client-side Pulsar plugin for Space Engineers that closes doors left open. Onc
 - **Which doors**: doors on grids you own (or your faction owns, if you tick *Faction grids too*), and only doors you have access to. Doors, sliding doors, advanced doors and modded doors are in; hangar doors are off unless you switch them on, for all grids or per grid.
 - **Delays**: a default, a grid's own, or a door's own (1-600 s).
 - **Per door**: *Default* (follows its grid), *Never*, or *Always* (closed even if it's a hangar or airlock door).
-- **Airlocks**: doors with "airlock" in their name or in a group's name are left alone (can be switched off). A door that something reopens right after Doorman closed it (a timer, a script) is left alone until it has stayed shut for a minute.
+- **Airlocks**: doors with "airlock" in their name or in a group's name are left alone (can be switched off). A door that something reopens right after Doorman closed it while nobody is within 5 m (a timer, a script) is left alone until it has stayed shut for a minute. Players walking in and out never count.
 - **Doorways**: if anyone is standing in the doorway, Doorman waits.
 - Doors that are off, unpowered, not working or part of a projection are left alone.
 

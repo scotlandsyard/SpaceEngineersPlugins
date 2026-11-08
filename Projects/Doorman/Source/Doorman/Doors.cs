@@ -37,6 +37,9 @@ internal static class Doors
 	/// <summary>Reopened this many times in a row: left alone.</summary>
 	private const int ReopensToBackOff = 2;
 
+	/// <summary>Someone this close to the door when it reopens opened it by hand: that never counts as something fighting Doorman.</summary>
+	private const double PersonRange = 5.0;
+
 	/// <summary>A door left alone gets closed again once it has stayed shut this long.</summary>
 	private const double BackOffQuiet = 60.0;
 
@@ -46,6 +49,9 @@ internal static class Doors
 	private const int MaxSends = 3;
 
 	private const int MaxClosesPerSecond = 5;
+
+	/// <summary>How far past the door block someone still counts as standing in the doorway.</summary>
+	private const double DoorwayMargin = 0.25;
 
 	internal class Door
 	{
@@ -351,9 +357,9 @@ internal static class Doors
 
 		if (door.ClosedSince >= 0)
 		{
-			// It just opened. Right after Doorman closed it means something else wants it open.
+			// It just opened. Right after Doorman closed it, with nobody near the door, means a timer or script wants it open.
 			double shutFor = now - door.ClosedSince;
-			if (door.ClosedByUs && shutFor < ReopenWindow)
+			if (door.ClosedByUs && shutFor < ReopenWindow && !SomeoneNear(block, PersonRange))
 			{
 				door.Reopens++;
 				if (!door.LeftAlone && (shutFor < FastReopen || door.Reopens >= ReopensToBackOff))
@@ -362,8 +368,9 @@ internal static class Doors
 					Personality.Say("door_left_alone", "door", door.Name);
 				}
 			}
-			else if (shutFor >= ReopenWindow)
+			else
 			{
+				// Opened by someone standing there, or long after: start counting again.
 				door.Reopens = 0;
 			}
 			door.ClosedSince = -1;
@@ -402,7 +409,7 @@ internal static class Doors
 			door.State = "Server didn't close it";
 			return;
 		}
-		if (SomeoneInDoorway(block))
+		if (SomeoneNear(block, DoorwayMargin))
 		{
 			door.State = "Waiting: someone in the doorway";
 			return;
@@ -459,10 +466,10 @@ internal static class Doors
 		return null;
 	}
 
-	/// <summary>A living character inside the door block's box (a little bigger, so the doorway counts).</summary>
-	private static bool SomeoneInDoorway(MyDoorBase block)
+	/// <summary>A living character within this many metres of the door block's box.</summary>
+	private static bool SomeoneNear(MyDoorBase block, double metres)
 	{
-		BoundingBoxD box = block.PositionComp.WorldAABB.Inflate(0.25);
+		BoundingBoxD box = block.PositionComp.WorldAABB.Inflate(metres);
 		s_inBox.Clear();
 		s_inBox.AddRange(MyAPIGateway.Entities.GetTopMostEntitiesInBox(ref box));
 		bool found = false;

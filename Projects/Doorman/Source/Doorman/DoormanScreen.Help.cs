@@ -25,7 +25,7 @@ public partial class DoormanScreen
 		"ONLY WHILE YOU'RE HERE\n" +
 		"Doorman runs on your PC, so it only closes doors on grids loaded in your game. While you're offline or too far away for the grid to be loaded, open doors stay open. A programmable block script keeps working when you're away; Doorman needs no programmable block and costs the server no script time.\n\n" +
 		"AIRLOCKS, TIMERS AND SCRIPTS\n" +
-		"With Leave airlocks alone ticked, a door with \"airlock\" in its name, or in a group with \"airlock\" in its name, is never closed. If something opens a door again right after Doorman closed it (straight away, or twice within 10 seconds), Doorman leaves that door alone and the list says so. Once the door has stayed shut for a minute, Doorman looks after it again. Picking a setting for the door in the window also clears it.\n\n" +
+		"With Leave airlocks alone ticked, a door with \"airlock\" in its name, or in a group with \"airlock\" in its name, is never closed. If something opens a door again right after Doorman closed it (straight away, or twice within 10 seconds) while nobody is within 5 m of it, Doorman takes it for a timer or script and leaves that door alone and the list says so. Once the door has stayed shut for a minute, Doorman looks after it again. Players walking in and out never count: a door opened by someone standing near it is always closed as usual. Picking a setting for the door in the window also clears it.\n\n" +
 		"NOT ON YOUR HEAD\n" +
 		"If anyone is standing in the doorway, Doorman waits until they've gone.\n\n" +
 		"THE WINDOW\n" +
