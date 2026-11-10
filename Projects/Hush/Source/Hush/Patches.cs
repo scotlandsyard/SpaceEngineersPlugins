@@ -3,6 +3,7 @@ using System.Linq;
 using System.Reflection;
 using HarmonyLib;
 using Sandbox.Game.Entities;
+using VRage.Audio;
 using VRage.Game.Entity;
 using VRage.Utils;
 
@@ -43,7 +44,7 @@ internal static class Patches
 				.FirstOrDefault(m => m.Name == nameof(MyEntity3DSoundEmitter.PlaySound) && m.GetParameters().FirstOrDefault()?.ParameterType == typeof(byte[]));
 			if (buffered != null)
 			{
-				s_harmony.Patch(buffered, prefix: new HarmonyMethod(typeof(Patches), nameof(PlayPrefix)));
+				s_harmony.Patch(buffered, prefix: new HarmonyMethod(typeof(Patches), nameof(BufferedPrefix)));
 			}
 		}
 		catch (Exception ex)
@@ -64,12 +65,23 @@ internal static class Patches
 		Mutes.AddEmitter(__instance);
 	}
 
-	/// <summary>False (skip the game's method) when the emitter belongs to a muted block.</summary>
+	/// <summary>False (skip the game's method) when the emitter belongs to a muted block. SoundId is the cue about to play.</summary>
 	private static bool PlayPrefix(MyEntity3DSoundEmitter __instance)
+	{
+		return Check(__instance, __instance.SoundId);
+	}
+
+	/// <summary>The same for buffered (recorded) audio, which has no cue.</summary>
+	private static bool BufferedPrefix(MyEntity3DSoundEmitter __instance)
+	{
+		return Check(__instance, null);
+	}
+
+	private static bool Check(MyEntity3DSoundEmitter emitter, MyCueId? cue)
 	{
 		try
 		{
-			return !Mutes.OnPlay(__instance);
+			return !Mutes.OnPlay(emitter, cue);
 		}
 		catch (Exception ex)
 		{

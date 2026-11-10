@@ -8,6 +8,7 @@ using Sandbox.Definitions;
 using Sandbox.Game.Entities;
 using Sandbox.ModAPI;
 using TimShared;
+using VRage.Audio;
 using VRage.Game.Entity;
 using VRage.ObjectBuilders;
 using VRage.Utils;
@@ -36,14 +37,22 @@ internal static class Mutes
 
 	private static readonly HashSet<MyObjectBuilderType> s_types = new HashSet<MyObjectBuilderType>();
 
-	/// <summary>Blocks that have tried to play a sound this session (by EntityId), so blocks with sounds no definition names show up too.</summary>
-	private static readonly HashSet<long> s_heard = new HashSet<long>();
+	/// <summary>
+	/// Blocks that have tried to play a working sound this session (EntityId to the cue's name), so blocks with sounds no
+	/// definition names show up too. Damage and destroy sounds don't count: every block has those.
+	/// </summary>
+	private static readonly Dictionary<long, string> s_heard = new Dictionary<long, string>();
 
-	private static readonly Dictionary<MyCubeBlockDefinition, bool> s_definitionHasSound = new Dictionary<MyCubeBlockDefinition, bool>();
+	private static readonly Dictionary<MyCubeBlockDefinition, DefinitionSounds> s_definitionSounds = new Dictionary<MyCubeBlockDefinition, DefinitionSounds>();
 
 	private static string s_worldFile;
 
 	private static bool s_settingsLoaded;
+
+	/// <summary>Hush's chat level and chat name, saved in Hush_Settings.txt with the type mutes.</summary>
+	public static Personality.Chattiness Chattiness = Personality.Chattiness.Normal;
+
+	public static string DisplayName = "";
 
 	public static List<MyObjectBuilderType> MutedTypes()
 	{
@@ -66,17 +75,24 @@ internal static class Mutes
 		}
 	}
 
-	/// <summary>Called on every play attempt: remembers that the block makes sound and says whether it's muted.</summary>
-	public static bool OnPlay(MyEntity3DSoundEmitter emitter)
+	/// <summary>
+	/// Called on every play attempt: remembers that the block makes a working sound (not for its definition's damage or
+	/// destroy sounds) and says whether it's muted. <paramref name="cue"/> is null for buffered (recorded) audio.
+	/// </summary>
+	public static bool OnPlay(MyEntity3DSoundEmitter emitter, MyCueId? cue)
 	{
 		MyCubeBlock block = BlockOf(emitter.Entity);
 		if (block == null)
 		{
 			return false;
 		}
+		bool working = cue == null || (!cue.Value.IsNull && !(SoundsOf(block.BlockDefinition)?.Damage.Contains(cue.Value) ?? false));
 		lock (s_lock)
 		{
-			s_heard.Add(block.EntityId);
+			if (working && !s_heard.ContainsKey(block.EntityId))
+			{
+				s_heard[block.EntityId] = cue == null ? "recorded" : cue.Value.Hash.String;
+			}
 			return IsMutedLocked(block);
 		}
 	}
@@ -227,57 +243,99 @@ internal static class Mutes
 
 	private static bool MakesSound(MyCubeBlock block)
 	{
-		lock (s_lock)
-		{
-			if (s_heard.Contains(block.EntityId) || IsMutedLocked(block))
-			{
-				return true;
-			}
-		}
-		return DefinitionMakesSound(block.BlockDefinition);
-	}
-
-	/// <summary>True if blocks of this definition make sound (see DefinitionHasSound); cached.</summary>
-	public static bool DefinitionMakesSound(MyCubeBlockDefinition definition)
-	{
-		if (definition == null)
-		{
-			return false;
-		}
-		if (!s_definitionHasSound.TryGetValue(definition, out bool hasSound))
-		{
-			hasSound = DefinitionHasSound(definition);
-			s_definitionHasSound[definition] = hasSound;
-		}
-		return hasSound;
+		return Why(block) != null;
 	}
 
 	/// <summary>
-	/// True if the definition names a working sound: any MySoundPair field or property (PrimarySound, ActionSound, a door's
-	/// open/close sounds, modded definitions' own), except the damage and destruction sounds every block has. Sound
-	/// blocks and jukeboxes count too, since the player picks their sound.
+	/// Why a block is listed, or null if it isn't: "Sound: cue" (its type has a working sound), "Played: cue" (it played a
+	/// working sound since the world loaded; "Played: recorded" for buffered audio), or "Muted" (muted, nothing else known).
 	/// </summary>
-	private static bool DefinitionHasSound(MyCubeBlockDefinition definition)
+	public static string Why(MyCubeBlock block)
 	{
+		DefinitionSounds sounds = SoundsOf(block.BlockDefinition);
+		if (sounds?.Working != null)
+		{
+			return "Sound: " + sounds.Working;
+		}
+		lock (s_lock)
+		{
+			if (s_heard.TryGetValue(block.EntityId, out string cue))
+			{
+				return "Played: " + cue;
+			}
+			if (IsMutedLocked(block))
+			{
+				return "Muted";
+			}
+		}
+		return null;
+	}
+
+	/// <summary>True if blocks of this definition have a working sound (see ReadSounds); cached.</summary>
+	public static bool DefinitionMakesSound(MyCubeBlockDefinition definition)
+	{
+		return SoundsOf(definition)?.Working != null;
+	}
+
+	/// <summary>The definition's first working sound, as the Types view shows it, or "".</summary>
+	public static string WorkingSoundName(MyCubeBlockDefinition definition)
+	{
+		return SoundsOf(definition)?.Working ?? "";
+	}
+
+	/// <summary>What a definition's sounds are: the first working one by name, and the damage/destroy cues to ignore.</summary>
+	private class DefinitionSounds
+	{
+		public string Working;
+
+		public readonly List<MyCueId> Damage = new List<MyCueId>();
+	}
+
+	private static DefinitionSounds SoundsOf(MyCubeBlockDefinition definition)
+	{
+		if (definition == null)
+		{
+			return null;
+		}
+		lock (s_lock)
+		{
+			if (!s_definitionSounds.TryGetValue(definition, out DefinitionSounds sounds))
+			{
+				sounds = ReadSounds(definition);
+				s_definitionSounds[definition] = sounds;
+			}
+			return sounds;
+		}
+	}
+
+	/// <summary>
+	/// Reads every MySoundPair field and property of the definition. Working sounds are all of them (PrimarySound,
+	/// ActionSound, a door's open/close sounds, modded definitions' own) except the damage and destruction sounds every
+	/// block has; those are kept separately so OnPlay can ignore them. Sound blocks and jukeboxes count as working,
+	/// since the player picks their sound.
+	/// </summary>
+	private static DefinitionSounds ReadSounds(MyCubeBlockDefinition definition)
+	{
+		DefinitionSounds sounds = new DefinitionSounds();
 		if (definition is MySoundBlockDefinition)
 		{
-			return true;
+			sounds.Working = "sound block";
 		}
 		const BindingFlags Flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
 		try
 		{
 			foreach (FieldInfo field in definition.GetType().GetFields(Flags))
 			{
-				if (field.FieldType == typeof(MySoundPair) && !IsDamageSound(field.Name) && IsSound(field.GetValue(definition) as MySoundPair))
+				if (field.FieldType == typeof(MySoundPair))
 				{
-					return true;
+					AddSound(sounds, field.Name, field.GetValue(definition) as MySoundPair);
 				}
 			}
 			foreach (PropertyInfo property in definition.GetType().GetProperties(Flags))
 			{
-				if (property.PropertyType == typeof(MySoundPair) && property.GetIndexParameters().Length == 0 && property.CanRead && !IsDamageSound(property.Name) && IsSound(property.GetValue(definition) as MySoundPair))
+				if (property.PropertyType == typeof(MySoundPair) && property.GetIndexParameters().Length == 0 && property.CanRead)
 				{
-					return true;
+					AddSound(sounds, property.Name, property.GetValue(definition) as MySoundPair);
 				}
 			}
 		}
@@ -285,17 +343,29 @@ internal static class Mutes
 		{
 			MyLog.Default.WriteLineAndConsole($"[Hush] Could not read the sounds of {definition.Id}: {ex.Message}");
 		}
-		return false;
+		return sounds;
+	}
+
+	private static void AddSound(DefinitionSounds sounds, string memberName, MySoundPair pair)
+	{
+		if (pair == null || (pair.Arcade.IsNull && pair.Realistic.IsNull))
+		{
+			return;
+		}
+		if (IsDamageSound(memberName))
+		{
+			sounds.Damage.Add(pair.Arcade);
+			sounds.Damage.Add(pair.Realistic);
+		}
+		else if (sounds.Working == null)
+		{
+			sounds.Working = pair.GetCueName();
+		}
 	}
 
 	private static bool IsDamageSound(string name)
 	{
 		return name.IndexOf("Damage", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("Destr", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("Explosion", StringComparison.OrdinalIgnoreCase) >= 0;
-	}
-
-	private static bool IsSound(MySoundPair pair)
-	{
-		return pair != null && (!pair.Arcade.IsNull || !pair.Realistic.IsNull);
 	}
 
 	/// <summary>"MyObjectBuilder_OxygenGenerator" becomes "Oxygen Generator".</summary>
@@ -445,9 +515,23 @@ internal static class Mutes
 				while ((line = reader.ReadLine()) != null)
 				{
 					int equals = line.IndexOf('=');
-					if (equals > 0 && line.Substring(0, equals).Trim() == "Type" && MyObjectBuilderType.TryParse(line.Substring(equals + 1).Trim(), out MyObjectBuilderType type))
+					if (equals <= 0)
+					{
+						continue;
+					}
+					string key = line.Substring(0, equals).Trim();
+					string value = line.Substring(equals + 1).Trim();
+					if (key == "Type" && MyObjectBuilderType.TryParse(value, out MyObjectBuilderType type))
 					{
 						s_types.Add(type);
+					}
+					else if (key == "Personality" && Enum.TryParse(value, true, out Personality.Chattiness level) && Enum.IsDefined(typeof(Personality.Chattiness), level))
+					{
+						Chattiness = level;
+					}
+					else if (key == "DisplayName")
+					{
+						DisplayName = value;
 					}
 				}
 			}
@@ -458,7 +542,8 @@ internal static class Mutes
 		}
 	}
 
-	private static void SaveSettings()
+	/// <summary>Saves the type mutes and the chat settings (Hush_Settings.txt, every world).</summary>
+	public static void SaveSettings()
 	{
 		try
 		{
@@ -468,7 +553,9 @@ internal static class Mutes
 				types = s_types.ToList();
 			}
 			using TextWriter writer = PluginStorage.Write(SettingsFile, typeof(Mutes));
-			writer.WriteLine("# Hush: block types muted in every world.");
+			writer.WriteLine("# Hush: block types muted in every world, and the chat settings.");
+			writer.WriteLine($"Personality={Chattiness}");
+			writer.WriteLine($"DisplayName={DisplayName}");
 			foreach (MyObjectBuilderType type in types)
 			{
 				writer.WriteLine($"Type={type}");

@@ -10,18 +10,23 @@ Type `/hush` in chat (or pick Hush in the plugin list at the top left of another
 
 **Blocks on a grid**
 - Pick one of your grids in the Grid list (nearest first). Only grids you own a block on, or that have a block shared with you, are listed, and only the blocks you could open in the terminal. You never see what's inside other players' grids.
-- A block is listed if its type has a working sound (thrusters, drills, refineries, doors, sound blocks...) or if it has played a sound since the world loaded.
+- A block is listed if its type has a working sound (thrusters, drills, refineries, doors, sound blocks...) or if it has played a working sound since the world loaded (damage sounds don't count: every block has those). The **Why listed** column says which: **Sound** and the sound's name, **Played** and the sound's name, or **Muted**.
 - Select a row and press **Mute / Unmute**, or double-click it. **Mute Type on Grid** / **Unmute Type on Grid** do every listed block of the selected block's type on that grid. **Unmute Grid** clears the grid.
 
+**Find** shortens either list as you type. While it's in use, **Mute Type on Grid**, **Unmute Type on Grid** and **Unmute Grid** only change the blocks it shows.
+
 **Types everywhere**
-- Every block type with a sound in the game and your mods. A muted type is silent on every grid, other players' included, in every world.
+- Every block type with a sound in the game and your mods. A muted type is silent on every grid, other players' included, in every world. The **Sound** column names the sound that type plays.
+
+**Chat**
+- Hush has a voice in our plugins' shared chat: a soft-spoken librarian, the quietest of them. The **Chat** dropdown at the top right of the window (or `/hush chat off|quiet|normal|chatty`) sets how much it talks; `/hush name <name>` renames it in chat, `/hush name` on its own puts it back. Only you see the lines.
 
 ## How it's saved
 
 | File (in `%AppData%\SpaceEngineers\Storage\Hush`) | What |
 |---|---|
 | `Hush_Mutes_<world>.txt` | Block mutes for that world: grid ID and the block's place on the grid |
-| `Hush_Settings.txt` | Type mutes, for every world |
+| `Hush_Settings.txt` | Type mutes and chat settings, for every world |
 
 A block mute survives a reload, but not the block being rebuilt or the grid being pasted again. In single player, mutes on grids that no longer exist are forgotten when you open the window.
 

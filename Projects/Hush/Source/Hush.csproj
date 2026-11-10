@@ -49,7 +49,17 @@
   <!-- Shared with our other plugins: one copy in the repo's Shared folder, compiled into each plugin. -->
   <ItemGroup>
     <Compile Include="../../../Shared/PluginSwitcher.cs" Link="Shared/PluginSwitcher.cs" />
+    <Compile Include="../../../Shared/ListSearch.cs" Link="Shared/ListSearch.cs" />
     <Compile Include="../../../Shared/PluginStorage.cs" Link="Shared/PluginStorage.cs" />
+    <Compile Include="../../../Shared/Personality.cs" Link="Shared/Personality.cs" />
   </ItemGroup>
+
+  <!-- Hush's chat lines, read by Shared/Personality.cs. -->
+  <ItemGroup>
+    <EmbeddedText Include="Personality.txt" />
+  </ItemGroup>
+
+  <!-- Turns the line files into C# constants, so PluginHub's source-only build still has them. -->
+  <Import Project="../../../Shared/EmbedText.targets" />
 
 </Project>

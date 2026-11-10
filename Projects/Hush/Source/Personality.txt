@@ -1,0 +1,18 @@
+# Hush's chat lines, read by Shared/Personality.cs (see Shared/README.md).
+# [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
+# PLACEHOLDERS: a soft-spoken, whispering librarian. Real lines come from the Chat Lines Studio (card hush).
+
+[menu_opened]
+- Shh. The reading room is open.
+
+[block_muted]
+- Shh. {block} will keep quiet now.
+
+[type_muted]
+- Every {type}, everywhere, hushed.
+
+[grid_unmuted]
+- {grid} may speak again. Softly, please.
+
+[rollcall]
+- Hush, here. Quietly. {command} if anything is too loud.

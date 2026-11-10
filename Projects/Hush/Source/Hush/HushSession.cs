@@ -14,6 +14,8 @@ namespace Hush;
 [MySessionComponentDescriptor(MyUpdateOrder.NoUpdate)]
 public class HushSession : MySessionComponentBase
 {
+	public const string ChatSender = "Hush";
+
 	private static readonly string[] ChatCommands = { "/hush" };
 
 	private bool _started;
@@ -44,6 +46,10 @@ public class HushSession : MySessionComponentBase
 			}
 			MyAPIGateway.Utilities.MessageEntered += OnMessageEntered;
 			PluginSwitcher.Register(Plugin.Name, OpenMenu);
+			Personality.Level = Mutes.Chattiness;
+			Personality.DisplayName = Mutes.DisplayName;
+			Personality.Changed += Chatter.Save;
+			Personality.Register(ChatSender);
 			_started = true;
 		}
 		catch (Exception ex)
@@ -60,6 +66,8 @@ public class HushSession : MySessionComponentBase
 			{
 				MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
 				PluginSwitcher.Unregister();
+				Personality.Unregister();
+				Personality.Changed -= Chatter.Save;
 			}
 			catch (Exception ex)
 			{
@@ -78,7 +86,38 @@ public class HushSession : MySessionComponentBase
 			return;
 		}
 		sendToOthers = false;
-		OpenMenu();
+		string word = words.Length > 1 ? words[1].ToLowerInvariant() : "";
+		switch (word)
+		{
+		case "":
+			OpenMenu();
+			break;
+		case "chat":
+			SetChatLevel(words.Length > 2 ? words[2] : null);
+			break;
+		case "name":
+		{
+			// Everything after "/hush name", spaces kept; nothing puts Hush's own name back.
+			int start = messageText.IndexOf(words[1], StringComparison.OrdinalIgnoreCase) + words[1].Length;
+			Chatter.SetDisplayName(messageText.Substring(start).Trim());
+			break;
+		}
+		default:
+			MyAPIGateway.Utilities.ShowMessage(Plugin.Name, "Commands: /hush (window), /hush chat off|quiet|normal|chatty, /hush name <name>.");
+			break;
+		}
+	}
+
+	/// <summary>/hush chat [off|quiet|normal|chatty]: sets how much Hush talks, or says what it's set to.</summary>
+	private static void SetChatLevel(string word)
+	{
+		if (string.IsNullOrEmpty(word) || !Enum.TryParse(word, true, out Personality.Chattiness level) || !Enum.IsDefined(typeof(Personality.Chattiness), level))
+		{
+			MyAPIGateway.Utilities.ShowMessage(Plugin.Name, $"Chat personality is {Personality.Level}. Change it with /hush chat off, quiet, normal or chatty.");
+			return;
+		}
+		Chatter.SetLevel(level);
+		MyAPIGateway.Utilities.ShowMessage(Plugin.Name, $"Chat personality: {level}. {Chatter.LevelHint(level)}");
 	}
 
 	private static void OpenMenu()
@@ -90,6 +129,7 @@ public class HushSession : MySessionComponentBase
 		try
 		{
 			MyGuiSandbox.AddScreen(new HushScreen());
+			Personality.Say("menu_opened");
 		}
 		catch (Exception ex)
 		{
