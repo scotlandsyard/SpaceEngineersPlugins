@@ -127,7 +127,7 @@ public partial class SargeScreen
 			_alertBox.AddItem(i, AlertNames[i], sort: false);
 		}
 		y += 0.05f;
-		AddCheck(ref y, "cargo", "Pause when the cargo is full", "Stops rotor, pistons and drills at the % above and carries on at the lower one.");
+		AddCheck(ref y, "cargo", "Pause when the cargo is full", "Holds the rig still (drills and pistons off, rotor held) at the % above and carries on at the lower one.");
 		AddCheck(ref y, "retract", "Pull the arm in before going down", "Every layer starts from the inside. Off: the arm works its way back in on the next layer, which saves the empty trip.");
 		AddCheck(ref y, "tensor", "Share inertia tensor on start", "Ticks Share inertia tensor on the rotor and pistons when the rig starts, which keeps big rigs steadier. Only where the world allows it and the game has Experimental mode on, like the terminal box.");
 		AddCheck(ref y, "refresh", "Rotor tensor refresh (script's option)", "While sweeping, the rotor's tensor sharing is off and comes on for 2 s once a minute: the script's fix for rotors that stall when sharing. 2 requests a minute. Off by default.");

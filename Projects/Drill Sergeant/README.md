@@ -25,7 +25,7 @@ Type `/sarge` in chat. The window lists every rig in the world:
 
 Below the table, the selected rig's details: the step it's on, or what's wrong. For a script rig, the script's status and the PB's detailed info.
 
-**Start** starts or continues a rig. **Pause** stops the rotor, pistons and drills where they are. **Stop** (plugin mode) ends the job: drills and rotor off, pistons back to the start, progress back to step 0; it asks first. In script mode that button is **Set** instead. **Remove** forgets a rig without touching its blocks.
+**Start** starts or continues a rig. **Pause** stops the drills and pistons and holds the rotor where it is: it stays on at 0 rpm with its Lock box ticked, so the arm can't coast. Start unticks Lock and carries on at the same step. **Stop** (plugin mode) ends the job: drills off, rotor held, pistons back to the start, progress back to step 0; it asks first. In script mode that button is **Set** instead. **Remove** forgets a rig without touching its blocks.
 
 ## Setting up a rig
 
@@ -95,7 +95,7 @@ Only requests a player can make by hand, each sent once when it's needed and nev
 |---|---|
 | A sweep | Rotor velocity, and turning the rotor on if it's off (limits only when they differ) |
 | A piston move | Each piston's limits and velocity, and turning it on if it's off |
-| Pause / Stop / cargo pause | Rotor, pistons and drills on or off |
+| Pause / Stop / cargo pause | Drills and pistons off; rotor velocity 0 and its Lock box (unticked again before the next sweep) |
 | LCD | One text update at most every 10 s, only when the text changed; only on your own LCDs |
 | Timers | The terminal's Start, once per event |
 | Share inertia tensor | The checkbox, once at start; with the refresh option, 2 per minute while sweeping |

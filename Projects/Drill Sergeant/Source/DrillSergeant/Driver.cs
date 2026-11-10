@@ -80,7 +80,7 @@ internal static class Driver
 		return $"{rig.Name}: paused where it is.";
 	}
 
-	/// <summary>Ends the job: drills and rotor off, pistons back to the start, progress back to step 0.</summary>
+	/// <summary>Ends the job: drills off, rotor held, pistons back to the start, progress back to step 0.</summary>
 	public static string Stop(Rig rig)
 	{
 		RigParts parts = RigParts.Resolve(rig);
@@ -93,10 +93,7 @@ internal static class Driver
 		rig.Command = RigCommand.Idle;
 		RigStore.Changed();
 		SetDrills(parts, false);
-		if (parts.Rotor.Enabled)
-		{
-			parts.Rotor.Enabled = false;
-		}
+		HoldRotor(parts.Rotor);
 		Pattern pattern = PatternFor(rig, parts);
 		MovePistons(rig, parts, pattern, 0, true, true);
 		return $"{rig.Name}: stopped. The pistons go back to the start; progress starts over.";
@@ -400,8 +397,31 @@ internal static class Driver
 		}
 	}
 
+	/// <summary>
+	/// Holds the arm still. A rotor that's off turns freely, so the arm would coast on (5 degrees in 4 s in a test).
+	/// Instead the rotor stays on at 0 rpm, so its motor brakes the arm, and its Lock box is ticked: the game engages
+	/// the lock once the rotor turns slower than about 5 degrees a second, and then it holds the angle exactly.
+	/// </summary>
+	private static void HoldRotor(IMyMotorStator rotor)
+	{
+		Set(rotor.TargetVelocityRPM, 0f, v => rotor.TargetVelocityRPM = v);
+		if (!rotor.Enabled)
+		{
+			rotor.Enabled = true;
+		}
+		if (!rotor.RotorLock)
+		{
+			rotor.RotorLock = true;
+		}
+	}
+
 	private static void SetRotorVelocity(IMyMotorStator rotor, float rpm)
 	{
+		// Unlock first: a locked rotor ignores its velocity.
+		if (rotor.RotorLock)
+		{
+			rotor.RotorLock = false;
+		}
 		Set(rotor.TargetVelocityRPM, rpm, v => rotor.TargetVelocityRPM = v);
 		if (!rotor.Enabled)
 		{
@@ -454,16 +474,17 @@ internal static class Driver
 		}
 	}
 
-	/// <summary>Pause: rotor, pistons and drills off, exactly where they are.</summary>
+	/// <summary>Pause: pistons and drills off, rotor held exactly where it is.</summary>
 	private static void HoldStill(Rig rig, RigParts parts)
 	{
-		foreach (IMyTerminalBlock block in parts.Moving)
+		foreach (IMyPistonBase piston in parts.Horizontal.Concat(parts.Vertical))
 		{
-			if (block is IMyFunctionalBlock functional && functional.Enabled)
+			if (piston.Enabled)
 			{
-				functional.Enabled = false;
+				piston.Enabled = false;
 			}
 		}
+		HoldRotor(parts.Rotor);
 		SetDrills(parts, false);
 		if (rig.TensorRefresh)
 		{

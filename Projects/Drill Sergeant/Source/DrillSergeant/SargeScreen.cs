@@ -112,7 +112,7 @@ public partial class SargeScreen : MyGuiScreenBase
 		Controls.Add(_status);
 
 		AddButton(-0.315f, ButtonRow1, "Start", () => OnRig(Commands.Start), _mainControls, "Starts or continues the selected rig. Plugin mode: from where it stopped. Script mode: sends \"start\" to the script.");
-		AddButton(-0.105f, ButtonRow1, "Pause", () => OnRig(Commands.Pause), _mainControls, "Stops the rotor, pistons and drills where they are; Start carries on from there. Script mode: sends \"pause\".");
+		AddButton(-0.105f, ButtonRow1, "Pause", () => OnRig(Commands.Pause), _mainControls, "Stops the drills and pistons and holds the rotor where it is (on at 0 rpm, Lock ticked); Start carries on from there. Script mode: sends \"pause\".");
 		_stopButton = AddButton(0.105f, ButtonRow1, "Stop", StopOrSet, _mainControls, "");
 		AddButton(0.315f, ButtonRow1, "Setup", () => OpenSetup(Selected()), _mainControls, "Blocks and settings of the selected rig (double-click a row does the same).");
 		AddButton(-0.315f, ButtonRow2, "New Rig", () => OpenSetup(null), _mainControls, "Set up a rig: pick its rotor and Sarge finds the pistons and drills on it.");
@@ -260,7 +260,7 @@ public partial class SargeScreen : MyGuiScreenBase
 		}
 		_detail.AppendText($"{rig.Name}: {rig.Live.State}\n{rig.Live.Detail}");
 		_stopButton.Text = rig.Mode == RigMode.Script ? "Set" : "Stop";
-		_stopButton.SetToolTip(rig.Mode == RigMode.Script ? "Sends \"set\" to the script: it reads its blocks and settings again and lines the rig up at step 0." : "Ends the job: drills and rotor off, pistons back to the start, progress back to step 0. Asks first.");
+		_stopButton.SetToolTip(rig.Mode == RigMode.Script ? "Sends \"set\" to the script: it reads its blocks and settings again and lines the rig up at step 0." : "Ends the job: drills off, rotor held, pistons back to the start, progress back to step 0. Asks first.");
 	}
 
 	// ---------------------------------------------------------------- buttons
