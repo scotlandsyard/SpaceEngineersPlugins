@@ -85,6 +85,8 @@ internal static class Program
 		Check(config.ReactorFillPct == 15.0 && config.GasGenFillPct == 50.0 && config.RefineryFillPct == 30.0, "settings-defaults.ini: fill % 15 / 50 / 30");
 		Check(config.BottleSweepMinutes == 3.0, "settings-defaults.ini: bottleSweepMinutes 3");
 		Check(!config.DockedFuel && !config.DockedProduction, "settings-defaults.ini: dockedFuel and dockedProduction false");
+		Check(!config.AutoUnloadShip, "settings-defaults.ini: autoUnloadShip false");
+		Check(ShepherdConfig.Parse("[Settings]\nrefineryFillPct=30\nautoUnloadShip=TRUE").AutoUnloadShip, "autoUnloadShip=TRUE: true");
 		Check(!ShepherdConfig.Looks("[Settings]\nreactorFillPct=15"), "no refineryFillPct: not SHEPHERD");
 		Check(!ShepherdConfig.Looks("[Other]\nrefineryFillPct=30"), "refineryFillPct outside [Settings]: not SHEPHERD");
 	}

@@ -18,7 +18,7 @@ internal enum ShepherdJob
 {
 	/// <summary>Sorting storage, draining connectors and collectors.</summary>
 	Sort,
-	/// <summary>Unloading docked ships and restocking them for their quotas.</summary>
+	/// <summary>Restocking docked ships for their quotas (and, before 1.0.50, unloading them).</summary>
 	Docked,
 	/// <summary>Keeping reactors and O2/H2 generators fuelled.</summary>
 	Fuel,
@@ -275,6 +275,22 @@ internal sealed class ShepherdLink
 		default:
 			return true;
 		}
+	}
+
+	/// <summary>
+	/// From 1.0.50 SHEPHERD unloads a docked ship only on its unloadShip command (or always with autoUnloadShip), and
+	/// while it sorts, its containers are closed to Stockpile Manager. So Unload docked ships runs that command, as
+	/// the terminal's Run button would. False when Stockpile Manager should unload them itself.
+	/// </summary>
+	public bool RunUnloadShip(Construct construct, GridRules rules)
+	{
+		if (!Handles(ShepherdJob.Sort, rules) || !ShepherdPanel.AtLeast(Version, 1, 0, 50) || !(Block is MyProgrammableBlock block) || !Block.IsWorking)
+		{
+			return false;
+		}
+		block.Run("unloadShip", Sandbox.ModAPI.Ingame.UpdateType.Terminal);
+		construct.AddLog($"Ran {Block.CustomName} with unloadShip");
+		return true;
 	}
 
 	public static bool IsMine(ShepherdJob job, GridRules rules)

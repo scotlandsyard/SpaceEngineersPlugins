@@ -11,14 +11,14 @@ All of it is data the game already has on the player's computer: block names, Cu
 | SHEPHERD's Part A | What SSM does with it |
 |---|---|
 | A1 Detection: a programmable block whose Custom Data has `[Settings]` with `refineryFillPct`, and `SHEPHERD` in the script text when the client has it; or a `[SHEPHERD]` status panel (a block with a screen: from 1.0.40 a tagged light is a status light, never a panel) | SSM looks only at the player's own blocks and panels, and only at tagged blocks with a screen and no inventory. Another player's SHEPHERD manages only its owner's blocks |
-| A2 Job switches: `reactorFillPct`, `gasGenFillPct`, `refineryFillPct`, `bottleSweepMinutes`, `dockedFuel`, `dockedProduction`, read as A2 says (key names case-sensitive, value cut at the first `;`, a number counts only when it parses with `.` and is in range, otherwise the default; booleans `true`/`false` in any case, anything else `false`) | A fill % or bottle sweep of 0 keeps that job with SSM. Docked machines count as SHEPHERD's only with `dockedFuel` / `dockedProduction`. With `refineryFillPct=0`, ingot quotas stay with SSM's refine by ingot need |
+| A2 Job switches: `reactorFillPct`, `gasGenFillPct`, `refineryFillPct`, `bottleSweepMinutes`, `dockedFuel`, `dockedProduction`, `autoUnloadShip` (from 1.0.50), read as A2 says (key names case-sensitive, value cut at the first `;`, a number counts only when it parses with `.` and is in range, otherwise the default; booleans `true`/`false` in any case, anything else `false`) | A fill % or bottle sweep of 0 keeps that job with SSM. Docked machines count as SHEPHERD's only with `dockedFuel` / `dockedProduction`. With `refineryFillPct=0`, ingot quotas stay with SSM's refine by ingot need. `autoUnloadShip` is read but changes nothing in SSM |
 | A3 Status panel: line 1 `SHEPHERD <version> · <health>`, line 2 the drawing block's name, line 3 a clock that changes on every redraw; `\r\n` and `\n` alike | SSM reads a text panel's own text (the block as a text surface, which is what SHEPHERD writes), and other screens from their first surface. See "Running" below. The version and health word are shown in SSM's Overview. The block named on line 2 picks whose settings apply when the player has several SHEPHERD blocks (the first working one when names repeat) |
 | A3 Health words | `working`, `idle` and `learning` mean SHEPHERD is doing its jobs. `standing by` means another SHEPHERD block is, never that SHEPHERD isn't running. `HALTED` means it isn't, for now |
 | A4 Tags (`[SHEPHERD:...(:#N)]`, `-RESERVE(:Name)`, `-Main`, `-Coop`, `-Off`, `-Split`, `[SHEPHERD]`; keyword case-insensitive) and reach | `[SHEPHERD:...]` and `-RESERVE` containers are SHEPHERD's: SSM never moves items into or out of them. `-Main` / `-Coop` assemblers only get SHEPHERD's orders. `-Off` blocks are SSM's. SHEPHERD's reach (its construct and those joined over connected connectors, except past `-Split`) is the set of units SSM treats as SHEPHERD's |
 | A4 Never managed: weapons, parachute hatches, and from 1.0.41 welders (Nanobot Build and Repair included); gas tanks only for bottles | Limits the player sets on weapons and tanks stay SSM's. A welder the player sets to Intake in SSM stays drained by SSM while SHEPHERD has Sorting |
 | A5.1 `[Reserve]` / `[Reserve:Name]` lines: key with an optional `MyObjectBuilder_` prefix, value `<amount>[M\|L][A]` or `All` (letters in any case); anything else ignored; `docked` is a pool setting. From 1.0.29 an `M` pool's surplus leaves only to fill another pool's shortfall of the item | Items with an A line are left to SHEPHERD's production (SSM's Items view shows the line). Lines SHEPHERD would ignore are ignored here too |
 | A5.2 `[Categories]` | Not used, except that export sets its own lines there (section 3) |
-| A6 `configReload` | Run once after an export |
+| A6 `configReload`, `unloadShip` (from 1.0.50) | `configReload` is run once after an export. `unloadShip` is run when the player presses SSM's Unload docked ships (or its toolbar action or `/ssm unload`) while SHEPHERD has Sorting and is 1.0.50 or later: SHEPHERD's containers are closed to SSM then, and from 1.0.50 SHEPHERD unloads a docked ship only on that command (A4 item 4). Otherwise SSM unloads the ships itself |
 
 **Running.** SSM counts SHEPHERD as doing its jobs while any of the player's `[SHEPHERD]` panels on the grid has a moving clock and a `working`, `idle`, `learning` or `standing by` health word. Any one moving panel is enough, since SHEPHERD redraws only the first. A panel counts as frozen when its text hasn't changed for max(90 s, 3 s × the number of SHEPHERD screens), never within 3 minutes of SSM first seeing it. SSM takes every job back when every panel is frozen or `HALTED`, or when all the player's SHEPHERD blocks are off, damaged or unpowered. It hands the jobs back by itself on its next refresh (1 to 3 s) once a panel moves again with a running word. With no panel at all, SSM assumes SHEPHERD runs while one of the player's SHEPHERD blocks works, and suggests adding a panel.
 
@@ -31,7 +31,7 @@ These jobs are left to SHEPHERD by default. The player can keep any of them for 
 | Job | SSM stops |
 |---|---|
 | Sorting | Sorting storage, draining connectors and collectors. Weapons and gas tanks were never part of it |
-| Docked ships | Restocking docked ships for their quotas |
+| Docked ships | Restocking docked ships for their quotas. SSM never unloads docked ships by itself, only when the player asks (see A6) |
 | Reactor and generator fuel | Their minimums and maximums |
 | Refineries | Refinery minimums and maximums, refinery priority, refine by ingot need |
 | Production output | Emptying refinery and assembler output |
@@ -66,7 +66,7 @@ The sections it writes (`[Reserve:Quotas]`, `[Reserve:<name>]`) are replaced who
 
 ## 4. Contract test
 
-`Tests/` parses SHEPHERD's sample files with SSM's own parsing code. The samples are the status panel for each health word and `settings-defaults.ini`, copied unchanged into `Tests/Fixtures/<tag>`, currently pinned to SHEPHERD **v1.0.45**. The test also checks the A2 reading rules and A5.1 quota lines. Run `dotnet run -c Release` in `Tests`. The pin moves when SHEPHERD releases new samples (`Tests/Fixtures/README.md`).
+`Tests/` parses SHEPHERD's sample files with SSM's own parsing code. The samples are the status panel for each health word and `settings-defaults.ini`, copied unchanged into `Tests/Fixtures/<tag>`, currently pinned to SHEPHERD **v1.0.50**. The test also checks the A2 reading rules and A5.1 quota lines. Run `dotnet run -c Release` in `Tests`. The pin moves when SHEPHERD releases new samples (`Tests/Fixtures/README.md`).
 
 ## 5. Change rule
 

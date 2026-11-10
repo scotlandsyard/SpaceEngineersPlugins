@@ -284,7 +284,8 @@ public class SsmSession : MySessionComponentBase
 		StartOneShot(construct, unload);
 	}
 
-	internal void StartOneShot(Construct construct, bool unload)
+	/// <summary>Starts a Sort now or Unload docked ships; true when the unload was handed to SHEPHERD's unloadShip.</summary>
+	internal bool StartOneShot(Construct construct, bool unload)
 	{
 		string name = construct.MainGrid?.CustomName ?? "grid";
 		if (unload)
@@ -292,7 +293,12 @@ public class SsmSession : MySessionComponentBase
 			if (!construct.Blocks.Any(b => b.Docked && !b.NotYours))
 			{
 				MyAPIGateway.Utilities.ShowNotification($"Stockpile Manager: no ship of yours is docked to {name}.", 3000, MyFontEnum.Red);
-				return;
+				return false;
+			}
+			if (construct.Shepherd != null && construct.Shepherd.RunUnloadShip(construct, Store.GridRules(construct.Snapshot)))
+			{
+				MyAPIGateway.Utilities.ShowNotification($"Stockpile Manager: {construct.Shepherd.Name} unloads the ships docked to {name}", 3000);
+				return true;
 			}
 			UnloadDocked(construct);
 			MyAPIGateway.Utilities.ShowNotification($"Stockpile Manager: unloading docked ships into {name}", 3000);
@@ -302,6 +308,7 @@ public class SsmSession : MySessionComponentBase
 			SortNow(construct);
 			MyAPIGateway.Utilities.ShowNotification($"Stockpile Manager: sorting {name}", 3000);
 		}
+		return false;
 	}
 
 	internal void OpenMenu(IMyTerminalBlock fromBlock)

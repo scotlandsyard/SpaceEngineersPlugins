@@ -11,7 +11,7 @@
     <OutputType>Exe</OutputType>
     <TargetFramework>net481</TargetFramework>
     <LangVersion>latest</LangVersion>
-    <FixtureTag>v1.0.45</FixtureTag>
+    <FixtureTag>v1.0.50</FixtureTag>
   </PropertyGroup>
 
   <ItemGroup>

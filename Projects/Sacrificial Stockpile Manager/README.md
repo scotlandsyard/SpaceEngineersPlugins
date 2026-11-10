@@ -66,7 +66,7 @@ Set in the Overview. All are off for a new grid except Clean production blocks, 
 
 **Reach.** The server only accepts item moves, queue changes and screen text from a player who is within 15 m of the grid (or any grid docked to it by connector, rotor or hinge), or linked to it by antenna. For anything farther away it refuses each request and logs a failed validation, which shows up in the admin's list. So when you are out of reach of a ship or station, the plugin pauses everything that sends requests for it (moves, queuing, Sort now, screen text), keeps showing what it last read, and the Overview says "out of reach: automation paused". It resumes by itself when you come back. Not applied in single player or on the host of a game. The log line "Moved ..." is written when the server has confirmed the move.
 
-**Sort now** runs everything Automation would do, once, until a pass has nothing to move (at most 2 minutes), even while Automation is off. **Unload docked ships** moves the cargo of the player's ships docked to the grid (cargo containers, connectors, collectors; not Stock or Manual blocks, and above any minimum) into the grid's storage. A grid's main grid is a station if it has one, so unloading always goes ship to station. A ship keeps its own quotas on board: only what it holds above a quota is unloaded.
+**Sort now** runs everything Automation would do, once, until a pass has nothing to move (at most 2 minutes), even while Automation is off. **Unload docked ships** moves the cargo of the player's ships docked to the grid (cargo containers, connectors, collectors; not Stock or Manual blocks, and above any minimum) into the grid's storage. A grid's main grid is a station if it has one, so unloading always goes ship to station. A ship keeps its own quotas on board: only what it holds above a quota is unloaded. While SHEPHERD 1.0.50 or later sorts the grid, Unload docked ships runs SHEPHERD's `unloadShip` instead, so the cargo goes into SHEPHERD's containers.
 
 **Priority** (0-9, Block settings): among storage blocks that accept an item equally well, the higher number fills first.
 
@@ -91,7 +91,7 @@ Stockpile Manager finds SHEPHERD by your programmable blocks that carry its sett
 | Job | Left to SHEPHERD means |
 |---|---|
 | Sorting | SHEPHERD empties every cargo container, cockpit and connector into its tagged containers; Stockpile Manager stops sorting and draining intakes there |
-| Docked ships | SHEPHERD unloads them; Stockpile Manager stops restocking them for their quotas (Unload docked ships still works when you press it) |
+| Docked ships | Stockpile Manager stops restocking them for their quotas. SHEPHERD before 1.0.50 also unloads them; from 1.0.50 it unloads a docked ship only on its `unloadShip` command (or always with `autoUnloadShip=true`), which Unload docked ships runs for you |
 | Reactor and generator fuel | SHEPHERD fills them to `reactorFillPct` / `gasGenFillPct`; their minimums and maximums here are left alone |
 | Refineries | SHEPHERD feeds them (`refineryFillPct`) and refines for its ingot quotas; refinery priority and refine by ingot need are left alone |
 | Production output | SHEPHERD empties refineries and assemblers |

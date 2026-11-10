@@ -252,7 +252,11 @@ public partial class SsmScreen
 			ShowMessage("No ship of yours is docked to this grid.", WarningColor);
 			return;
 		}
-		Session.StartOneShot(live, unload);
+		if (Session.StartOneShot(live, unload))
+		{
+			ShowMessage($"Ran {live.Shepherd.Name} with unloadShip: SHEPHERD unloads the ships docked now, once, into its containers.", GoodColor);
+			return;
+		}
 		ShowMessage(unload ? "Unloading docked ships into this grid's storage. The Log view shows each move." : "Sorting once, even with Automation off. It stops when there's nothing left to move; see the Log view.", GoodColor);
 		_rowsSignature = null;
 		RefreshAll();

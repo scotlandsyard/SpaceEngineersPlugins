@@ -146,6 +146,9 @@ internal sealed class ShepherdConfig
 
 	public bool DockedFuel;
 
+	/// <summary>From 1.0.50: docked ships are unloaded whenever they're docked, not only on unloadShip.</summary>
+	public bool AutoUnloadShip;
+
 	/// <summary>[Categories]: item key to category, for items moved out of their built-in category.</summary>
 	public readonly Dictionary<string, string> Categories = new Dictionary<string, string>();
 
@@ -193,6 +196,9 @@ internal sealed class ShepherdConfig
 				break;
 			case "dockedFuel":
 				config.DockedFuel = bool.TryParse(value, out bool fuel) && fuel;
+				break;
+			case "autoUnloadShip":
+				config.AutoUnloadShip = bool.TryParse(value, out bool unload) && unload;
 				break;
 			}
 		}
