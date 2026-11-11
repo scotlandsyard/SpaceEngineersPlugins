@@ -4,7 +4,9 @@ using System.Linq;
 using System.Reflection;
 using System.Text;
 using Sandbox.Graphics.GUI;
+using TimShared;
 using VRage.Input;
+using VRage.Utils;
 using VRageMath;
 
 namespace SacrificialStockpileManager;
@@ -24,13 +26,19 @@ public partial class SsmScreen
 
 	private MyGuiControlButton _removeTickedButton;
 
+	/// <summary>Text in the All grids Find box, kept while the window is open. Not the item lists' Find text (s_search).</summary>
+	private string _gridFind = "";
+
+	/// <summary>How many grids the Find box left in the table at the last refresh.</summary>
+	private int _gridFindShown;
+
 	private static string TickText(long key) => s_ticked.Contains(key) ? "[x]" : "[ ]";
 
-	/// <summary>The Tick row above the All grids table.</summary>
+	/// <summary>The Tick row above the All grids table, with the Find box to its right.</summary>
 	private void CreateAllGridsControls()
 	{
 		AddLabel(Left, Row2Y, "Tick");
-		_tickCombo = AddCombo(-0.36f, Row2Y, 0.25f, TickChoices.Length, "Ticks the grids that match, for Remove ticked. Click a grid's first column or press Space to tick it yourself.");
+		_tickCombo = AddCombo(-0.36f, Row2Y, 0.25f, TickChoices.Length, "Ticks the grids that match, for Remove ticked. Click a grid's first column or press Space to tick it yourself. While Find is in use, this only changes the grids it shows; ticks on hidden grids stay.");
 		for (int i = 0; i < TickChoices.Length; i++)
 		{
 			_tickCombo.AddItem(i, TickChoices[i], i, null, sort: false);
@@ -46,18 +54,43 @@ public partial class SsmScreen
 			TickMatching(choice);
 			_tickCombo.SelectItemByKey(0, sendEvent: false);
 		};
+
+		AddLabel(-0.09f, Row2Y, ListSearch.Label);
+		MyGuiControlTextbox find = new MyGuiControlTextbox(new Vector2(-0.04f, Row2Y), _gridFind, ListSearch.MaxLength)
+		{
+			Size = new Vector2(0.46f, 0.04f),
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+		};
+		find.SetToolTip(ListSearch.ToolTip);
+		find.TextChanged += box =>
+		{
+			_gridFind = box.Text ?? "";
+			_rowsSignature = null;
+			RefreshRows();
+		};
+		Controls.Add(find);
 	}
+
+	/// <summary>A row against the Find box: every column except the tick, whose "[x]" isn't a name.</summary>
+	private bool GridRowMatchesFind(RowData row) => ListSearch.Matches(_gridFind, row.Texts.Skip(1));
+
+	/// <summary>The row keys of the grids the Find box leaves in the table.</summary>
+	private HashSet<string> ShownGridKeys() => new HashSet<string>(AllGridRows().Where(GridRowMatchesFind).Select(r => r.Key));
 
 	/// <summary>Grids that can't be removed: loaded ones would come straight back, docked ones go with their dock.</summary>
 	private static bool Removable(GridSnapshot grid) => grid.DockedTo == null && Session?.FindConstruct(grid.Key) == null;
 
 	private void TickMatching(int choice)
 	{
-		s_ticked.Clear();
+		// With Find in use the choice only touches the rows it shows, so ticks on hidden grids survive.
+		bool filtered = ListSearch.IsActive(_gridFind);
+		HashSet<string> shown = filtered ? ShownGridKeys() : null;
+		bool IsShown(long key) => !filtered || shown.Contains("g:" + key);
+		s_ticked.RemoveWhere(IsShown);
 		if (choice != TickChoices.Length - 1)
 		{
 			DateTime now = DateTime.UtcNow;
-			foreach (GridSnapshot grid in Store.Grids.Where(Removable))
+			foreach (GridSnapshot grid in Store.Grids.Where(g => Removable(g) && IsShown(g.Key)))
 			{
 				bool match = choice switch
 				{
@@ -73,7 +106,10 @@ public partial class SsmScreen
 				}
 			}
 		}
-		ShowMessage(s_ticked.Count > 0 ? $"Ticked {s_ticked.Count} grid(s): {TickChoices[choice]}." : choice == TickChoices.Length - 1 ? "Cleared the ticks." : "No grid matches.", null);
+		int hidden = filtered ? s_ticked.Count(key => !IsShown(key)) : 0;
+		string hiddenNote = hidden > 0 ? $" {hidden} hidden by Find stay ticked." : "";
+		int ticked = s_ticked.Count - hidden;
+		ShowMessage((ticked > 0 ? $"Ticked {ticked} grid(s): {TickChoices[choice]}." : choice == TickChoices.Length - 1 ? "Cleared the ticks." : "No grid matches.") + hiddenNote, null);
 		RefreshRows();
 	}
 
@@ -140,6 +176,15 @@ public partial class SsmScreen
 		if (remove.Count > 10)
 		{
 			text.Append($"\n- and {remove.Count - 10} more");
+		}
+		if (ListSearch.IsActive(_gridFind))
+		{
+			HashSet<string> shown = ShownGridKeys();
+			int hidden = remove.Count(g => !shown.Contains("g:" + g.Key));
+			if (hidden > 0)
+			{
+				text.Append($"\n\n{hidden} of them are hidden by the Find box.");
+			}
 		}
 		text.Append($"\n\nTheir settings go with them: {settings} block and display setting(s), and their grid settings and quotas. Screens on other grids that showed them go back to their own grid. Nothing on the grids themselves changes. This can't be undone: a grid that still exists comes back with default settings the next time it's in range.");
 		if (skipped.Count > 0)

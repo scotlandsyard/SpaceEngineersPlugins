@@ -990,6 +990,15 @@ public partial class SsmScreen : MyGuiScreenBase
 			{
 				rows.Add(Row("none", MutedColor, "No grids yet. Your ships and stations show up here once they've been in range."));
 			}
+			else if (ListSearch.IsActive(_gridFind))
+			{
+				rows = rows.Where(GridRowMatchesFind).ToList();
+				_gridFindShown = rows.Count;
+				if (rows.Count == 0)
+				{
+					rows.Add(Row("none", MutedColor, "", "No grid matches Find."));
+				}
+			}
 		}
 		else if (grid == null)
 		{

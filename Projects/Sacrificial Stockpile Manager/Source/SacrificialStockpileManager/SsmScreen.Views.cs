@@ -498,7 +498,7 @@ public partial class SsmScreen
 		return rows;
 	}
 
-	private static string AllGridsHint()
+	private string AllGridsHint()
 	{
 		List<GridSnapshot> grids = Store.Grids.ToList();
 		if (grids.Count == 0)
@@ -514,7 +514,7 @@ public partial class SsmScreen
 			max += gridMax;
 		}
 		int live = grids.Count(g => Session?.FindConstruct(g.Key) != null);
-		return $"{grids.Count} grid(s), {live} loaded. Storage: {Items.Litres(used)} used of {Items.Litres(max)}, {Items.Litres(max - used)} free. Double-click a grid to open it; tick grids to remove several.";
+		return $"{grids.Count} grid(s), {live} loaded. Storage: {Items.Litres(used)} used of {Items.Litres(max)}, {Items.Litres(max - used)} free. {(TimShared.ListSearch.IsActive(_gridFind) ? $"Find shows {_gridFindShown}." : "Double-click a grid to open it; tick grids to remove several.")}";
 	}
 
 	private void OpenSelectedGrid()

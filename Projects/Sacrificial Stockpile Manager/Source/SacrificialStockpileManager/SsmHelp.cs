@@ -24,6 +24,7 @@ internal static class SsmHelp
 		"- GPS marker adds a marker where the grid was last seen (it moves the existing one if you press it again).",
 		"- Remove from list is for grids that were deleted or destroyed. It removes the grid and its settings (block settings, quotas, displays). A grid that is loaded can't be removed. If a removed grid still exists, it comes back with default settings the next time it's in range.",
 		"- To remove several at once, tick them (click a grid's first column, press Space, or pick from the Tick list: not loaded now, not seen in 7, 30 or 90 days, has no settings) and press Remove ticked. A confirm box lists them first; loaded and docked grids are skipped.",
+		"- Find, above the All grids table, shortens the list as you type. Ticks stay on grids it hides, the Tick list only changes the grids it shows, and the confirm box says how many ticked grids are hidden.",
 		"",
 		"# Automation (Overview)",
 		"Automation is off on every grid until you switch it on. While it's off, nothing is moved; the window only shows what is where and what would need doing. Double-click a setting in the Overview to switch it:",
