@@ -358,7 +358,10 @@ internal static class Personality
 		["Drill Sergeant"] = new Color(150, 168, 82),
 		["Radar"] = new Color(0, 255, 127),
 		["Digby"] = new Color(165, 105, 60),
-		["Doorman"] = new Color(200, 60, 90)
+		["Doorman"] = new Color(200, 60, 90),
+		["Tripwire"] = new Color(176, 196, 222),
+		["Tally"] = new Color(170, 110, 160),
+		["Hush"] = new Color(190, 170, 230)
 	};
 
 	/// <summary>

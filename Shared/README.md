@@ -26,11 +26,13 @@ The plugins talk over a private mod message channel (`0x54494D5F53574954`, "TIM_
 | Doorman | Doorman | Main window (doors, delays) |
 | Drill Sergeant | Drill Sergeant | Main window (rigs, setup) |
 | Fat Albert | Fat Albert | Main window |
+| Hush | Hush | Main window (blocks, types) |
 | OreScout | OreScout | Marker library |
 | Quiet Skies | Quiet Skies | Main window (signal marker filter) |
 | Radar Tech | Radar Tech | Main window (range finder settings, last reading) |
 | Sacrificial Stockpile Manager | Stockpile Manager | Main window |
 | Script to Plugin | Script to Plugin | Main window |
+| Tally | Tally | Main window (bill of materials) |
 | Tripwire | Tripwire | Main window (alerts and script logs) |
 | Wilson | Wilson | Main window |
 
@@ -136,6 +138,9 @@ Each character's name shows in its own colour, picked so none is a colour the ga
 | Radar | Spring green | 0, 255, 127 |
 | Digby | Earth brown | 165, 105, 60 |
 | Doorman | Livery red | 200, 60, 90 |
+| Tripwire | Sentry steel | 176, 196, 222 |
+| Tally | Ink plum | 170, 110, 160 |
+| Hush | Lavender | 190, 170, 230 |
 | Shepherd (guest of Stockpile Manager) | Slate gray | 112, 128, 144 |
 | Any other | Apricot | 255, 180, 110 |
 

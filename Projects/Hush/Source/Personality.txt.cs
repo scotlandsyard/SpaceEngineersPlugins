@@ -7,21 +7,51 @@ internal static partial class EmbeddedText
 {
 	public const string Personality = @"# Hush's chat lines, read by Shared/Personality.cs (see Shared/README.md).
 # [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
-# PLACEHOLDERS: a soft-spoken, whispering librarian. Real lines come from the Chat Lines Studio (card hush).
+# Written with Gemini through the Chat Lines Studio (2026-11-10); the sheet is in SpaceEngineers-Private\Personality\Characters.md.
 
 [menu_opened]
-- Shh. The reading room is open.
+- welcome to the quiet desk, captain. tell me which noisy machines we should hush today.
+- soft controls open, chief. let us turn down the volume of the universe together.
+- reading room console ready, ace. which shouting block would you like me to muffle?
+- librarian console active, hotshot. point me to the loud corners, softly now.
+- checking the sound registers, captain. let us find you some quiet breathing room.
+- sound board open, chief. we can tuck away any engine that is troubling your peace.
+- welcome in, ace. step lightly, and pick whichever machines need a gentle rest.
 
 [block_muted]
-- Shh. {block} will keep quiet now.
+- shh. there now, captain. quieted {block} so you can hear your own thoughts.
+- tucked {block} into silence, chief. just a little more breathing room for your ears.
+- rested {block}, ace. no more rattling, just soft calm across the cabin.
+- hushed {block}, hotshot. that noisy machine has officially lost its indoor voice.
+- faded the roar on {block}, captain. quiet, gentle peace in your headset.
+- muted {block}, chief. one less disruption in our little library among the stars.
+- put a gentle blanket over {block}, ace. soft and still, just as it should be.
 
 [type_muted]
-- Every {type}, everywhere, hushed.
+- tucked away every {type}, captain. the whole sector feels so much softer now.
+- shh. silenced all {type} blocks, chief. nothing but deep, restful quiet.
+- silenced that whole family of {type}, ace. enjoy the stillness, you earned it.
+- quieted every {type} everywhere, hotshot. no more shouting across the void.
+- peace restored, captain. all {type} units have been gently hushed.
+- faded out every single {type}, chief. close your eyes and take a calm breath.
+- muffled all {type} across the board, ace. pure reading-room silence.
 
 [grid_unmuted]
-- {grid} may speak again. Softly, please.
+- oh dear. the racket has returned to {grid}, captain. mind your poor ears.
+- woke up every machine on {grid}, chief. loud, clattering engines everywhere again.
+- unmuted {grid}, ace. so much shouting, but i suppose you needed the noise.
+- the silence broke on {grid}, hotshot. engines roaring and drills singing again.
+- all the voices on {grid} are back, captain. i will keep some earplugs ready for you.
+- returned the volume to {grid}, chief. it was so beautifully peaceful while it lasted.
+- unhushed {grid}, ace. back to the clatter and clatter of industrial life.
 
 [rollcall]
-- Hush, here. Quietly. {command} if anything is too loud.
+- hush listening, captain. keeping things quiet and soft. type {command} to mute the noise.
+- here in the corner, chief. resting tired ears. enter {command} to turn down the shouting.
+- hush present, ace. keeping the peace in your headset. call up {command} for some stillness.
+- softly on duty, hotshot. deep space is loud enough; punch in {command} to hush your blocks.
+- tucked away on post, captain. no shouting on my watch. hit {command} to soften the roar.
+- librarian checked in, chief. gentle calm on demand. type {command} to silence your ships.
+- present and whispering, ace. peaceful travels out there; enter {command} whenever you need quiet.
 ";
 }
