@@ -199,7 +199,13 @@ internal sealed class ShepherdLink
 	/// while a block works. HALTED clears on its own: at the next refresh after a panel shows a running word again,
 	/// the jobs go back to SHEPHERD.
 	/// </summary>
-	public bool Active => _active;
+	public bool Active => _active && (Block == null || !Block.Closed);
+
+	/// <summary>All the player's SHEPHERD programmable blocks on the construct.</summary>
+	public List<IMyProgrammableBlock> Blocks = new List<IMyProgrammableBlock>();
+
+	/// <summary>The leader a standing-by panel names ("&lt;PB name&gt; on &lt;grid name&gt;"), when the panel shown is standing by.</summary>
+	public string Leader;
 
 	public string Name => PanelName ?? Block?.CustomName ?? "SHEPHERD";
 
@@ -279,18 +285,70 @@ internal sealed class ShepherdLink
 
 	/// <summary>
 	/// From 1.0.50 SHEPHERD unloads a docked ship only on its unloadShip command (or always with autoUnloadShip), and
-	/// while it sorts, its containers are closed to Stockpile Manager. So Unload docked ships runs that command, as
-	/// the terminal's Run button would. False when Stockpile Manager should unload them itself.
+	/// while it sorts, its containers are closed to Stockpile Manager. So Unload docked ships runs that command on the
+	/// leading block, as the terminal's Run button would (on a multiplayer client that sends the server a run request).
+	/// A standing-by block ignores it. The leader is the block named on a running panel, or the block a standing-by
+	/// panel names. Without a panel a client can't tell (a block's detail pane only reaches a client while it's open
+	/// in the terminal), so it's run on every working SHEPHERD block, which only the leader acts on. Returns what to
+	/// tell the player, or null when Stockpile Manager should unload the ships itself.
 	/// </summary>
-	public bool RunUnloadShip(Construct construct, GridRules rules)
+	public string RunUnloadShip(Construct construct, GridRules rules)
 	{
-		if (!Handles(ShepherdJob.Sort, rules) || !ShepherdPanel.AtLeast(Version, 1, 0, 50) || !(Block is MyProgrammableBlock block) || !Block.IsWorking)
+		if (!Active || !Handles(ShepherdJob.Sort, rules))
 		{
-			return false;
+			return null;
 		}
-		block.Run("unloadShip", Sandbox.ModAPI.Ingame.UpdateType.Terminal);
-		construct.AddLog($"Ran {Block.CustomName} with unloadShip");
-		return true;
+		List<IMyProgrammableBlock> targets = new List<IMyProgrammableBlock>();
+		if (Health == null)
+		{
+			targets.AddRange(Blocks.Where(b => !b.Closed && b.IsWorking));
+			if (targets.Count == 0)
+			{
+				return null;
+			}
+		}
+		else
+		{
+			if (!ShepherdPanel.AtLeast(Version, 1, 0, 50))
+			{
+				return null;
+			}
+			IMyProgrammableBlock leader = Leader != null ? FindLeader(Leader) : Block != null && !Block.Closed && Block.CustomName.Trim() == PanelName ? Block : null;
+			if (leader == null || !leader.IsWorking)
+			{
+				string missing = Leader != null ? $"its leader {Leader} isn't one of your loaded, working blocks" : $"{PanelName} isn't one of your working blocks on this grid";
+				construct.AddLog($"Unload docked ships: not run, {missing}");
+				return $"Not unloaded: {missing}. Run unloadShip on the leading SHEPHERD block yourself.";
+			}
+			targets.Add(leader);
+		}
+		foreach (IMyProgrammableBlock target in targets)
+		{
+			if (target is MyProgrammableBlock block)
+			{
+				block.Run("unloadShip", Sandbox.ModAPI.Ingame.UpdateType.Terminal);
+				construct.AddLog($"Ran {target.CustomName} with unloadShip");
+			}
+		}
+		return Health == null
+			? $"Ran unloadShip on {targets.Count} SHEPHERD block(s): the leading one unloads the ships docked now, once. Add an LCD named [SHEPHERD] so Stockpile Manager can tell which one leads."
+			: $"Ran {targets[0].CustomName} with unloadShip: SHEPHERD unloads the ships docked now, once, into its containers.";
+	}
+
+	/// <summary>The player's SHEPHERD block named "&lt;PB name&gt; on &lt;grid name&gt;", on any loaded construct (a working one first).</summary>
+	private static IMyProgrammableBlock FindLeader(string leader)
+	{
+		long me = MyAPIGateway.Session?.Player?.IdentityId ?? 0;
+		List<IMyProgrammableBlock> found = new List<IMyProgrammableBlock>();
+		foreach (Construct other in SsmSession.Instance?.Constructs ?? new List<Construct>())
+		{
+			other.Terminal?.GetBlocksOfType(found, b => !b.Closed && b.OwnerId == me && ShepherdConfig.Looks(b.CustomData) && $"{b.CustomName.Trim()} on {b.CubeGrid.CustomName.Trim()}" == leader);
+			if (found.Count > 0)
+			{
+				return found.OrderByDescending(b => b.IsWorking).First();
+			}
+		}
+		return null;
 	}
 
 	public static bool IsMine(ShepherdJob job, GridRules rules)
@@ -319,7 +377,7 @@ internal sealed class ShepherdLink
 		{
 			return null;
 		}
-		ShepherdLink link = new ShepherdLink();
+		ShepherdLink link = new ShepherdLink { Blocks = blocks };
 		// The panel to show: a running one first, then standing by, then any other moving one, then any.
 		int shown = Enumerable.Range(0, panels.Count)
 			.OrderByDescending(i => live[i] && panels[i].Value.Running)
@@ -334,6 +392,7 @@ internal sealed class ShepherdLink
 			link.Version = panel.Version;
 			link.PanelName = panel.Name;
 			link.Problems = panel.Messages;
+			link.Leader = panel.Leader;
 		}
 		// Settings from the block named on that panel when there's one (names can repeat: a working one first), else
 		// from the first working block.

@@ -71,6 +71,12 @@ internal static class Program
 				Check(health == "standing by" || panel.Messages.LastOrDefault() == "craft Component/SteelPlate: no Main assembler", $"{file} ({ending}): a wrapped message reads as one ('{panel.Messages.LastOrDefault()}')");
 			}
 		}
+		// B2: a standing-by panel's last line names the leader, which Unload docked ships runs unloadShip on.
+		Check(ShepherdPanel.Parse(File.ReadAllText(Path.Combine(fixtures, "status-standing-by.txt")))?.Leader == "Base PB on Base", "status-standing-by.txt: the leader is 'Base PB on Base'");
+		Check(ShepherdPanel.Parse(File.ReadAllText(Path.Combine(fixtures, "status-working.txt")))?.Leader == null, "status-working.txt: a running panel names no leader");
+		string wrapped = "SHEPHERD 1.0.50 · standing by\nShuttle PB\n11:46:15\n─────\nCargo Shuttle PB on Long Haul\n  Freighter leads";
+		Check(ShepherdPanel.Parse(wrapped)?.Leader == "Cargo Shuttle PB on Long Haul Freighter", "a leader line wrapped at statusWrapChars reads as one");
+		Check(ShepherdPanel.Parse("SHEPHERD 1.0.50 · standing by\nShuttle PB\n11:46:15\n─────\nsomething else")?.Leader == null, "a standing-by panel without a leader line names none");
 		Check(ShepherdPanel.Parse("SHEPHERD v1.0.21 running\nBase PB") == null, "the Echo's first line is not a panel");
 		Check(ShepherdPanel.Parse("Some LCD text") == null, "other text is not a panel");
 		Check(ShepherdPanel.AtLeast("1.0.21", 1, 0, 21) && !ShepherdPanel.AtLeast("1.0.5", 1, 0, 21) && ShepherdPanel.AtLeast("1.1.0", 1, 0, 21) && !ShepherdPanel.AtLeast(null, 1, 0, 21), "version comparison");

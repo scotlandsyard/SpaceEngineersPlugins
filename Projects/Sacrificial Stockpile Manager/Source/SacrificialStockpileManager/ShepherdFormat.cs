@@ -280,6 +280,12 @@ internal sealed class ShepherdPanel
 
 	public List<string> Messages = new List<string>();
 
+	/// <summary>
+	/// On a standing-by panel, the leader from its last line "&lt;PB name&gt; on &lt;grid name&gt; leads" (B2), as
+	/// "&lt;PB name&gt; on &lt;grid name&gt;" (either name can contain " on ", so it's matched whole); else null.
+	/// </summary>
+	public string Leader;
+
 	/// <summary>SHEPHERD is doing its jobs (learning moves nothing on purpose, which is still its job).</summary>
 	public bool Running => Health == Working || Health == Idle || Health == Learning;
 
@@ -313,6 +319,11 @@ internal sealed class ShepherdPanel
 					panel.Messages.Add(line.Trim());
 				}
 			}
+		}
+		string last = panel.Messages.LastOrDefault();
+		if (panel.Health == StandingBy && last != null && last.EndsWith(" leads", StringComparison.Ordinal) && last.Contains(" on "))
+		{
+			panel.Leader = last.Substring(0, last.Length - " leads".Length);
 		}
 		return panel;
 	}
