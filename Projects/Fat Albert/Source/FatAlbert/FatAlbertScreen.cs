@@ -25,12 +25,13 @@ public class FatAlbertScreen : MyGuiScreenBase
 		Thrusters,
 		Fuel,
 		Planets,
+		Cargo,
 		Names,
 		Help
 	}
 
 	// In the same order as View.
-	private static readonly string[] ViewNames = { "Lift-off check", "Thrust by direction", "Thrusters", "Fuel & power", "All planets", "Planet names (setup)", "Help" };
+	private static readonly string[] ViewNames = { "Lift-off check", "Thrust by direction", "Thrusters", "Fuel & power", "All planets", "Cargo fill", "Planet names (setup)", "Help" };
 
 	private static readonly string[] DirNames = { "Up", "Down", "Forward", "Backward", "Left", "Right" };
 
@@ -80,7 +81,13 @@ public class FatAlbertScreen : MyGuiScreenBase
 	private const float GpsY = 0.205f;
 
 	/// <summary>All planets view: top of the planet summary under the table.</summary>
-	private const float SummaryY = 0.045f;
+	private const float SummaryY = 0.095f;
+
+	/// <summary>All planets view: the Find row, between the table's bottom edge and the summary.</summary>
+	private const float PlanetsFindY = 0.068f;
+
+	/// <summary>Planet names view: the Find row, between the table's bottom edge and the GPS row.</summary>
+	private const float NamesFindY = 0.145f;
 
 	private const float StatusY = 0.315f;
 
@@ -106,6 +113,9 @@ public class FatAlbertScreen : MyGuiScreenBase
 	private static long s_namePlanetId;
 
 	private MyGuiControlTextbox _nameBox;
+
+	/// <summary>Text in the Find box, kept while the window is open.</summary>
+	private string _find = "";
 
 	private MyGuiControlCombobox _gpsCombo;
 
@@ -150,6 +160,9 @@ public class FatAlbertScreen : MyGuiScreenBase
 	private AscentResult _result;
 
 	private AscentPlan _plan;
+
+	/// <summary>Cargo fill view: the last result, kept while the inputs stay the same.</summary>
+	private Cargo.Result _cargo;
 
 	private Dir _dir;
 
@@ -307,7 +320,7 @@ public class FatAlbertScreen : MyGuiScreenBase
 			Size = new Vector2(0.84f, 0.5f),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP,
 			ColumnsCount = columns.Count,
-			VisibleRowsCount = CurrentView == View.Names ? 9 : CurrentView == View.Planets ? 7 : 12
+			VisibleRowsCount = CurrentView == View.Names ? 9 : CurrentView == View.Planets || CurrentView == View.Cargo ? 7 : 12
 		};
 		_table.SetCustomColumnWidths(columns.Select(c => c.Width).ToArray());
 		_rightAligned = columns.Select(c => c.RightAligned).ToArray();
@@ -327,9 +340,9 @@ public class FatAlbertScreen : MyGuiScreenBase
 
 		_summary = null;
 		_summaryText = null;
-		if (CurrentView == View.Planets)
+		if (CurrentView == View.Planets || CurrentView == View.Cargo)
 		{
-			// Under the table: the full answer for the planet picked in it.
+			// Under the table: the full answer for the planet picked in it, or what the cargo numbers mean.
 			_summary = new MyGuiControlMultilineText(new Vector2(0f, SummaryY), new Vector2(0.84f, StatusY - 0.03f - SummaryY), null, "Blue", 0.75f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP)
 			{
 				OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
@@ -362,6 +375,16 @@ public class FatAlbertScreen : MyGuiScreenBase
 			CreateNameEditor();
 		}
 
+		if (CurrentView == View.Cargo)
+		{
+			CreateCargoControls();
+		}
+
+		if (FindApplies)
+		{
+			CreateFindBox(CurrentView == View.Names ? NamesFindY : CurrentView == View.Planets ? PlanetsFindY : EditorY);
+		}
+
 		_status = new MyGuiControlLabel(new Vector2(Left, StatusY), null, "", null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
 		Controls.Add(_status);
 
@@ -369,11 +392,12 @@ public class FatAlbertScreen : MyGuiScreenBase
 		{
 			FillShipCombo();
 			FillPlanetCombo();
+			_cargo = null;
 			Refresh(rebuild: true);
 		});
 		if (CurrentView == View.Names)
 		{
-			AddButton(-0.105f, "Paste GPS list", PasteGps);
+			AddButton(-0.105f, "Paste GPS list", PasteGps).SetToolTip("Names planets from GPS on the clipboard. While Find is in use, only the planets it shows.");
 		}
 		else if (CurrentView == View.Help)
 		{
@@ -400,6 +424,157 @@ public class FatAlbertScreen : MyGuiScreenBase
 		{
 			AddButton(0.315f, "Help", () => SwitchView(View.Help));
 		}
+	}
+
+	// ---- Cargo fill ----
+
+	/// <summary>Cargo fill view: the kind of cargo and an extra percentage, in the row under the table.</summary>
+	private void CreateCargoControls()
+	{
+		AddLabel(Left, PlanetsFindY, "Cargo is");
+		MyGuiControlCombobox mixCombo = AddCombo(-0.34f, PlanetsFindY, 0.33f, 6, "What fills the cargo space. Fill is by volume, so this sets how heavy a full hold is: ore (any ore or ice) is light, ingots and plates heavy, platinum ingots the heaviest cargo there is.");
+		List<Cargo.Mix> mixes = Cargo.Mixes();
+		for (int i = 0; i < mixes.Count; i++)
+		{
+			mixCombo.AddItem(i, mixes[i].Name, i, null, sort: false);
+		}
+		mixCombo.SelectItemByKey(Math.Min(Settings.CargoMix, mixes.Count - 1), sendEvent: false);
+		mixCombo.ItemSelected += () =>
+		{
+			if (!_suppressEvents)
+			{
+				Settings.CargoMix = (int)mixCombo.GetSelectedKey();
+				Recompute();
+			}
+		};
+		AddLabel(0.0f, PlanetsFindY, "Also check %");
+		AddNumberBox(0.12f, PlanetsFindY, Settings.CargoPercent, "An extra row for this percentage of full (0 to 100). Leave empty for none.", text => Settings.CargoPercent = text);
+	}
+
+	private void AddCargoRows(List<RowData> rows)
+	{
+		if (_ship.CargoVolume <= 0.0)
+		{
+			rows.Add(Row(WarningColor, "No cargo space", "", "", "", "", "This ship has no cargo containers, connectors, cockpits, drills or tools with room to carry anything."));
+			return;
+		}
+		if (_cargo == null || !_cargo.Key.StartsWith(_ship.Key + "|"))
+		{
+			rows.Add(Row(MutedColor, "Working it out..."));
+			return;
+		}
+		foreach (Cargo.Row row in _cargo.Rows)
+		{
+			Ascent.ThrustNeed need = row.Need;
+			string answer = CargoAnswer(need, out Color? color);
+			rows.Add(Row(color, row.Label, Format.Mass(row.Weight), Format.Mass(row.ShipMass), need.Known ? Format.Force(need.Needed) : "-", need.Have > 0.0 ? Format.Force(need.Have) : "-", answer));
+		}
+	}
+
+	private static string CargoAnswer(Ascent.ThrustNeed need, out Color? color)
+	{
+		color = null;
+		switch (need.Outcome)
+		{
+		case AscentOutcome.NoMass:
+			color = WarningColor;
+			return "? ship mass reads 0 kg";
+		case AscentOutcome.NoGravity:
+			color = MutedColor;
+			return "no gravity here";
+		case AscentOutcome.NoThrusters:
+			color = BadColor;
+			return "NO: no thrusters push that way";
+		}
+		if (need.Success)
+		{
+			color = GoodColor;
+			return need.Known && need.Needed > 0.0 ? $"YES: {Math.Max(0.0, need.Have / need.Needed - 1.0) * 100.0:0}% spare thrust" : "YES";
+		}
+		color = BadColor;
+		if (!need.Known)
+		{
+			// Thrust of the kind the ship has can't fix it; say why.
+			switch (need.Outcome)
+			{
+			case AscentOutcome.OutOfFuel:
+				return "NO: runs out of fuel or power (more thrust won't help)";
+			case AscentOutcome.Stalled:
+				return "NO: thrust fades as the air thins (needs thrusters that work in space)";
+			case AscentOutcome.CantLand:
+				return "NO: can't land (more thrust like this won't help)";
+			default:
+				return "NO: more thrust of this kind wouldn't help";
+			}
+		}
+		double missing = need.Needed - need.Have;
+		string more = need.UnitThrust > 0.0 && !string.IsNullOrEmpty(need.UnitType) ? $", about {Math.Ceiling(missing / need.UnitThrust):0} more {need.UnitType}" : "";
+		return $"NO: {Format.Force(missing)} short{more}";
+	}
+
+	private void AddCargoSummary(List<RowData> lines)
+	{
+		ShipSnapshot ship = _ship;
+		if (ship.CargoVolume <= 0.0)
+		{
+			lines.Add(Row(MutedColor, "", "Nothing to fill: no cargo space found on this ship."));
+			return;
+		}
+		Cargo.Result cargo = _cargo;
+		double multiplier = Math.Max(1.0, ship.InventoryMultiplier);
+		lines.Add(Row(null, "Cargo space", $"{ship.CargoVolume:#,0.##} m3 ({Format.Litres(ship.CargoVolume * 1000.0)}) in {ship.CargoBlocks} inventories of containers, connectors, cockpits, drills and tools."));
+		lines.Add(Row(null, "In there now", $"{Format.Mass(ship.CargoItemMass)} of items, {Format.Percent(ship.CargoUsedVolume, ship.CargoVolume)} full; they add {Format.Mass(ship.CargoWeight)} to the ship."));
+		if (multiplier > 1.0)
+		{
+			lines.Add(Row(null, "Inventory multiplier", $"{multiplier:0.##}x in this world: cargo space is {multiplier:0.##}x bigger and items weigh 1/{multiplier:0.##} of their real mass, so a full hold adds its item mass divided by {multiplier:0.##}."));
+		}
+		if (cargo != null)
+		{
+			Cargo.Density(cargo.Mix, ship, out bool fellBack);
+			string density = $"{cargo.KgPerLitre:0.##} kg per litre" + (fellBack ? " (the cargo is empty, so ore's)" : "");
+			lines.Add(Row(null, cargo.Mix.Name, $"{density}: a full hold is {Format.Mass(ship.CargoVolume * 1000.0 * cargo.KgPerLitre / multiplier)} of cargo. The ship without cargo is {Format.Mass(cargo.BaseMass)}."));
+		}
+		string way = _plan != null ? DirNames[(int)_plan.Dir] + " thrusters" : "the lifting thrusters";
+		lines.Add(Row(MutedColor, "Thrust needed", $"The least thrust from the {way} at the start of the trip that gets the ship all the way (the same climb as Lift-off check, landing first when you visit a planet), with fuel and power use scaled along with it. Fuel and power you don't have can't be fixed with thrust, so those rows say so. 'About N more' counts the strongest thruster type pushing that way; the extra thrusters' own weight isn't included, so allow a few more."));
+	}
+
+	// ---- Find ----
+
+	/// <summary>The views that are real lists. Lift-off check is an answer to read, Thrust by direction always six rows, Help no table.</summary>
+	private static bool FindApplies => CurrentView == View.Thrusters || CurrentView == View.Fuel || CurrentView == View.Planets || CurrentView == View.Names;
+
+	private void CreateFindBox(float y)
+	{
+		AddLabel(Left, y, ListSearch.Label);
+		MyGuiControlTextbox find = new MyGuiControlTextbox(new Vector2(-0.36f, y), _find, ListSearch.MaxLength)
+		{
+			Size = new Vector2(0.34f, 0.04f),
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+		};
+		find.SetToolTip(ListSearch.ToolTip);
+		find.TextChanged += box =>
+		{
+			_find = box.Text ?? "";
+			if (!_suppressEvents)
+			{
+				ShowRows();
+			}
+		};
+		Controls.Add(find);
+	}
+
+	/// <summary>The planets the table lists right now (the rows that carry a planet id).</summary>
+	private HashSet<long> ShownPlanetIds()
+	{
+		HashSet<long> ids = new HashSet<long>();
+		for (int i = 0; i < _table.RowsCount; i++)
+		{
+			if (_table.GetRow(i).UserData is long id && id != 0)
+			{
+				ids.Add(id);
+			}
+		}
+		return ids;
 	}
 
 	// ---- Planet names (setup) ----
@@ -497,6 +672,12 @@ public class FatAlbertScreen : MyGuiScreenBase
 		{
 			ShowMessage("Pick a planet in the table first.", WarningColor);
 		}
+		else if (ListSearch.IsActive(_find) && !ShownPlanetIds().Contains(planet.Id))
+		{
+			// The planet stays picked while Find hides its row; don't rename what can't be seen.
+			ShowMessage($"{planet.Name} is hidden by Find. Clear Find or pick a planet in the table.", WarningColor);
+			return null;
+		}
 		return planet;
 	}
 
@@ -544,7 +725,7 @@ public class FatAlbertScreen : MyGuiScreenBase
 			ShowMessage("The clipboard is empty. Copy the server's planet GPS list first.", WarningColor);
 			return;
 		}
-		PlanetNames.ImportReport report = PlanetNames.Import(text, _planets);
+		PlanetNames.ImportReport report = PlanetNames.Import(text, _planets, ListSearch.IsActive(_find) ? ShownPlanetIds() : null);
 		FillGpsCombo();
 		if (report.Found == 0)
 		{
@@ -560,7 +741,11 @@ public class FatAlbertScreen : MyGuiScreenBase
 		{
 			message.Append($" Same planet twice (the one nearest its centre kept): {string.Join(", ", report.Clashes.Take(2))}.");
 		}
-		AfterRename(message.ToString(), report.NoPlanet.Count > 0 || report.Clashes.Count > 0 ? WarningColor : GoodColor);
+		if (report.HiddenByFind > 0)
+		{
+			message.Append($" {report.HiddenByFind} planet(s) hidden by Find were left alone.");
+		}
+		AfterRename(message.ToString(), report.NoPlanet.Count > 0 || report.Clashes.Count > 0 || report.HiddenByFind > 0 ? WarningColor : GoodColor);
 	}
 
 	private void AfterRename(string message, Color? color = null)
@@ -653,6 +838,16 @@ public class FatAlbertScreen : MyGuiScreenBase
 				new Column("Thrust/weight", 0.14f, true),
 				new Column("Land and get out?", 0.23f),
 				new Column("Spare mass", 0.18f, true)
+			};
+		case View.Cargo:
+			return new List<Column>
+			{
+				new Column("Cargo fill", 0.14f),
+				new Column("Cargo", 0.13f, true),
+				new Column("Ship mass", 0.13f, true),
+				new Column("Thrust needed", 0.13f, true),
+				new Column("Thrust you have", 0.14f, true),
+				new Column("Can it leave?", 0.33f)
 			};
 		case View.Fuel:
 			return new List<Column>
@@ -913,6 +1108,25 @@ public class FatAlbertScreen : MyGuiScreenBase
 		List<KeyValuePair<PlanetInfo, AscentPlan>> others = CurrentView == View.Planets ? _planets.Select(p => new KeyValuePair<PlanetInfo, AscentPlan>(p, PlanFor(ship, p))).ToList() : null;
 		AscentResult result = null;
 		Dictionary<long, AscentResult> planetResults = null;
+		// Cargo fill: a row per fill, each its own search, so only when something changed (or Rescan).
+		Cargo.Mix mix = null;
+		double density = 0.0;
+		double? custom = null;
+		string cargoKey = null;
+		Cargo.Result cargoResult = null;
+		if (CurrentView == View.Cargo && ship.CargoVolume > 0.0)
+		{
+			List<Cargo.Mix> mixes = Cargo.Mixes();
+			mix = mixes[Math.Min(Settings.CargoMix, mixes.Count - 1)];
+			density = Cargo.Density(mix, ship, out bool _);
+			custom = Settings.Parse(Settings.CargoPercent);
+			string gas = ship.Gas.Values.Sum(g => g.Litres).ToString("0.0e+0", System.Globalization.CultureInfo.InvariantCulture);
+			cargoKey = string.Join("|", ship.Key, plan.Dir, plan.Planet?.Id, plan.Land, plan.Distance, plan.Speed.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture), mix.Name, density.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture), custom, ship.Mass.ToString("0"), ship.CargoVolume.ToString("0.###", System.Globalization.CultureInfo.InvariantCulture), ship.CargoUsedVolume.ToString("0.##", System.Globalization.CultureInfo.InvariantCulture), Settings.CountOff, Settings.UseChutes, ship.Thrusters.Count, gas);
+			if (cargoKey == _cargo?.Key)
+			{
+				cargoKey = null;
+			}
+		}
 		_simRunning = true;
 		MyAPIGateway.Parallel.StartBackground(() =>
 		{
@@ -920,6 +1134,10 @@ public class FatAlbertScreen : MyGuiScreenBase
 			if (others != null)
 			{
 				planetResults = others.ToDictionary(p => p.Key.Id, p => Ascent.Solve(ship, p.Value));
+			}
+			if (cargoKey != null)
+			{
+				cargoResult = Cargo.Compute(ship, plan, mix, density, custom, cargoKey);
 			}
 		}, () =>
 		{
@@ -931,6 +1149,10 @@ public class FatAlbertScreen : MyGuiScreenBase
 			if (ship.Key == s_shipKey)
 			{
 				_result = result;
+				if (cargoResult != null)
+				{
+					_cargo = cargoResult;
+				}
 				Chatter.Comment(ship, plan, result);
 				if (planetResults != null)
 				{
@@ -991,6 +1213,19 @@ public class FatAlbertScreen : MyGuiScreenBase
 			case View.Planets:
 				AddPlanetRows(rows);
 				break;
+			case View.Cargo:
+				AddCargoRows(rows);
+				break;
+			}
+		}
+		// A "No ship" or "Station" row explains why the list is empty, so Find leaves it alone.
+		bool isList = CurrentView == View.Names || (_ship != null && !_ship.IsStatic);
+		if (isList && FindApplies && ListSearch.IsActive(_find))
+		{
+			rows = rows.Where(r => ListSearch.Matches(_find, r.Texts)).ToList();
+			if (rows.Count == 0)
+			{
+				rows.Add(Row(MutedColor, "No match for Find"));
 			}
 		}
 
@@ -1306,6 +1541,10 @@ public class FatAlbertScreen : MyGuiScreenBase
 		{
 			lines.Add(Row(MutedColor, "", "No ship to check."));
 		}
+		else if (CurrentView == View.Cargo)
+		{
+			AddCargoSummary(lines);
+		}
 		else if (planet == null)
 		{
 			lines.Add(Row(MutedColor, "", "Click a planet in the table to see its summary here."));
@@ -1499,8 +1738,12 @@ public class FatAlbertScreen : MyGuiScreenBase
 		"Where I am now checks lift-off from where the ship is. Pick a planet to check a trip there from space: the ship falls in at the speed limit (the game caps falling speed, so that costs no fuel), brakes at full thrust to land at sea level, then climbs back out with whatever fuel and power are left. If it can't brake hard enough to land, the answer is NO. The All planets view runs this for every planet and moon in the world at once, with how much mass you have to spare for each; click a planet to see its full answer under the table (landing, climb, fuel used, limits). The Thrust by direction and Thrusters views show thrust at the start of the climb, so at sea level on the planet you picked.\n\n" +
 		"CLIMB KM / SPEED M/S\n" +
 		"Leave Climb empty to climb to where the planet's gravity ends; the plugin reads that from the world. Type a number to climb that many km from where you are instead. Speed is how fast to climb; empty uses the world's speed limit. The ship goes full thrust until it reaches that speed, then holds it, as the dampeners do. A slower climb burns more, because the thrusters hold the ship up for longer.\n\n" +
+		"CARGO FILL\n" +
+		"Shows what the ship weighs with its cargo space 0, 25, 50, 75 and 100% full (and a row for what is in there now, and one for a percentage you type), and the thrust it would need to leave at each weight. Fill is by volume, as in the game, so pick what fills it: ore (any ore or ice) is light, iron ingots and steel plates heavy, platinum ingots the heaviest. Cargo space is every container, connector, cockpit, drill and tool; reactor fuel, assembler and refinery queues and ammo stay in the ship's base weight. The world's inventory multiplier is applied: items weigh their real mass divided by it. Thrust needed is the least thrust from the lifting thrusters at the start of the trip that gets the ship all the way through the same climb as Lift-off check (and the landing first, when you pick a planet to visit), with fuel and power use scaled with it. Where the answer is NO it shows how much thrust is missing and about how many more of your strongest thruster type that is; the extra thrusters' own weight isn't included. If fuel or power runs out at any thrust, it says more thrust won't help. Rescan works it out again.\n\n" +
 		"PLANET NAMES (SETUP)\n" +
 		"Servers often call planets something other than the game does. In the Planet names view, copy the server's list of planet GPS (the usual GPS:Name:X:Y:Z: format, as many as you like, from Discord or anywhere) and press Paste GPS list. Each GPS names the planet whose gravity it's in, so the coordinates only need to be roughly right: a point on the surface, in orbit or at the centre all work. A GPS that isn't inside any planet's gravity can still be given to a planet by hand: pick the planet in the table, pick the GPS in the GPS list (your last paste, then your own GPS list, each showing which planet it's near) and press Use this GPS. To fix a name, pick the planet, type a new one and press Set name; Game's name puts the original back. Names are kept on your computer, separately for each world, and show everywhere in the window.\n\n" +
+		"FIND\n" +
+		"Thrusters, Fuel & power, All planets and Planet names have a Find box that shortens the list as you type. While it's in use, Paste GPS list only names the planets it shows, and a planet it hides can't be renamed.\n\n" +
 		"THE ANSWER\n" +
 		"Thrust/weight above 1 means it lifts off. Lift-off limit is the heaviest the ship can be and still leave the ground here. Reach-space limit is the heaviest it can be and still get out of the gravity well with the fuel and power it has. Weakest point is where thrust is closest to the ship's weight; atmospheric thrusters lose thrust as the air thins and ion thrusters gain it.\n\n" +
 		"MODDED THRUSTERS\n" +

@@ -93,6 +93,9 @@ internal static class PlanetNames
 
 		/// <summary>Planets that matched more than one GPS; the one nearest the planet's centre won.</summary>
 		public readonly List<string> Clashes = new List<string>();
+
+		/// <summary>Planets a GPS matched but that were left alone because the Find box hides them.</summary>
+		public int HiddenByFind;
 	}
 
 	private const string FilePrefix = "FatAlbert_";
@@ -164,7 +167,7 @@ internal static class PlanetNames
 	/// planet's surface first (so a moon's GPS inside a planet's gravity still goes to the moon). The coordinates
 	/// only need to be roughly right: anywhere in the planet's gravity counts.
 	/// </summary>
-	public static ImportReport Import(string text, IList<PlanetInfo> planets)
+	public static ImportReport Import(string text, IList<PlanetInfo> planets, ICollection<long> onlyPlanets = null)
 	{
 		ImportReport report = new ImportReport();
 		Dictionary<long, KeyValuePair<string, double>> best = new Dictionary<long, KeyValuePair<string, double>>();
@@ -204,6 +207,11 @@ internal static class PlanetNames
 		}
 		foreach (KeyValuePair<long, KeyValuePair<string, double>> pick in best)
 		{
+			if (onlyPlanets != null && !onlyPlanets.Contains(pick.Key))
+			{
+				report.HiddenByFind++;
+				continue;
+			}
 			s_names[pick.Key] = new Entry { Name = pick.Value.Key, Source = "GPS " + pick.Value.Key };
 			report.Named.Add(pick.Value.Key);
 		}

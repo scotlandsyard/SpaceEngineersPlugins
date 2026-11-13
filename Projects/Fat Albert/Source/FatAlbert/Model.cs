@@ -297,6 +297,23 @@ public class ShipSnapshot
 
 	public int BlocksOff;
 
+	/// <summary>Room in the cargo-type blocks (containers, connectors, cockpits, drills, tools) in m3, as the game reports it: already scaled by the world's inventory multiplier.</summary>
+	public double CargoVolume;
+
+	/// <summary>Volume of the items in those blocks now, in m3.</summary>
+	public double CargoUsedVolume;
+
+	/// <summary>Mass of the items in those blocks now as the game lists it, in kg.</summary>
+	public double CargoItemMass;
+
+	/// <summary>The world's inventory size multiplier: cargo adds only its item mass divided by this to the ship's weight.</summary>
+	public double InventoryMultiplier = 1.0;
+
+	public int CargoBlocks;
+
+	/// <summary>What that cargo adds to Mass now.</summary>
+	public double CargoWeight => CargoItemMass / Math.Max(1.0, InventoryMultiplier);
+
 	public Vector3D Axis(Dir dir)
 	{
 		switch (dir)

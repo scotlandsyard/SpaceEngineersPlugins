@@ -43,6 +43,19 @@ public class AscentPlan
 	/// <summary>Parachutes to open for the landing (ones with canopy material), or null to land on thrusters alone.</summary>
 	public List<ParachuteInfo> Chutes;
 
+	/// <summary>
+	/// Multiplies every thruster's thrust and power use, as if that many more thrusters of the same mix were fitted
+	/// (their own weight isn't counted). 1 = the ship as it is; Ascent.Need searches this to find the thrust a trip needs.
+	/// </summary>
+	public double ThrustScale = 1.0;
+
+	public AscentPlan Scaled(double scale)
+	{
+		AscentPlan copy = (AscentPlan)MemberwiseClone();
+		copy.ThrustScale = scale;
+		return copy;
+	}
+
 	public double TargetRadius => Distance.HasValue ? StartRadius + Distance.Value : Planet?.GravityLimit ?? 0.0;
 
 	public static AscentPlan Here(ShipSnapshot ship, Dir dir, double? distance, double speed)
@@ -123,6 +136,11 @@ public class AscentResult
 	public double ChuteSpeed;
 
 	public double TouchdownSpeed;
+
+	/// <summary>The kind of thruster that pushes the chosen way most at the start, and what one of them gives there, in newtons (0 when none gives anything).</summary>
+	public string UnitType;
+
+	public double UnitThrust;
 
 	/// <summary>Heaviest the ship could be and still make it, in kg (filled in by Ascent.Solve).</summary>
 	public double MaxMass;
@@ -415,6 +433,95 @@ internal static class Ascent
 		return result.StartGravity > 0 ? result.StartThrust / result.StartGravity : 0.0;
 	}
 
+	/// <summary>How much thrust a trip needs at a given mass, found by searching ThrustScale over the same climb.</summary>
+	public class ThrustNeed
+	{
+		/// <summary>The outcome with the ship's own thrusters.</summary>
+		public AscentOutcome Outcome;
+
+		public bool Success => Outcome == AscentOutcome.Made;
+
+		/// <summary>Thrust the ship has pushing the chosen way at the start of the climb, in newtons.</summary>
+		public double Have;
+
+		/// <summary>The least thrust at that point that makes the whole trip, in newtons; NaN when no amount does (out of fuel or power) or it can't be told.</summary>
+		public double Needed = double.NaN;
+
+		public string UnitType;
+
+		public double UnitThrust;
+
+		public bool Known => !double.IsNaN(Needed);
+	}
+
+	/// <summary>
+	/// The least start thrust that gets this ship, at this mass, through the trip: the same climb (and landing, for a
+	/// visit), with every thruster's thrust and power use scaled until the trip just makes it. Needs a trip that more
+	/// thrust can fix: not one that runs out of fuel or power at any thrust, or has no gravity or no thrusters.
+	/// </summary>
+	public static ThrustNeed Need(ShipSnapshot ship, AscentPlan plan, double mass)
+	{
+		AscentResult own = Run(ship, plan, mass);
+		ThrustNeed need = new ThrustNeed { Outcome = own.Outcome, Have = own.StartThrust, UnitType = own.UnitType, UnitThrust = own.UnitThrust };
+		if (own.Outcome == AscentOutcome.NoGravity || own.Outcome == AscentOutcome.NoMass || own.Outcome == AscentOutcome.NoThrusters || own.StartThrust <= 0.0)
+		{
+			return need;
+		}
+		double low;
+		double high;
+		if (own.Success)
+		{
+			low = 0.0;
+			high = 1.0;
+		}
+		else
+		{
+			low = 1.0;
+			high = 2.0;
+			while (!Run(ship, plan.Scaled(high), mass).Success)
+			{
+				low = high;
+				high *= 2.0;
+				if (high > 1024.0)
+				{
+					return need;
+				}
+			}
+		}
+		for (int i = 0; i < 12; i++)
+		{
+			double mid = (low + high) / 2.0;
+			if (Run(ship, plan.Scaled(mid), mass).Success)
+			{
+				high = mid;
+			}
+			else
+			{
+				low = mid;
+			}
+		}
+		need.Needed = own.StartThrust * high;
+		return need;
+	}
+
+	/// <summary>The kind of thruster that gives the most push the chosen way at the start, and what one fitted straight along that way would give.</summary>
+	private static void FindUnit(ShipSnapshot ship, AscentPlan plan, Vector3D axis, AscentResult result)
+	{
+		double air = plan.Planet?.AirAt(plan.StartRadius) ?? 0.0;
+		bool atmosphere = plan.Planet?.HasAtmosphere ?? false;
+		double best = 0.0;
+		foreach (IGrouping<string, ThrusterInfo> group in ship.Thrusters.GroupBy(t => t.TypeName))
+		{
+			double push = group.Sum(t => Math.Max(0.0, Vector3D.Dot(t.Push, axis)) * t.Force * t.Effectiveness(air, atmosphere));
+			if (push > best)
+			{
+				best = push;
+				result.UnitType = group.Key;
+				result.UnitThrust = group.Max(t => t.Force * t.Effectiveness(air, atmosphere));
+			}
+		}
+	}
+
 	public static AscentResult Run(ShipSnapshot ship, AscentPlan plan, double mass)
 	{
 		AscentResult result = new AscentResult { Direction = plan.Dir, Mass = mass };
@@ -450,9 +557,10 @@ internal static class Ascent
 				entry = new Active { Thruster = thruster };
 				kinds[kind] = entry;
 			}
-			entry.Force += thruster.Force * share;
-			entry.Power += thruster.MaxPower;
+			entry.Force += thruster.Force * share * plan.ThrustScale;
+			entry.Power += thruster.MaxPower * plan.ThrustScale;
 		}
+		FindUnit(ship, plan, axis, result);
 		if (kinds.Count == 0)
 		{
 			result.Outcome = AscentOutcome.NoThrusters;

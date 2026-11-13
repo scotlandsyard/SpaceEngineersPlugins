@@ -31,6 +31,12 @@ internal static class Settings
 	/// <summary>Open the ship's parachutes when landing on a planet with air.</summary>
 	public static bool UseChutes = true;
 
+	/// <summary>Cargo fill view: which kind of cargo fills the ship (index into Cargo.Mixes).</summary>
+	public static int CargoMix;
+
+	/// <summary>Cargo fill view: an extra fill to check, as a percentage typed in.</summary>
+	public static string CargoPercent = "";
+
 	/// <summary>Show the HUD overlay.</summary>
 	public static bool Hud;
 
@@ -110,6 +116,14 @@ internal static class Settings
 			{
 				UseChutes = chutes != "0";
 			}
+			if (values.TryGetValue("CargoMix", out string cargoMix) && int.TryParse(cargoMix, out int mixIndex) && mixIndex >= 0 && mixIndex < 16)
+			{
+				CargoMix = mixIndex;
+			}
+			if (values.TryGetValue("CargoPercent", out string cargoPercent))
+			{
+				CargoPercent = cargoPercent;
+			}
 			if (values.TryGetValue("Hud", out string hud))
 			{
 				Hud = hud == "1";
@@ -157,6 +171,8 @@ internal static class Settings
 				writer.WriteLine("CountOff=" + (CountOff ? "1" : "0"));
 				writer.WriteLine("View=" + View);
 				writer.WriteLine("UseChutes=" + (UseChutes ? "1" : "0"));
+				writer.WriteLine("CargoMix=" + CargoMix);
+				writer.WriteLine("CargoPercent=" + CargoPercent);
 				writer.WriteLine("Hud=" + (Hud ? "1" : "0"));
 				writer.WriteLine("HudKey=" + HudKey);
 				writer.WriteLine("HudX=" + HudX.ToString(CultureInfo.InvariantCulture));

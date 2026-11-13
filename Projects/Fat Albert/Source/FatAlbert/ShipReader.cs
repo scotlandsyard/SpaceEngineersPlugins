@@ -67,6 +67,7 @@ internal static class ShipReader
 	{
 		s_cache.Clear();
 		s_priorities = null;
+		Cargo.Clear();
 	}
 
 	/// <summary>The player's ships near them (not stations), nearest first. The ship they're flying always comes first.</summary>
@@ -185,7 +186,38 @@ internal static class ShipReader
 		ReadTanks(ship, cache, countOff);
 		ReadSources(ship, cache, countOff);
 		ReadParachutes(ship, cache, countOff);
+		ReadCargo(ship, cache);
 		return ship;
+	}
+
+	/// <summary>
+	/// Cargo space for the Cargo fill view: the inventories of blocks meant for carrying things (containers,
+	/// connectors, cockpits, drills, grinders and welders). Reactor fuel, assembler and refinery queues, ammo and
+	/// canopy material stay in the ship's base weight. MaxVolume already includes the world's inventory multiplier.
+	/// </summary>
+	private static void ReadCargo(ShipSnapshot ship, BlockCache cache)
+	{
+		ship.InventoryMultiplier = Math.Max(1.0, MyAPIGateway.Session?.SessionSettings?.BlocksInventorySizeMultiplier ?? 1f);
+		foreach (MyCubeBlock block in cache.Inventories)
+		{
+			if (!(block is IMyCargoContainer || block is IMyShipConnector || block is IMyShipController || block is IMyShipDrill || block is IMyShipToolBase))
+			{
+				continue;
+			}
+			for (int i = 0; i < block.InventoryCount; i++)
+			{
+				MyInventory inventory = block.GetInventory(i);
+				// An inventory with no limit (some creative or modded blocks) has no room to fill.
+				if (inventory == null || (double)inventory.MaxVolume > 1e7)
+				{
+					continue;
+				}
+				ship.CargoVolume += (double)inventory.MaxVolume;
+				ship.CargoUsedVolume += (double)inventory.CurrentVolume;
+				ship.CargoItemMass += (double)inventory.CurrentMass;
+				ship.CargoBlocks++;
+			}
+		}
 	}
 
 	/// <summary>
