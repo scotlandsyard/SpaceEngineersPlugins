@@ -81,7 +81,9 @@ internal static class Signals
 		{
 			return SignalKind.Encounter;
 		}
-		if (!gps.IsContainerGPS)
+		// After a world load the game marks every GPS that has an entity id as a container marker (LoadGpss), so
+		// contract, objective and mod markers can carry the flag too: never count those.
+		if (!gps.IsContainerGPS || gps.ContractId != 0 || gps.IsObjective)
 		{
 			return null;
 		}
@@ -100,9 +102,10 @@ internal static class Signals
 		{
 			return SignalKind.Unknown;
 		}
-		// A server in another language: fall back to the colours the drop system gives each kind.
+		// A server in another language: fall back to the colours the drop system gives each kind, and only for names
+		// shaped like a cargo drop's ("<text> <number>"), so a mod marker that happens to share a colour isn't taken.
 		MyContainerDropSystemDefinition definition = DropDefinition();
-		if (definition == null || SameColor(gps.GPSColor, BodyColor))
+		if (definition == null || SameColor(gps.GPSColor, BodyColor) || !EndsInNumber(name))
 		{
 			return null;
 		}
@@ -120,6 +123,17 @@ internal static class Signals
 	private static bool StartsWith(string name, string prefix)
 	{
 		return !string.IsNullOrEmpty(prefix) && name.StartsWith(prefix, StringComparison.OrdinalIgnoreCase);
+	}
+
+	private static bool EndsInNumber(string name)
+	{
+		string trimmed = name.TrimEnd();
+		int digits = 0;
+		while (digits < trimmed.Length && char.IsDigit(trimmed[trimmed.Length - 1 - digits]))
+		{
+			digits++;
+		}
+		return digits > 0 && digits < trimmed.Length && trimmed[trimmed.Length - 1 - digits] == ' ';
 	}
 
 	private static bool SameColor(Color a, Color b)

@@ -32,8 +32,14 @@ public class QuietSkiesScreen : MyGuiScreenBase
 
 	private int _frames;
 
+	private const int KeepDelayFrames = 120;
+
+	private readonly Dictionary<SignalKind, int> _pendingKeep = new Dictionary<SignalKind, int>();
+
+	private int _pendingSince;
+
 	public QuietSkiesScreen()
-		: base(new Vector2(0.5f, 0.5f), MyGuiConstants.SCREEN_BACKGROUND_COLOR, new Vector2(0.72f, 0.6f))
+		: base(new Vector2(0.5f, 0.5f), MyGuiConstants.SCREEN_BACKGROUND_COLOR, new Vector2(0.92f, 0.6f))
 	{
 		EnabledBackgroundFade = true;
 		m_closeOnEsc = true;
@@ -56,10 +62,11 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		_helpControls.Clear();
 		_counts.Clear();
 
-		AddLabel(-0.32f, HeaderY, "Marker", _mainControls);
-		AddLabel(-0.09f, HeaderY, "On the HUD", _mainControls);
-		AddLabel(0.1f, HeaderY, "Nearby km", _mainControls);
-		AddLabel(0.21f, HeaderY, "Markers", _mainControls);
+		AddLabel(-0.42f, HeaderY, "Marker", _mainControls);
+		AddLabel(-0.19f, HeaderY, "On the HUD", _mainControls);
+		AddLabel(0.0f, HeaderY, "Nearby km", _mainControls);
+		AddLabel(0.1f, HeaderY, "Keep newest", _mainControls);
+		AddLabel(0.2f, HeaderY, "Markers", _mainControls);
 
 		float y = FirstRowY;
 		foreach (SignalKind kind in Signals.Kinds)
@@ -68,17 +75,17 @@ public class QuietSkiesScreen : MyGuiScreenBase
 			y += RowStep;
 		}
 
-		_status = AddLabel(-0.32f, 0.135f, "", _mainControls);
-		AddLabel(-0.32f, 0.175f, "Hide also takes markers off the HUD on your other PCs. Nearby only is this PC only.", _mainControls).ColorMask = new Vector4(0.7f, 0.7f, 0.7f, 1f);
-		AddButton(0.24f, ButtonsY, "Help", () => ShowPage(_helpControls), _mainControls);
+		_status = AddLabel(-0.42f, 0.135f, "", _mainControls);
+		AddLabel(-0.42f, 0.175f, "Hide also takes markers off the HUD on your other PCs. Nearby only is this PC only.", _mainControls).ColorMask = new Vector4(0.7f, 0.7f, 0.7f, 1f);
+		AddButton(0.34f, ButtonsY, "Help", () => ShowPage(_helpControls), _mainControls);
 
-		MyGuiControlMultilineText help = new MyGuiControlMultilineText(new Vector2(0f, -0.2f), new Vector2(0.66f, 0.4f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
+		MyGuiControlMultilineText help = new MyGuiControlMultilineText(new Vector2(0f, -0.2f), new Vector2(0.86f, 0.4f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
 		{
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
 		};
 		help.AppendText(HelpText);
 		Add(help, _helpControls);
-		AddButton(0.24f, ButtonsY, "Back", () => ShowPage(_mainControls), _helpControls);
+		AddButton(0.34f, ButtonsY, "Back", () => ShowPage(_mainControls), _helpControls);
 
 		ShowPage(_mainControls);
 		RefreshCounts();
@@ -86,9 +93,9 @@ public class QuietSkiesScreen : MyGuiScreenBase
 
 	private void AddRow(SignalKind kind, float y)
 	{
-		AddLabel(-0.32f, y, Signals.Name(kind), _mainControls);
+		AddLabel(-0.42f, y, Signals.Name(kind), _mainControls);
 
-		MyGuiControlCombobox combo = new MyGuiControlCombobox(new Vector2(-0.09f, y), new Vector2(0.17f, 0.04f), originAlign: MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
+		MyGuiControlCombobox combo = new MyGuiControlCombobox(new Vector2(-0.19f, y), new Vector2(0.17f, 0.04f), originAlign: MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
 		foreach (SignalMode mode in new[] { SignalMode.Show, SignalMode.Hide, SignalMode.Nearby })
 		{
 			combo.AddItem((long)mode, Signals.ModeName(mode), sort: false);
@@ -102,7 +109,7 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		};
 		Add(combo, _mainControls);
 
-		MyGuiControlTextbox km = new MyGuiControlTextbox(new Vector2(0.1f, y), QuietSkiesSession.FormatKm(Settings.Km(kind)), 6)
+		MyGuiControlTextbox km = new MyGuiControlTextbox(new Vector2(0.0f, y), QuietSkiesSession.FormatKm(Settings.Km(kind)), 6)
 		{
 			Size = new Vector2(0.08f, 0.045f),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
@@ -120,7 +127,34 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		};
 		Add(km, _mainControls);
 
-		_counts[kind] = AddLabel(0.21f, y, "", _mainControls);
+		MyGuiControlTextbox keep = new MyGuiControlTextbox(new Vector2(0.1f, y), Settings.Keep(kind).ToString(CultureInfo.InvariantCulture), 3)
+		{
+			Size = new Vector2(0.07f, 0.045f),
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+		};
+		keep.SetToolTip($"Keep only this many {Signals.Name(kind)}s and delete the oldest from your GPS list as new ones arrive, hidden or not. 0 is off (the default). Up to {Settings.MaxKeep}. Deleting can't be undone.");
+		keep.TextChanged += box =>
+		{
+			// Not applied while typing: "15" would pass through "1" and delete all but one marker.
+			string text = (box.Text ?? "").Trim();
+			if (text.Length == 0)
+			{
+				_pendingKeep[kind] = 0;
+				_pendingSince = _frames;
+			}
+			else if (int.TryParse(text, NumberStyles.Integer, CultureInfo.InvariantCulture, out int value) && value >= 0)
+			{
+				_pendingKeep[kind] = value;
+				_pendingSince = _frames;
+			}
+		};
+		Add(keep, _mainControls);
+
+		_counts[kind] = AddLabel(0.2f, y, "", _mainControls);
+
+		MyGuiControlButton delete = AddButton(0.375f, y, "Delete all", () => QuietSkiesSession.ConfirmDelete(kind, RefreshCounts), _mainControls);
+		delete.Size = new Vector2(0.1f, 0.04f);
+		delete.SetToolTip($"Deletes every {Signals.Name(kind)} from your GPS list, after asking with the count. Same as the G menu's Delete, five a second. Can't be undone.");
 	}
 
 	public override bool Update(bool hasFocus)
@@ -129,7 +163,27 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		{
 			RefreshCounts();
 		}
+		// Keep newest applies 2 seconds after the last keystroke, or when the window closes.
+		if (_pendingKeep.Count > 0 && _frames - _pendingSince >= KeepDelayFrames)
+		{
+			ApplyPendingKeep();
+		}
 		return base.Update(hasFocus);
+	}
+
+	protected override void OnClosed()
+	{
+		ApplyPendingKeep();
+		base.OnClosed();
+	}
+
+	private void ApplyPendingKeep()
+	{
+		foreach (KeyValuePair<SignalKind, int> pair in _pendingKeep)
+		{
+			QuietSkiesSession.SetKeep(pair.Key, pair.Value);
+		}
+		_pendingKeep.Clear();
 	}
 
 	private void RefreshCounts()
@@ -141,7 +195,9 @@ public class QuietSkiesScreen : MyGuiScreenBase
 				Filter.Count(pair.Key, out int total, out int onHud);
 				pair.Value.Text = total == 0 ? "none" : $"{total}, {onHud} shown";
 			}
-			_status.Text = Filter.Queued > 0 ? $"Sending {Filter.Queued} change(s) to the server..." : $"Show on HUD requests sent this session: {Filter.RequestsSent}";
+			_status.Text = Filter.DeletesLeft > 0 ? $"Deleting... {Filter.DeletesLeft} marker(s) left (about {Math.Ceiling(Filter.Queued / 5.0):0} s)."
+				: Filter.Queued > 0 ? $"Sending {Filter.Queued} change(s) to the server..."
+				: $"Requests sent this session: {Filter.RequestsSent}";
 		}
 		catch (Exception ex)
 		{
@@ -175,10 +231,11 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		return label;
 	}
 
-	private void AddButton(float x, float y, string text, Action onClick, List<MyGuiControlBase> page)
+	private MyGuiControlButton AddButton(float x, float y, string text, Action onClick, List<MyGuiControlBase> page)
 	{
 		MyGuiControlButton button = new MyGuiControlButton(new Vector2(x, y), MyGuiControlButtonStyleEnum.Default, null, null, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER, null, new StringBuilder(text), 0.8f, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER, MyGuiControlHighlightType.WHEN_CURSOR_OVER, (MyGuiControlButton _) => onClick());
 		Add(button, page);
+		return button;
 	}
 
 	private const string HelpText =
@@ -189,14 +246,16 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		"Hide: takes the markers off your HUD with the game's own Show on HUD switch, the same as unticking it in the G menu. They stay in your G list, and the server remembers the switch, so they stay off the HUD even without the plugin.\n" +
 		"Nearby only: the markers show on your HUD only within the distance you set, measured from you or the ship you control. This one only changes your own screen and sends nothing; in the G list they still show as on the HUD. A marker comes back inside the distance and goes again a little beyond it, so it doesn't flicker at the edge.\n" +
 		"New markers follow the setting as they arrive (the game still plays its arrival sound). Settings are kept for each world.\n\n" +
+		"DELETING\n" +
+		"Delete all removes every marker of that kind from your GPS list, after asking with the count. Keep newest keeps only that many of a kind and deletes the oldest whenever there are more, hidden or not; 0 turns it off, and it's off by default. Both use the G menu's Delete, five markers a second, so 100 markers take about 20 seconds (the status line shows how many are left). Deleting can't be undone: the server removes the marker from your list, and it doesn't come back for that encounter or drop. The game keeps no time on a marker, so Quiet Skies notes the order markers arrive in; for markers that were already there, it goes by the cargo drop's number or an encounter's time left.\n\n" +
 		"YOUR OWN CHOICES\n" +
 		"Show and Nearby only only turn a marker back on if Quiet Skies hid it. A marker you took off the HUD yourself in the G menu stays off. When a setting changes, or when you load the world, Quiet Skies applies it to every marker again.\n\n" +
 		"TOOLBAR\n" +
-		"In a cockpit or remote control, the toolbar has Quiet Skies: signal filter (opens this window) and one action per kind that steps through Show, Hide and Nearby only.\n\n" +
+		"In a cockpit or remote control, the toolbar has Quiet Skies: signal filter (opens this window), one action per kind that steps through Show, Hide and Nearby only, and one per kind that deletes them all (it asks first).\n\n" +
 		"COMMANDS\n" +
-		"/skies opens this window. /skies status lists each kind's mode and markers. /skies unidentified hide, /skies unknown show, /skies strong nearby 20 or /skies all hide set a mode (nearby takes an optional distance in km). /skies chat off, quiet, normal or chatty sets how much it comments. /skies name and a name changes what its chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins.\n\n" +
+		"/skies opens this window. /skies status lists each kind's mode and markers. /skies unidentified hide, /skies unknown show, /skies strong nearby 20 or /skies all hide set a mode (nearby takes an optional distance in km). /skies keep unknown 5 keeps the newest 5 (0 turns it off; all works too). /skies delete strong deletes every Strong Unknown Signal after asking. /skies chat off, quiet, normal or chatty sets how much it comments. /skies name and a name changes what its chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins.\n\n" +
 		"WHAT THE SERVER SEES\n" +
-		"Hide sends one Show on HUD request per marker. Show sends two for each marker Quiet Skies hid: Show on HUD, and Always visible (the game turns that off when a marker is hidden). They're the same requests the G menu sends, at most five a second. Nearby only, the window, the commands and the toolbar actions send nothing. A toolbar action saved in a cockpit's toolbar is stored with the ship, like any other toolbar slot.\n\n" +
+		"Hide sends one Show on HUD request per marker. Show sends two for each marker Quiet Skies hid: Show on HUD, and Always visible (the game turns that off when a marker is hidden). Delete all and Keep newest send one Delete request per marker. They're all the same requests the G menu sends, at most five a second. Nearby only, the window, the commands and the toolbar actions send nothing. A toolbar action saved in a cockpit's toolbar is stored with the ship, like any other toolbar slot.\n\n" +
 		"FILES\n" +
-		"The chat setting is in QuietSkies_Settings.txt and each world's modes in QuietSkies_<world>_Settings.txt, in %AppData%\\SpaceEngineers\\Storage.";
+		"The chat setting is in QuietSkies_Settings.txt and each world's modes, Keep newest and the markers' arrival order in QuietSkies_<world>_Settings.txt, in %AppData%\\SpaceEngineers\\Storage.";
 }

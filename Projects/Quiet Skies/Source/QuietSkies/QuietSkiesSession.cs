@@ -8,6 +8,7 @@ using Sandbox.Graphics.GUI;
 using Sandbox.ModAPI;
 using Sandbox.ModAPI.Interfaces.Terminal;
 using TimShared;
+using VRage.Game;
 using VRage.Game.Components;
 using VRage.Game.ModAPI;
 using VRage.Utils;
@@ -51,6 +52,14 @@ public class QuietSkiesSession : MySessionComponentBase
 			{
 				SignalKind k = kind;
 				_actions.Add(new MyTerminalAction<MyTerminalBlock>(ActionPrefix + "Cycle" + kind, new StringBuilder("Quiet Skies: " + Signals.Name(kind) + " Show/Hide/Nearby"), _ => Cycle(k), "Textures\\GUI\\Icons\\Actions\\Toggle.dds")
+				{
+					ValidForGroups = false
+				});
+			}
+			foreach (SignalKind kind in Signals.Kinds)
+			{
+				SignalKind k = kind;
+				_actions.Add(new MyTerminalAction<MyTerminalBlock>(ActionPrefix + "Delete" + kind, new StringBuilder("Quiet Skies: delete all " + Signals.Name(kind) + "s"), _ => ConfirmDelete(k), "Textures\\GUI\\Icons\\Actions\\Reset.dds")
 				{
 					ValidForGroups = false
 				});
@@ -170,6 +179,36 @@ public class QuietSkiesSession : MySessionComponentBase
 		}
 	}
 
+	/// <summary>Sets Keep newest for a kind (0 turns it off), saves it for this world and trims on the next tick.</summary>
+	internal static void SetKeep(SignalKind kind, int keep)
+	{
+		Settings.KeepNewest[kind] = Settings.ClampKeep(keep);
+		Settings.SaveWorld();
+		Filter.ScanSoon();
+	}
+
+	/// <summary>Asks before deleting every marker of a kind, with the count; the window, the chat command and the toolbar all go through here.</summary>
+	internal static void ConfirmDelete(SignalKind kind, Action done = null)
+	{
+		Filter.Count(kind, out int total, out _);
+		string name = Signals.Name(kind);
+		if (total == 0)
+		{
+			MyAPIGateway.Utilities.ShowMessage(ChatSender, $"There are no {name}s to delete.");
+			return;
+		}
+		MyGuiSandbox.AddScreen(MyGuiSandbox.CreateMessageBox(MyMessageBoxStyleEnum.Info, MyMessageBoxButtonsType.YES_NO, messageCaption: new StringBuilder("Delete signals"), messageText: new StringBuilder($"Delete {total} {name}{(total == 1 ? "" : "s")} from your GPS list? This can't be undone. Your own GPS and other markers aren't touched."), callback: answer =>
+		{
+			if (answer != MyGuiScreenMessageBox.ResultEnum.YES)
+			{
+				return;
+			}
+			int count = Filter.DeleteAll(kind);
+			MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Deleting {count} {name}{(count == 1 ? "" : "s")}, five a second (about {Math.Ceiling(count / 5.0):0} s).");
+			done?.Invoke();
+		}));
+	}
+
 	private static void Cycle(SignalKind kind)
 	{
 		SignalMode next = (SignalMode)(((int)Settings.Mode(kind) + 1) % 3);
@@ -215,12 +254,34 @@ public class QuietSkiesSession : MySessionComponentBase
 			int start = messageText.IndexOf(words[1], StringComparison.OrdinalIgnoreCase) + words[1].Length;
 			Chatter.SetDisplayName(messageText.Substring(start));
 			return;
+		case "delete":
+			SignalKind[] toDelete = words.Length > 2 ? ParseKinds(words[2].ToLowerInvariant()) : null;
+			if (toDelete == null || toDelete.Length != 1)
+			{
+				MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /skies delete unidentified, unknown or strong. It asks first, with the count.");
+				return;
+			}
+			ConfirmDelete(toDelete[0]);
+			return;
+		case "keep":
+			SignalKind[] toKeep = words.Length > 2 ? ParseKinds(words[2].ToLowerInvariant()) : null;
+			if (toKeep == null || words.Length < 4 || !int.TryParse(words[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int keep) || keep < 0)
+			{
+				MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Use /skies keep <unidentified|unknown|strong|all> <number>, up to {Settings.MaxKeep}; 0 turns it off.");
+				return;
+			}
+			foreach (SignalKind kind in toKeep)
+			{
+				SetKeep(kind, keep);
+			}
+			ShowStatus();
+			return;
 		}
 		SignalKind[] kinds = ParseKinds(sub);
 		SignalMode? mode = words.Length > 2 ? ParseMode(words[2]) : null;
 		if (kinds == null || !mode.HasValue)
 		{
-			MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /skies <unidentified|unknown|strong|all> <show|hide|nearby> [km], /skies status, or /skies on its own for the window.");
+			MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /skies <unidentified|unknown|strong|all> <show|hide|nearby> [km], /skies keep <kind> <number>, /skies delete <kind>, /skies status, or /skies on its own for the window.");
 			return;
 		}
 		double? km = null;
@@ -283,7 +344,8 @@ public class QuietSkiesSession : MySessionComponentBase
 		foreach (SignalKind kind in Signals.Kinds)
 		{
 			Filter.Count(kind, out int total, out int onHud);
-			text.Append($"\n{Signals.Name(kind)}: {Describe(kind)}. {total} marker(s), {onHud} on your HUD.");
+			int keep = Settings.Keep(kind);
+			text.Append($"\n{Signals.Name(kind)}: {Describe(kind)}{(keep > 0 ? $", keep newest {keep}" : "")}. {total} marker(s), {onHud} on your HUD.");
 		}
 		MyAPIGateway.Utilities.ShowMessage(ChatSender, text.ToString());
 	}

@@ -34,7 +34,24 @@ internal static class Settings
 	/// <summary>Entity ids of markers this plugin hid through the server. Never filled with markers you hid yourself.</summary>
 	public static readonly HashSet<long> HiddenByUs = new HashSet<long>();
 
+	public const int MaxKeep = 999;
+
+	/// <summary>Keep only this many of a kind, deleting the oldest; 0 (the default) is off.</summary>
+	public static readonly Dictionary<SignalKind, int> KeepNewest = new Dictionary<SignalKind, int>();
+
+	/// <summary>
+	/// The order markers arrived in, by entity id: a higher number is newer. The game keeps no creation time on a GPS,
+	/// so Keep newest uses this.
+	/// </summary>
+	public static readonly Dictionary<long, long> Seen = new Dictionary<long, long>();
+
+	public static long NextSeen = 1;
+
 	private static string s_world = "";
+
+	public static int Keep(SignalKind kind) => KeepNewest.TryGetValue(kind, out int keep) ? keep : 0;
+
+	public static int ClampKeep(int keep) => Math.Max(0, Math.Min(MaxKeep, keep));
 
 	public static SignalMode Mode(SignalKind kind) => Modes.TryGetValue(kind, out SignalMode mode) ? mode : SignalMode.Show;
 
@@ -49,6 +66,9 @@ internal static class Settings
 		Modes.Clear();
 		NearbyKm.Clear();
 		HiddenByUs.Clear();
+		KeepNewest.Clear();
+		Seen.Clear();
+		NextSeen = 1;
 		string world = MyAPIGateway.Session?.Name ?? "Unknown";
 		s_world = new string(world.Select(c => char.IsLetterOrDigit(c) || c == '-' || c == '_' ? c : '_').ToArray());
 
@@ -72,6 +92,22 @@ internal static class Settings
 			if (values.TryGetValue("Km." + kind, out string km) && double.TryParse(km, NumberStyles.Float, CultureInfo.InvariantCulture, out double k))
 			{
 				NearbyKm[kind] = ClampKm(k);
+			}
+			if (values.TryGetValue("Keep." + kind, out string keep) && int.TryParse(keep, NumberStyles.Integer, CultureInfo.InvariantCulture, out int n))
+			{
+				KeepNewest[kind] = ClampKeep(n);
+			}
+		}
+		if (values.TryGetValue("Seen", out string seen))
+		{
+			foreach (string pair in seen.Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries))
+			{
+				string[] parts = pair.Split(':');
+				if (parts.Length == 2 && long.TryParse(parts[0].Trim(), out long entityId) && entityId != 0 && long.TryParse(parts[1].Trim(), out long order))
+				{
+					Seen[entityId] = order;
+					NextSeen = Math.Max(NextSeen, order + 1);
+				}
 			}
 		}
 		if (values.TryGetValue("HiddenByUs", out string hidden))
@@ -145,8 +181,10 @@ internal static class Settings
 				{
 					writer.WriteLine("Mode." + kind + "=" + Mode(kind));
 					writer.WriteLine("Km." + kind + "=" + Km(kind).ToString(CultureInfo.InvariantCulture));
+					writer.WriteLine("Keep." + kind + "=" + Keep(kind).ToString(CultureInfo.InvariantCulture));
 				}
 				writer.WriteLine("HiddenByUs=" + string.Join(",", HiddenByUs));
+				writer.WriteLine("Seen=" + string.Join(",", Seen.Select(p => p.Key + ":" + p.Value)));
 			}
 		}
 		catch (Exception ex)
