@@ -231,7 +231,9 @@ internal static class Items
 		return choices;
 	}
 
-	private static Dictionary<string, MyBlueprintDefinitionBase> s_offered;
+	// Per item, every blueprint in a public assembler type's classes that makes it. Whether one is offered is checked on
+	// each lookup, so the answer follows the definitions as they are now.
+	private static Dictionary<string, List<MyBlueprintDefinitionBase>> s_offered;
 
 	/// <summary>
 	/// A blueprint some public assembler type in the game offers for the item (public item, public and enabled
@@ -241,7 +243,7 @@ internal static class Items
 	{
 		if (s_offered == null)
 		{
-			s_offered = new Dictionary<string, MyBlueprintDefinitionBase>();
+			s_offered = new Dictionary<string, List<MyBlueprintDefinitionBase>>();
 			foreach (MyAssemblerDefinition assembler in MyDefinitionManager.Static.GetAllDefinitions().OfType<MyAssemblerDefinition>())
 			{
 				if (!assembler.Public || !assembler.Enabled || assembler.BlueprintClasses == null)
@@ -252,23 +254,28 @@ internal static class Items
 				{
 					foreach (MyBlueprintDefinitionBase blueprint in blueprintClass)
 					{
-						if (!Offered(blueprint) || blueprint.Results == null)
+						if (blueprint?.Results == null)
 						{
 							continue;
 						}
 						foreach (MyBlueprintDefinitionBase.Item result in blueprint.Results)
 						{
 							string made = Key(result.Id);
-							if (!s_offered.ContainsKey(made) && Definition(made)?.Public == true)
+							if (!s_offered.TryGetValue(made, out List<MyBlueprintDefinitionBase> makers))
 							{
-								s_offered[made] = blueprint;
+								makers = new List<MyBlueprintDefinitionBase>();
+								s_offered[made] = makers;
+							}
+							if (!makers.Contains(blueprint))
+							{
+								makers.Add(blueprint);
 							}
 						}
 					}
 				}
 			}
 		}
-		return s_offered.TryGetValue(key, out MyBlueprintDefinitionBase found) ? found : null;
+		return Definition(key)?.Public == true && s_offered.TryGetValue(key, out List<MyBlueprintDefinitionBase> found) ? found.FirstOrDefault(Offered) : null;
 	}
 
 	/// <summary>How many of the item one run of the blueprint makes (1 for vanilla components).</summary>
