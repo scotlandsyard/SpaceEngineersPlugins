@@ -483,6 +483,14 @@ public class SsmSession : MySessionComponentBase
 			}
 			if (construct.Key != main.EntityId)
 			{
+				// A different ship or station now leads this terminal system (the game can reuse the object, and
+				// docking switches the main grid): start fresh, so the old grid's snapshot, log, notes and quota
+				// state don't carry over to it.
+				if (construct.Key != 0)
+				{
+					construct = new Construct { Terminal = entry.Key };
+					_constructs[entry.Key] = construct;
+				}
 				changed = true;
 			}
 			construct.Key = main.EntityId;
