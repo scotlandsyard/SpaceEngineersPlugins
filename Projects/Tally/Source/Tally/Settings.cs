@@ -28,6 +28,15 @@ internal static class Settings
 	/// <summary>Refinery yield in percent typed in the window; 0 = this world's best refinery without modules.</summary>
 	public static double YieldPercent;
 
+	/// <summary>The assembler or group last queued in (Target.Key).</summary>
+	public static string QueueTarget = "";
+
+	/// <summary>What the assemblers already have queued or finished counts as on its way.</summary>
+	public static bool QueueCountQueued = true;
+
+	/// <summary>What's in the assemblers' grid is taken off before queuing.</summary>
+	public static bool QueueMinusCargo;
+
 	public static void Load()
 	{
 		Dictionary<string, string> values = ReadFile(FileName);
@@ -44,6 +53,9 @@ internal static class Settings
 		Cargo = Get("Cargo") == "yes";
 		double.TryParse(Get("YieldPercent") ?? "0", NumberStyles.Float, CultureInfo.InvariantCulture, out YieldPercent);
 		YieldPercent = YieldPercent > 0 && YieldPercent <= 1000 ? YieldPercent : 0;
+		QueueTarget = Get("QueueTarget") ?? "";
+		QueueCountQueued = Get("QueueCountQueued") != "no";
+		QueueMinusCargo = Get("QueueMinusCargo") == "yes";
 	}
 
 	public static void Save()
@@ -56,7 +68,10 @@ internal static class Settings
 			["StillNeeded"] = StillNeeded ? "yes" : "no",
 			["Carried"] = Carried ? "yes" : "no",
 			["Cargo"] = Cargo ? "yes" : "no",
-			["YieldPercent"] = YieldPercent.ToString(CultureInfo.InvariantCulture)
+			["YieldPercent"] = YieldPercent.ToString(CultureInfo.InvariantCulture),
+			["QueueTarget"] = QueueTarget ?? "",
+			["QueueCountQueued"] = QueueCountQueued ? "yes" : "no",
+			["QueueMinusCargo"] = QueueMinusCargo ? "yes" : "no"
 		});
 	}
 

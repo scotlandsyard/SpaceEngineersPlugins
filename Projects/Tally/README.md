@@ -1,6 +1,6 @@
 # Tally
 
-A client-side [Pulsar](https://github.com/StarCpt/Pulsar) plugin for Space Engineers that adds up what something takes to build: the components, the ingots the assembler needs for them and the ore the refinery needs for those ingots. It works from a projection, a blueprint in your F10 library or one of your own grids, uses the definitions the game has loaded (mods included), and writes the list onto datapads you can hand round.
+A client-side [Pulsar](https://github.com/StarCpt/Pulsar) plugin for Space Engineers that adds up what something takes to build: the components, the ingots the assembler needs for them and the ore the refinery needs for those ingots. It works from a projection, a blueprint in your F10 library or one of your own grids, uses the definitions the game has loaded (mods included), and writes the list onto datapads you can hand round. It can also queue the components in your assemblers.
 
 Open it with `/tally`, or from the plugin list at the top left of any of our plugin windows.
 
@@ -35,6 +35,18 @@ The window shows Components, Ingots and Ore as a table you can sort by any colum
 
 **Copy** puts the same text on the clipboard.
 
+## Queue in assemblers
+
+**Queue in assemblers** tallies again and opens the Queue page. Pick an assembler, or a terminal group of them, that you have access to. The page shows what would be queued before anything is sent.
+
+- Each component goes whole to one assembler, the one with the shortest queue, so a group shares the bill out; co-op assemblers then take their share from there.
+- Only components are queued, never ingots or ore, and only ones these assemblers have a blueprint for. The rest is listed as not queued. Damaged assemblers and ones set to disassemble are left out.
+- It queues what's still to get when the tally took something off, else the whole bill.
+- *Count what's already queued there* (on by default): what the assemblers already have queued, or finished in their output, counts as on its way, so pressing Queue twice doesn't double it.
+- *Minus the assemblers' grid*: also takes off what's in that grid's inventories and what's docked to it.
+- Queue asks first, then checks a few seconds later that the assemblers show the orders. **Undo last queue** takes Tally's last queue back out, except runs already started or passed on to co-op assemblers.
+- Stockpile Manager and BaR Maid queue on assemblers set to Main or Co-op, and inventory scripts may queue too. The page warns when the target has a Main or Co-op assembler. Tally never changes an assembler's mode, cooperative switch or Custom Data. For a big bill, a group nothing else uses is best.
+
 ## Commands
 
 | Command | What it does |
@@ -51,6 +63,7 @@ The window shows Components, Ingots and Ore as a table you can sort by any colum
 |---|---|
 | Tallying, the table, Copy | Nothing: projections, grids, inventories and definitions are already on your PC, and blueprints are your own files |
 | Write datapad | One datapad edit request per datapad, the same one the game's datapad screen sends when you press OK, only for datapads in your own inventory. The server saves the name and text with your inventory |
+| Queue, Undo last queue | One add-to-queue request per order and one remove request per queue entry, the same ones the terminal's production screen sends. The server checks access to the assembler and that you're near its grid or connected to it by antenna. Only queues change: nothing is ever put into an inventory |
 
 Only what you already have is read: projectors you have access to, grids you own, your own blueprint folder.
 

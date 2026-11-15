@@ -20,6 +20,7 @@ public partial class TallyScreen : MyGuiScreenBase
 	public enum Page
 	{
 		Tally,
+		Queue,
 		Help
 	}
 
@@ -102,6 +103,7 @@ public partial class TallyScreen : MyGuiScreenBase
 			_pages[page] = new List<MyGuiControlBase>();
 		}
 		BuildTallyPage();
+		BuildQueuePage();
 		BuildHelpPage();
 		Page wanted = _page;
 		_page = Page.Tally;
@@ -204,6 +206,7 @@ public partial class TallyScreen : MyGuiScreenBase
 		AddButton(-0.34f, ButtonsY, "Tally", () => Calculate(), page).SetToolTip("Counts the picked projector, blueprint or grid and works out the components, ingots and ore.");
 		AddButton(-0.17f, ButtonsY, "Write datapad", WriteDatapad, page).SetToolTip("Writes the list shown onto the datapad picked above (more than one if it's long).");
 		AddButton(0f, ButtonsY, "Copy", Copy, page).SetToolTip("Copies the list as text, the same as on the datapad.");
+		AddButton(0.17f, ButtonsY, "Queue in assemblers", OpenQueue, page).SetToolTip("Queues the components in an assembler or a group of them: you pick which and see what it would add before anything is sent.");
 		AddButton(0.34f, ButtonsY, "Help", () => ShowPage(Page.Help), page);
 		_filling = false;
 	}
@@ -472,6 +475,18 @@ public partial class TallyScreen : MyGuiScreenBase
 			catch (Exception ex)
 			{
 				MyLog.Default.WriteLineAndConsole($"[Tally] Window: {ex}");
+			}
+		}
+		else if (page == Page.Queue)
+		{
+			try
+			{
+				FillTargets();
+				ShowPlan();
+			}
+			catch (Exception ex)
+			{
+				MyLog.Default.WriteLineAndConsole($"[Tally] Queue page: {ex}");
 			}
 		}
 	}

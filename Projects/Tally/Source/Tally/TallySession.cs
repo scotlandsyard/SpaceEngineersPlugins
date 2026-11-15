@@ -36,6 +36,12 @@ public class TallySession : MySessionComponentBase
 
 	private static bool s_reading;
 
+	private static KeyValuePair<List<Order>, Dictionary<long, double>>? s_queueCheck;
+
+	private static Action<string> s_queueReport;
+
+	private static double s_queueCheckAt;
+
 	private bool _started;
 
 	internal static double Now => MyAPIGateway.Session?.ElapsedPlayTime.TotalSeconds ?? 0.0;
@@ -97,11 +103,26 @@ public class TallySession : MySessionComponentBase
 		s_blueprints.Clear();
 		s_expected.Clear();
 		s_reading = false;
+		s_queueCheck = null;
+		s_queueReport = null;
+		Assemblers.LastQueue = null;
 		_started = false;
 	}
 
 	public override void UpdateAfterSimulation()
 	{
+		if (s_queueCheck != null && Now >= s_queueCheckAt)
+		{
+			try
+			{
+				CheckQueue();
+			}
+			catch (Exception ex)
+			{
+				s_queueCheck = null;
+				MyLog.Default.WriteLineAndConsole($"[Tally] Queue check: {ex}");
+			}
+		}
 		if (s_expected.Count == 0 || Now < s_expectedAt)
 		{
 			return;
@@ -218,6 +239,7 @@ public class TallySession : MySessionComponentBase
 		}
 		Bill bill = Materials.Compute(count, have, string.Join(" and ", from), options.YieldPercent);
 		bill.SourceKey = source.Key;
+		bill.CargoGridId = cargo?.EntityId ?? 0;
 		LastBill = bill;
 		Personality.Say("tallied", "blocks", bill.Blocks.ToString("N0"));
 		done(bill, null);
@@ -229,6 +251,33 @@ public class TallySession : MySessionComponentBase
 		s_expected.Clear();
 		s_expected.AddRange(writes.Select(w => new KeyValuePair<Datapads.Write, Action<string>>(w, report)));
 		s_expectedAt = Now + 3.0;
+	}
+
+	/// <summary>Checks a few seconds after queuing that the assemblers' grids show more queued than before, and says so.</summary>
+	internal static void ExpectQueue(List<Order> orders, Dictionary<long, double> before, Action<string> report)
+	{
+		s_queueCheck = new KeyValuePair<List<Order>, Dictionary<long, double>>(orders, before);
+		s_queueReport = report;
+		s_queueCheckAt = Now + 3.0;
+	}
+
+	private static void CheckQueue()
+	{
+		List<Order> orders = s_queueCheck.Value.Key;
+		Dictionary<long, double> before = s_queueCheck.Value.Value;
+		Action<string> report = s_queueReport;
+		s_queueCheck = null;
+		Dictionary<long, double> after = Assemblers.Watch(orders);
+		int grids = before.Count;
+		int grew = before.Count(b => after.TryGetValue(b.Key, out double now) && now > b.Value + 1e-6);
+		if (grew == grids)
+		{
+			report($"The assemblers show the new orders ({orders.Sum(o => o.Runs):N0} runs).");
+		}
+		else
+		{
+			report("The assemblers don't show the new orders yet. The server may be slow, or it refused them: it only takes queue changes from a player near the grid or connected to it by antenna, with access to the assemblers.");
+		}
 	}
 
 	private static void CheckPads()

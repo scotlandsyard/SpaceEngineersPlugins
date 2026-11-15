@@ -47,6 +47,9 @@ internal class Bill
 
 	public bool Subtracted => HaveFrom.Length > 0;
 
+	/// <summary>The grid whose cargo was taken off (with what's docked to it), or 0.</summary>
+	public long CargoGridId;
+
 	public float Assembler;
 
 	/// <summary>Refinery yield used for the ore, 1 = 100%.</summary>
