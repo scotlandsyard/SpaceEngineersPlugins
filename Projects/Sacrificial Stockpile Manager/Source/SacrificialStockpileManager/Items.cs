@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using Sandbox.Definitions;
+using Sandbox.Game.Entities.Cube;
 using VRage.Game;
 
 namespace SacrificialStockpileManager;
@@ -152,6 +153,124 @@ internal static class Items
 		return blueprint;
 	}
 
+	/// <summary>
+	/// True for a blueprint the game's production screen offers: Public and enabled. Admin-only blueprints are not
+	/// Public (MyTerminalProductionController.RefreshBlueprints lists only Public ones), so a player can't queue them
+	/// by hand, and neither does the plugin.
+	/// </summary>
+	public static bool Offered(MyBlueprintDefinitionBase blueprint)
+	{
+		return blueprint != null && blueprint.Public && blueprint.Enabled;
+	}
+
+	/// <summary>How much of the item one run makes, 0 when the blueprint doesn't make it.</summary>
+	public static double MakesOf(MyBlueprintDefinitionBase blueprint, string key)
+	{
+		double total = 0.0;
+		if (blueprint?.Results != null)
+		{
+			foreach (MyBlueprintDefinitionBase.Item result in blueprint.Results)
+			{
+				if (Key(result.Id) == key)
+				{
+					total += (double)result.Amount;
+				}
+			}
+		}
+		return total;
+	}
+
+	/// <summary>
+	/// The blueprint one of these assemblers can be ordered to make the item with, the way the production screen
+	/// offers it: a public item, a public and enabled blueprint, in one of the assembler's blueprint classes. Null
+	/// when none of them can, admin-only and disabled blueprints included.
+	/// </summary>
+	public static MyBlueprintDefinitionBase BuildableBlueprint(string key, IEnumerable<MyProductionBlock> assemblers)
+	{
+		if (Definition(key)?.Public != true || assemblers == null)
+		{
+			return null;
+		}
+		foreach (MyProductionBlock assembler in assemblers)
+		{
+			if (assembler == null || assembler.Closed || !(assembler.BlockDefinition is MyProductionBlockDefinition definition) || definition.BlueprintClasses == null)
+			{
+				continue;
+			}
+			foreach (MyBlueprintClassDefinition blueprintClass in definition.BlueprintClasses)
+			{
+				foreach (MyBlueprintDefinitionBase blueprint in blueprintClass)
+				{
+					if (Offered(blueprint) && MakesOf(blueprint, key) > 0.0 && assembler.CanUseBlueprint(blueprint))
+					{
+						return blueprint;
+					}
+				}
+			}
+		}
+		return null;
+	}
+
+	/// <summary>
+	/// The items the Items &amp; quotas picker lists, each with whether it can be made here. Listed: what these
+	/// assemblers are offered a blueprint for (any public assembler type when <paramref name="assemblers"/> is null,
+	/// for a grid that isn't loaded), what only refineries make, and, marked not buildable, what the grid holds or
+	/// already has a quota for. Admin-only items that are neither are left out.
+	/// </summary>
+	public static List<KeyValuePair<string, bool>> QuotaChoices(IEnumerable<string> keys, ICollection<string> keep, IList<MyProductionBlock> assemblers)
+	{
+		List<KeyValuePair<string, bool>> choices = new List<KeyValuePair<string, bool>>();
+		foreach (string key in keys.Distinct())
+		{
+			bool buildable = RefineryOnly(key) || (assemblers != null ? BuildableBlueprint(key, assemblers) != null : OfferedBlueprint(key) != null);
+			if (buildable || keep.Contains(key))
+			{
+				choices.Add(new KeyValuePair<string, bool>(key, buildable));
+			}
+		}
+		return choices;
+	}
+
+	private static Dictionary<string, MyBlueprintDefinitionBase> s_offered;
+
+	/// <summary>
+	/// A blueprint some public assembler type in the game offers for the item (public item, public and enabled
+	/// blueprint), or null. For grids that aren't loaded, where the assemblers themselves can't be asked.
+	/// </summary>
+	public static MyBlueprintDefinitionBase OfferedBlueprint(string key)
+	{
+		if (s_offered == null)
+		{
+			s_offered = new Dictionary<string, MyBlueprintDefinitionBase>();
+			foreach (MyAssemblerDefinition assembler in MyDefinitionManager.Static.GetAllDefinitions().OfType<MyAssemblerDefinition>())
+			{
+				if (!assembler.Public || !assembler.Enabled || assembler.BlueprintClasses == null)
+				{
+					continue;
+				}
+				foreach (MyBlueprintClassDefinition blueprintClass in assembler.BlueprintClasses)
+				{
+					foreach (MyBlueprintDefinitionBase blueprint in blueprintClass)
+					{
+						if (!Offered(blueprint) || blueprint.Results == null)
+						{
+							continue;
+						}
+						foreach (MyBlueprintDefinitionBase.Item result in blueprint.Results)
+						{
+							string made = Key(result.Id);
+							if (!s_offered.ContainsKey(made) && Definition(made)?.Public == true)
+							{
+								s_offered[made] = blueprint;
+							}
+						}
+					}
+				}
+			}
+		}
+		return s_offered.TryGetValue(key, out MyBlueprintDefinitionBase found) ? found : null;
+	}
+
 	/// <summary>How many of the item one run of the blueprint makes (1 for vanilla components).</summary>
 	public static double BlueprintYield(MyBlueprintDefinitionBase blueprint, string key)
 	{
@@ -193,7 +312,8 @@ internal static class Items
 				{
 					foreach (MyBlueprintDefinitionBase blueprint in blueprintClass)
 					{
-						if (blueprint?.Results == null || blueprint.Prerequisites == null)
+						// Only blueprints the game offers players: an admin-only one makes nothing "refinery-made" or "assembler-made".
+						if (!Offered(blueprint) || blueprint.Results == null || blueprint.Prerequisites == null)
 						{
 							continue;
 						}

@@ -647,9 +647,9 @@ public partial class SsmScreen
 		{
 			ShowMessage($"{(minimum ? "Quota" : "Maximum")} for {name} cleared.", null);
 		}
-		else if (Items.Blueprint(key) == null)
+		else if (!Items.RefineryOnly(key) && (QuotaAssemblers(grid) is IList<Sandbox.Game.Entities.Cube.MyProductionBlock> assemblers ? Items.BuildableBlueprint(key, assemblers) : Items.OfferedBlueprint(key)) == null)
 		{
-			ShowMessage($"No blueprint makes {name}, so it can't be {(minimum ? "assembled" : "disassembled")}. The setting is kept for the LCD pages.", WarningColor);
+			ShowMessage($"No assembler here offers a blueprint for {name}, so it won't be {(minimum ? "assembled" : "disassembled")}. The setting is kept for the LCD pages.", WarningColor);
 		}
 		else if (minimum)
 		{

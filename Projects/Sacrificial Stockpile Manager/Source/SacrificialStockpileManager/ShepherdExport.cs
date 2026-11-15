@@ -217,6 +217,11 @@ internal static class ShepherdExport
 					ingotsKept++;
 					continue;
 				}
+				// Nothing the game doesn't offer players (admin-only or disabled blueprints): SHEPHERD would queue it too.
+				if (!Items.RefineryOnly(quota.Item) && Items.OfferedBlueprint(quota.Item) == null)
+				{
+					continue;
+				}
 				double kept = others.Where(q => q.Item == quota.Item && q.Mode != "L").Sum(q => q.Target);
 				double held = others.Where(q => q.Item == quota.Item).Sum(q => q.Target);
 				string line = QuotaLine(quota, rules.Disassemble, kept, held, ref rangesCut);

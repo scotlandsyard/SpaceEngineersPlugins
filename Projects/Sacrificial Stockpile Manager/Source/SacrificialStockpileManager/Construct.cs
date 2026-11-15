@@ -626,12 +626,9 @@ internal class Construct
 	/// <param name="unit">Whose assemblers to count: a unit (mechanical group); the grid itself when left out.</param>
 	public double QueuedAmount(string key, long? unit = null)
 	{
-		Sandbox.Definitions.MyBlueprintDefinitionBase blueprint = Items.Blueprint(key);
-		if (blueprint == null)
-		{
-			return 0.0;
-		}
-		double runs = 0.0;
+		// Any blueprint that makes the item counts, so the one autocraft picked (see Items.BuildableBlueprint) is counted
+		// whichever it is.
+		double amount = 0.0;
 		foreach (LiveBlock live in Blocks)
 		{
 			// Disassembly queues take items away, so they don't count toward what's coming.
@@ -640,13 +637,10 @@ internal class Construct
 			{
 				foreach (MyProductionBlock.QueueItem item in production.Queue)
 				{
-					if (item.Blueprint != null && item.Blueprint.Id == blueprint.Id)
-					{
-						runs += (double)item.Amount;
-					}
+					amount += (double)item.Amount * Items.MakesOf(item.Blueprint, key);
 				}
 			}
 		}
-		return runs * Items.BlueprintYield(blueprint, key);
+		return amount;
 	}
 }

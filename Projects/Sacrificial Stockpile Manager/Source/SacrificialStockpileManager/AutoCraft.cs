@@ -236,7 +236,23 @@ internal static class AutoCraft
 				unit.Notes[key] = (quota.HasMin && have < quota.Min ? $"Short {Items.Amount(quota.Min - have)}. " : "") + shepherdNote;
 				continue;
 			}
-			MyBlueprintDefinitionBase blueprint = Items.Blueprint(key);
+			// Only a blueprint the production screen would offer on this unit's assemblers (public, enabled, in their
+			// blueprint classes), so nothing is queued that the player couldn't queue by hand. Without assemblers, the
+			// one the game offers anywhere, for the "no assembler" notes.
+			MyBlueprintDefinitionBase blueprint = Items.BuildableBlueprint(key, unit.Assemblers);
+			if (blueprint == null && unit.Assemblers.Count == 0)
+			{
+				blueprint = Items.OfferedBlueprint(key);
+			}
+			// Some blueprint makes it, but not one players are offered here: admin-only, disabled, or not in these
+			// assemblers' classes. Quotas saved before this check existed land here too.
+			bool notOffered = blueprint == null && Items.Blueprint(key) != null && !Items.RefineryOnly(key);
+			if (notOffered && ((quota.HasMax && have > quota.Max) || (quota.HasMin && have < quota.Min)))
+			{
+				unit.Notes[key] = NotBuildableNote;
+				Refused(construct, key);
+				continue;
+			}
 			if (quota.HasMax && have > quota.Max)
 			{
 				unit.Notes[key] = Disassemble(construct, unit, key, blueprint, have - quota.Max, now, cooldown);
@@ -321,6 +337,13 @@ internal static class AutoCraft
 				// Until the server's reply shows the batch in the queue, it would look idle.
 				construct.CraftCooldown[batchKey] = now + (MyAPIGateway.Multiplayer?.IsServer ?? true ? 0.0 : 5.0);
 			}
+			// Last check before the request: never anything the production screen wouldn't offer on this assembler.
+			if (!CanOrder(receiver, blueprint, key))
+			{
+				unit.Notes[key] = NotBuildableNote;
+				Refused(construct, key);
+				continue;
+			}
 			// One order on one Main assembler; its Co-op assemblers take their share from its queue.
 			receiver.AddQueueItemRequest(blueprint, (MyFixedPoint)runs);
 			construct.CraftCooldown[cooldownKey] = now + cooldown;
@@ -352,6 +375,31 @@ internal static class AutoCraft
 			runsPerSecond += world * speed / Math.Max(0.01f, blueprint.BaseProductionTimeInSeconds);
 		}
 		return Math.Max(1, (int)Math.Floor(runsPerSecond * YieldBatchSeconds));
+	}
+
+	/// <summary>The Items note for an item the plugin won't queue or disassemble on this grid.</summary>
+	public const string NotBuildableNote = "Not buildable here: no assembler here offers a blueprint for it";
+
+	// Construct and item keys already logged as refused, so the log says it once per item, not every pass.
+	private static readonly HashSet<string> s_refused = new HashSet<string>();
+
+	/// <summary>
+	/// True when the request would be one the player could make by hand in the production screen: a public item, a
+	/// public and enabled blueprint that makes it, on an assembler whose blueprint classes hold it.
+	/// </summary>
+	public static bool CanOrder(MyProductionBlock assembler, MyBlueprintDefinitionBase blueprint, string key)
+	{
+		return assembler != null && Items.Offered(blueprint) && Items.Definition(key)?.Public == true && Items.MakesOf(blueprint, key) > 0.0
+			&& Items.BuildableBlueprint(key, new[] { assembler }) != null && assembler.CanUseBlueprint(blueprint);
+	}
+
+	/// <summary>Logs, once per grid and item, that an item isn't queued because no assembler here offers it.</summary>
+	private static void Refused(Construct construct, string key)
+	{
+		if (s_refused.Add(construct.Key + ":" + key))
+		{
+			construct.AddLog($"Not queuing {Items.Name(key)}: no assembler here offers a blueprint for it (admin-only, disabled or not in their blueprint classes)");
+		}
 	}
 
 	/// <summary>The ore the plan pulled up for this item first, or null.</summary>
@@ -431,6 +479,11 @@ internal static class AutoCraft
 		if (!disassembler.CanUseBlueprint(blueprint))
 		{
 			return over + $", {disassembler.CustomName} can't disassemble it";
+		}
+		if (!CanOrder(disassembler, blueprint, key))
+		{
+			Refused(construct, key);
+			return NotBuildableNote;
 		}
 		int runs = (int)Math.Floor(surplus / perRun + 1e-6);
 		disassembler.AddQueueItemRequest(blueprint, (MyFixedPoint)runs);

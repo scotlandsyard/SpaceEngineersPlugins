@@ -639,10 +639,16 @@ public partial class SsmScreen : MyGuiScreenBase
 			// Modded or unusual items that exist on the grid but aren't in the catalog.
 			keys = keys.Concat(grid.Totals.Keys.Where(k => !Items.Catalog.Contains(k)));
 		}
-		foreach (string key in keys.Where(MatchesSearch))
+		// Quotas: only what can be made here (no admin-only items), plus what the grid holds or has a quota for,
+		// marked. Other views (block limits, accepts) keep every item.
+		List<KeyValuePair<string, bool>> choices = s_view == View.Items
+			? Items.QuotaChoices(keys, QuotaKeep(grid), QuotaAssemblers(grid))
+			: keys.Select(k => new KeyValuePair<string, bool>(k, true)).ToList();
+		foreach (KeyValuePair<string, bool> choice in choices.Where(c => MatchesSearch(c.Key)))
 		{
-			_itemCombo.AddItem(_itemKeys.Count, $"{Items.Name(key)}  ({Items.CategoryShort[(int)Items.Category(key)]})", _itemKeys.Count, null, sort: false);
-			_itemKeys.Add(key);
+			string mark = choice.Value ? "" : "  - not buildable here";
+			_itemCombo.AddItem(_itemKeys.Count, $"{Items.Name(choice.Key)}  ({Items.CategoryShort[(int)Items.Category(choice.Key)]}){mark}", _itemKeys.Count, null, sort: false);
+			_itemKeys.Add(choice.Key);
 		}
 		int selected = s_itemKey == null ? -1 : _itemKeys.IndexOf(s_itemKey);
 		if (selected < 0 && _itemKeys.Count > 0 && s_search.Trim().Length > 0)
@@ -655,6 +661,34 @@ public partial class SsmScreen : MyGuiScreenBase
 		{
 			_itemCombo.SelectItemByKey(selected, sendEvent: false);
 		}
+	}
+
+	/// <summary>Items the quota picker keeps even when they can't be made here: on the grid, or already with a quota.</summary>
+	private static HashSet<string> QuotaKeep(GridSnapshot grid)
+	{
+		HashSet<string> keep = new HashSet<string>();
+		if (grid != null)
+		{
+			keep.UnionWith(grid.Totals.Keys);
+			keep.UnionWith(Store.GridRules(grid)?.Quotas.Select(q => q.Item) ?? Enumerable.Empty<string>());
+		}
+		return keep;
+	}
+
+	/// <summary>The viewed ship's or station's assemblers (survival kits included), or null when it isn't loaded.</summary>
+	private static IList<Sandbox.Game.Entities.Cube.MyProductionBlock> QuotaAssemblers(GridSnapshot grid)
+	{
+		Construct live = Live;
+		if (grid == null || live == null)
+		{
+			return null;
+		}
+		long unit = live.UnitFor(grid.Key);
+		return live.Blocks
+			.Where(b => b.Unit == unit && (b.Kind == BlockKind.Assembler || b.Kind == BlockKind.SurvivalKit))
+			.Select(b => b.Block as Sandbox.Game.Entities.Cube.MyProductionBlock)
+			.Where(b => b != null && !b.Closed)
+			.ToList();
 	}
 
 	/// <summary>True when the item's name, category or key contains the Find text (or Find is empty).</summary>
