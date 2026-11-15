@@ -75,6 +75,7 @@ internal static class Store
 		{
 			rules.Accept ??= new List<string>();
 			rules.Limits ??= new List<ItemLimit>();
+			rules.Bill ??= new List<BillLine>();
 			s_blockRules[rules.BlockId] = rules;
 		}
 		s_gridRules.Clear();

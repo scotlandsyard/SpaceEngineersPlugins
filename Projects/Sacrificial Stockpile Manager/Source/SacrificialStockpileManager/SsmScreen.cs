@@ -25,6 +25,7 @@ public partial class SsmScreen : MyGuiScreenBase
 		Items,
 		Blocks,
 		Block,
+		Bill,
 		Types,
 		Production,
 		Machine,
@@ -35,7 +36,7 @@ public partial class SsmScreen : MyGuiScreenBase
 	}
 
 	// In the same order as View.
-	private static readonly string[] ViewNames = { "All grids", "Overview", "Items & quotas", "Blocks", "Block settings", "Block type limits", "Production","Production details", "Refinery priority", "Displays (LCD)", "Log", "Help" };
+	private static readonly string[] ViewNames = { "All grids", "Overview", "Items & quotas", "Blocks", "Block settings", "Block materials", "Block type limits", "Production","Production details", "Refinery priority", "Displays (LCD)", "Log", "Help" };
 
 	// In the same order as BlockRole.
 	private static readonly string[] RoleNames = { "Auto", "Storage", "Intake", "Stock", "Manual" };
@@ -279,6 +280,12 @@ public partial class SsmScreen : MyGuiScreenBase
 			tableTop = -0.245f;
 			rows = 10;
 		}
+		else if (s_view == View.Bill)
+		{
+			CreateBillControls();
+			tableTop = -0.235f;
+			rows = 11;
+		}
 		else if (s_view == View.Machine)
 		{
 			CreateMachineControls();
@@ -416,7 +423,13 @@ public partial class SsmScreen : MyGuiScreenBase
 			AddButton(-0.315f, "Set minimum", () => SetLimit(minimum: true));
 			AddButton(-0.105f, "Set maximum", () => SetLimit(minimum: false));
 			AddButton(0.105f, "Clear limits", ClearLimits);
-			AddButton(0.315f, "Back to blocks", () => SwitchView(View.Blocks));
+			AddButton(0.315f, "Add block materials", () => OpenBillFor(s_blockId));
+			break;
+		case View.Bill:
+			AddButton(-0.315f, "Remove", RemoveBillRow);
+			AddButton(-0.105f, "Apply", ApplyBill);
+			AddButton(0.105f, "Quotas for shortfall", BillQuotas);
+			AddButton(0.315f, "Back", () => SwitchView(View.Block));
 			break;
 		case View.Displays:
 			AddButton(-0.315f, "Show page", AssignDisplay);
@@ -974,6 +987,8 @@ public partial class SsmScreen : MyGuiScreenBase
 			return "Pick an item, type an amount: Set quota to keep at least that many (autocraft), Set maximum to disassemble above it." + offline;
 		case View.Blocks:
 			return "Double-click a block to edit its role, what it accepts and its stock limits." + offline;
+		case View.Bill:
+			return BillHint(grid);
 		case View.Block:
 		{
 			BlockSnapshot block = grid.Block(s_blockId);

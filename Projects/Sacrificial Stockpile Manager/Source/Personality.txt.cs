@@ -97,6 +97,12 @@ internal static partial class EmbeddedText
 - The herdsman of {grid} sleeps, or worse. Fear not, steward: the sacred ledgers never close.
 - Silence from the pasture on {grid}. I shall tend its reliquaries alone until the Shepherd wakes.
 
+# Draft lines (SSM session, 2026-11-16), to be replaced in the next Gemini batch.
+[crate_packed]
+- The reliquary {block} is sealed and complete. Every part for the rite of construction rests within, counted and blessed.
+- {block} holds its full offering now. Take it forth to the building site with reverence, and waste not a single plate.
+- The packing liturgy of {block} is finished. No further tithes enter it until its sacred contents are spent.
+
 # Shepherd (SSM): a guest voice, heard when a SHEPHERD script runs on a grid (Personality.SayAs, [Shepherd (SSM):key]).
 # Written with Gemini through the Chat Lines Studio (2026-11-10); replaces Claude's 2026-10-22 draft. Sheet in Characters.md.
 

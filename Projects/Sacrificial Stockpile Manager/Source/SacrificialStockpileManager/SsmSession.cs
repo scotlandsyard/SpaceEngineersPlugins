@@ -133,6 +133,7 @@ public class SsmSession : MySessionComponentBase
 			MyAPIGateway.TerminalControls.CustomActionGetter += CustomActionGetter;
 			MyAPIGateway.Utilities.MessageEntered += OnMessageEntered;
 			PluginSwitcher.Register("Stockpile Manager", () => OpenMenu(null));
+			BillApi.Register();
 			Personality.Level = Store.Chattiness;
 			// The name the player chose for the character; it can also be changed from Wilson's window.
 			Personality.DisplayName = Store.DisplayName;
@@ -157,6 +158,7 @@ public class SsmSession : MySessionComponentBase
 		Detach(() => Personality.Changed -= OnPersonalityChanged);
 		Detach(PluginSwitcher.Unregister);
 		Detach(Personality.Unregister);
+		Detach(BillApi.Unregister);
 		if (_started)
 		{
 			// Only saved after a complete start, so a failed load can't overwrite the stored settings.
@@ -324,6 +326,30 @@ public class SsmSession : MySessionComponentBase
 			SortNow(construct);
 			Notices.Show(Notices.Sorting(name), 3000);
 		}
+		return null;
+	}
+
+	/// <summary>
+	/// Opens the window on a block's Add block materials view with a bill in the preview (from <see cref="BillApi"/>).
+	/// Returns why it couldn't, or null.
+	/// </summary>
+	internal string OpenBill(IMyTerminalBlock block, Dictionary<string, double> items, bool keep, string source)
+	{
+		RefreshNow();
+		Construct construct = ConstructOf(block);
+		LiveBlock live = construct?.Find(block.EntityId);
+		if (live == null)
+		{
+			return $"{block.CustomName} isn't on one of your loaded grids.";
+		}
+		if (live.NotYours)
+		{
+			return $"{block.CustomName} isn't yours, so Stockpile Manager won't stock it.";
+		}
+		// A block on a docked ship opens on the ship's own view.
+		long gridKey = live.Unit == construct.CoreUnit ? construct.Key : construct.Snapshot?.DockedShips?.FirstOrDefault(d => d.Unit == live.Unit)?.Key ?? construct.Key;
+		SsmScreen.PrepareBill(gridKey, block.EntityId, items, keep, source);
+		MyGuiSandbox.AddScreen(new SsmScreen(gridKey, null));
 		return null;
 	}
 
@@ -689,6 +715,8 @@ public class SsmSession : MySessionComponentBase
 			oneShot = false;
 		}
 		StockEngine engine = StockEngine.Run(construct, rules, now);
+		// Fill-once block materials: done when the block holds them, dropped when they're taken out.
+		BlockBill.Update(construct);
 		construct.Warnings = engine.Warnings;
 		construct.OneShotSorted += oneShot ? engine.Sorted : 0.0;
 		double oneShotSorted = construct.OneShotSorted;

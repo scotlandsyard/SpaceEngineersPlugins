@@ -84,6 +84,16 @@ public partial class SsmScreen
 				new Column { Name = "Used / size", Width = 0.2f, RightAligned = true },
 				new Column { Name = "Settings", Width = 0.22f }
 			};
+		case View.Bill:
+			return new List<Column>
+			{
+				new Column { Name = "Item", Width = 0.3f, Sortable = false },
+				new Column { Name = "Needed", Width = 0.11f, RightAligned = true, Sortable = false },
+				new Column { Name = "In block", Width = 0.11f, RightAligned = true, Sortable = false },
+				new Column { Name = "On grid", Width = 0.11f, RightAligned = true, Sortable = false },
+				new Column { Name = "Short", Width = 0.11f, RightAligned = true, Sortable = false },
+				new Column { Name = "Note", Width = 0.26f, Sortable = false }
+			};
 		case View.Block:
 			return new List<Column>
 			{
@@ -126,6 +136,8 @@ public partial class SsmScreen
 			return "No items on this grid.";
 		case View.Blocks:
 			return "No blocks with an inventory that you can access.";
+		case View.Bill:
+			return "Pick a block type and a count above, then Add line.";
 		case View.Block:
 			return "Empty, and no limits set. Pick an item below to add one.";
 		case View.Types:
@@ -153,6 +165,8 @@ public partial class SsmScreen
 			return ItemRows(grid);
 		case View.Blocks:
 			return BlockRows(grid);
+		case View.Bill:
+			return BillRows(grid);
 		case View.Block:
 			return BlockItemRows(grid);
 		case View.Production:
@@ -818,6 +832,7 @@ public partial class SsmScreen
 		if (rules != null)
 		{
 			keys = keys.Union(rules.Limits.Select(l => l.Item)).Union(rules.Accept.Where(a => a.Contains("/")));
+			keys = keys.Union(rules.Bill?.Select(b => b.Item) ?? Enumerable.Empty<string>());
 		}
 		if (typeLimits != null)
 		{
@@ -833,6 +848,14 @@ public partial class SsmScreen
 			{
 				limit = typeLimit;
 				from = $" (all {TypeName(block.Kind).ToLowerInvariant()})";
+			}
+			// Block materials add to the minimum shown (see BillLine).
+			double bill = rules?.Bill?.Where(b => b.Item == key).Sum(b => b.Amount) ?? 0.0;
+			if (bill > 0.0)
+			{
+				bool packed = rules.Bill.Where(b => b.Item == key).All(b => b.Keep || b.Done) && rules.Bill.Any(b => b.Item == key && !b.Keep);
+				limit = new ItemLimit { Item = key, Min = (limit != null && limit.HasMin ? limit.Min : 0.0) + bill, Max = limit?.Max ?? -1.0 };
+				from += $" ({Items.Amount(bill)} block materials{(packed ? ", packed" : "")})";
 			}
 			string state = "";
 			Color? color = null;

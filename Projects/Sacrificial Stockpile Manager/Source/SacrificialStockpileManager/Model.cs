@@ -50,6 +50,27 @@ public enum BlockKind
 }
 
 /// <summary>A minimum and/or maximum for one item. -1 means not set. For grid quotas only Min is used.</summary>
+/// <summary>
+/// One item of a bill of materials added to a block's minimums. Added on top of the player's own minimum, never lowering it.
+/// Fill once: when the block holds it, the line is Done: no longer refilled, but what's there stays protected until it's
+/// taken out, then the line goes. Keep stocked: it stays a minimum until removed.
+/// </summary>
+public class BillLine
+{
+	public string Item;
+
+	public double Amount;
+
+	/// <summary>Keep stocked; false is Fill once.</summary>
+	public bool Keep;
+
+	/// <summary>Fill once only: the block held it once, so it isn't refilled.</summary>
+	public bool Done;
+
+	/// <summary>What it was for, e.g. "3 x Prototech Drill, 1 x Small Reactor" or "Tally: hangar bill".</summary>
+	public string Source;
+}
+
 public class ItemLimit
 {
 	public string Item;
@@ -75,10 +96,13 @@ public class BlockRules
 
 	public List<ItemLimit> Limits = new List<ItemLimit>();
 
+	/// <summary>Minimums added with Add block materials (or a bill from another plugin), kept apart from <see cref="Limits"/> so they can be removed as a set.</summary>
+	public List<BillLine> Bill = new List<BillLine>();
+
 	/// <summary>Fill priority for storage: among blocks that accept an item equally well, a higher number fills first.</summary>
 	public int Priority;
 
-	public bool IsEmpty => Role == BlockRole.Auto && Accept.Count == 0 && Limits.Count == 0 && Priority == 0;
+	public bool IsEmpty => Role == BlockRole.Auto && Accept.Count == 0 && Limits.Count == 0 && Priority == 0 && (Bill == null || Bill.Count == 0);
 
 	public ItemLimit Limit(string item)
 	{

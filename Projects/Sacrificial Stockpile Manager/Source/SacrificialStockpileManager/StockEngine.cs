@@ -514,7 +514,9 @@ internal class StockEngine
 			}
 			foreach (ItemLimit limit in LimitsOf(destination))
 			{
-				if (!limit.HasMin || Have(destination, limit.Item) >= limit.Min - Epsilon)
+				// Finished Fill-once block materials aren't refilled (see BillLine): they only protect what's there.
+				double target = limit.Min - destination.Block.NoRefillOf(limit.Item);
+				if (!limit.HasMin || target <= Epsilon || Have(destination, limit.Item) >= target - Epsilon)
 				{
 					continue;
 				}
@@ -524,11 +526,11 @@ internal class StockEngine
 					continue;
 				}
 				double before = Have(destination, limit.Item);
-				string problem = Fill(destination, limit.Item, limit.Min - before);
+				string problem = Fill(destination, limit.Item, target - before);
 				double have = Have(destination, limit.Item);
-				if (have < limit.Min - Epsilon)
+				if (have < target - Epsilon)
 				{
-					Warnings.Add($"{destination.Block.Name}: {Items.Name(limit.Item)} {Items.Amount(have)} of {Items.Amount(limit.Min)} - {problem ?? "not enough available"}");
+					Warnings.Add($"{destination.Block.Name}: {Items.Name(limit.Item)} {Items.Amount(have)} of {Items.Amount(target)} - {problem ?? "not enough available"}");
 				}
 				else if (have - before > _restockedAmount)
 				{

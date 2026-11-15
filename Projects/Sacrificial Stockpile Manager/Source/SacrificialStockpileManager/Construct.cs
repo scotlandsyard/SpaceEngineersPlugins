@@ -40,6 +40,14 @@ internal class LiveBlock
 	/// <summary>The block's own limits plus the grid's limits for its type (its own win for the same item).</summary>
 	public List<ItemLimit> Limits = new List<ItemLimit>();
 
+	/// <summary>Items with a block-materials minimum on this block (see <see cref="BillLine"/>), or null.</summary>
+	public HashSet<string> BillItems;
+
+	/// <summary>Per item: the part of the minimum that comes from finished Fill-once lines, so it isn't refilled; or null.</summary>
+	public Dictionary<string, double> NoRefill;
+
+	public double NoRefillOf(string item) => NoRefill != null && NoRefill.TryGetValue(item, out double amount) ? amount : 0.0;
+
 	public ItemLimit Limit(string item)
 	{
 		return Limits.FirstOrDefault(l => l.Item == item);
@@ -48,7 +56,7 @@ internal class LiveBlock
 	/// <summary>True when the limit was set on this block itself rather than for its whole type.</summary>
 	public bool IsOwnLimit(ItemLimit limit)
 	{
-		return Rules != null && Rules.Limits.Contains(limit);
+		return (Rules != null && Rules.Limits.Contains(limit)) || (BillItems != null && BillItems.Contains(limit.Item));
 	}
 
 	/// <summary>The main inventory (a machine's input), or null for blocks without one.</summary>
@@ -418,6 +426,7 @@ internal class Construct
 			{
 				live.Limits.AddRange(typeLimits.Limits.Where(t => !live.Limits.Any(l => l.Item == t.Item)));
 			}
+			BlockBill.Merge(live);
 			if (block.HasInventory)
 			{
 				live.Input = block.GetInventory(0) as MyInventory;
