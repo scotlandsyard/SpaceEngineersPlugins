@@ -308,6 +308,12 @@ public class SsmSession : MySessionComponentBase
 					// (A failure has already logged its reason.)
 					construct.AddLog("Unload docked ships: " + shepherd);
 				}
+				// No [SHEPHERD] panel: every SHEPHERD block was run. A second short notice suggests the panel.
+				if (Notices.IsRanAll(notice))
+				{
+					Notices.Show(Notices.ShepherdPanelHint(), 6000);
+					return Notices.ForWindow(notice) + " Name an LCD [SHEPHERD] so it runs only the leader.";
+				}
 				return Notices.ForWindow(notice);
 			}
 			UnloadDocked(construct);

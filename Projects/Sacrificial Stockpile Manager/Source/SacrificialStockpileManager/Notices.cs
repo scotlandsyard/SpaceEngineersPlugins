@@ -33,6 +33,12 @@ internal static class Notices
 	/// <summary>SHEPHERD ran on every block, as no [SHEPHERD] panel says which one leads.</summary>
 	public static string ShepherdRanAll(int blocks) => Prefix + $"ran unloadShip on {blocks} SHEPHERD blocks";
 
+	/// <summary>True for a <see cref="ShepherdRanAll"/> notice.</summary>
+	public static bool IsRanAll(string notice) => notice != null && notice.StartsWith(Prefix + "ran unloadShip on ", System.StringComparison.Ordinal);
+
+	/// <summary>Shown after <see cref="ShepherdRanAll"/>: a panel would let SSM run only the leader.</summary>
+	public static string ShepherdPanelHint() => Prefix + "name an LCD [SHEPHERD] to show the leader";
+
 	/// <summary>The leading SHEPHERD block couldn't be found; the reason is in the log.</summary>
 	public static string ShepherdNotRun() => Prefix + "not unloaded, see the Log view";
 
@@ -48,7 +54,7 @@ internal static class Notices
 	public static List<string> Samples()
 	{
 		string longName = new string('W', 80);
-		return new List<string> { NotYourGrid(), NoShipDocked(), Unloading(longName), Sorting(longName), ShepherdUnloading(), ShepherdRanAll(9999), ShepherdNotRun() };
+		return new List<string> { NotYourGrid(), NoShipDocked(), Unloading(longName), Sorting(longName), ShepherdUnloading(), ShepherdRanAll(9999), ShepherdPanelHint(), ShepherdNotRun() };
 	}
 
 	/// <summary>Shows a notification. Anything over the limit is cut (and logged whole), though the builders above never make one.</summary>

@@ -303,7 +303,9 @@ internal static class Items
 			foreach (MyProductionBlockDefinition block in MyDefinitionManager.Static.GetAllDefinitions().OfType<MyProductionBlockDefinition>())
 			{
 				bool refinery = block is MyRefineryDefinition;
-				bool assembler = block is MyAssemblerDefinition;
+				// Survival kits refine stone into iron, nickel and silicon ingots; those still count as refinery-made, so
+				// ingot quotas steer the refineries (refine by need) instead of being "not buildable here".
+				bool assembler = block is MyAssemblerDefinition && !(block is MySurvivalKitDefinition);
 				if ((!refinery && !assembler) || block.BlueprintClasses == null)
 				{
 					continue;
