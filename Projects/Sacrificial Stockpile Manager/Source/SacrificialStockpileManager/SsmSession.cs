@@ -278,7 +278,7 @@ public class SsmSession : MySessionComponentBase
 		}
 		if (construct == null)
 		{
-			MyAPIGateway.Utilities.ShowNotification("Stockpile Manager: this grid isn't one of yours.", 3000, MyFontEnum.Red);
+			Notices.Show(Notices.NotYourGrid(), 3000, MyFontEnum.Red);
 			return;
 		}
 		StartOneShot(construct, unload);
@@ -292,23 +292,31 @@ public class SsmSession : MySessionComponentBase
 		{
 			if (!construct.Blocks.Any(b => b.Docked && !b.NotYours))
 			{
-				MyAPIGateway.Utilities.ShowNotification($"Stockpile Manager: no ship of yours is docked to {name}.", 3000, MyFontEnum.Red);
+				Notices.Show(Notices.NoShipDocked(), 3000, MyFontEnum.Red);
 				return null;
 			}
-			string shepherd = construct.Shepherd?.RunUnloadShip(construct, Store.GridRules(construct.Snapshot));
+			string notice = null;
+			string shepherd = construct.Shepherd?.RunUnloadShip(construct, Store.GridRules(construct.Snapshot), out notice);
 			if (shepherd != null)
 			{
 				bool failed = shepherd.StartsWith("Not", StringComparison.Ordinal);
-				MyAPIGateway.Utilities.ShowNotification("Stockpile Manager: " + shepherd, failed ? 6000 : 3000, failed ? MyFontEnum.Red : MyFontEnum.White);
-				return shepherd;
+				notice ??= Notices.ShepherdUnloading();
+				Notices.Show(notice, failed ? 6000 : 3000, failed ? MyFontEnum.Red : MyFontEnum.White);
+				// The full sentence goes to the Log view; the window's one-line status gets the short notice.
+				if (!failed)
+				{
+					// (A failure has already logged its reason.)
+					construct.AddLog("Unload docked ships: " + shepherd);
+				}
+				return Notices.ForWindow(notice);
 			}
 			UnloadDocked(construct);
-			MyAPIGateway.Utilities.ShowNotification($"Stockpile Manager: unloading docked ships into {name}", 3000);
+			Notices.Show(Notices.Unloading(name), 3000);
 		}
 		else
 		{
 			SortNow(construct);
-			MyAPIGateway.Utilities.ShowNotification($"Stockpile Manager: sorting {name}", 3000);
+			Notices.Show(Notices.Sorting(name), 3000);
 		}
 		return null;
 	}

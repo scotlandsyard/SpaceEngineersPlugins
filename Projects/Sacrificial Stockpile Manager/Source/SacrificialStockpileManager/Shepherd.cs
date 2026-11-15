@@ -292,8 +292,9 @@ internal sealed class ShepherdLink
 	/// in the terminal), so it's run on every working SHEPHERD block, which only the leader acts on. Returns what to
 	/// tell the player, or null when Stockpile Manager should unload the ships itself.
 	/// </summary>
-	public string RunUnloadShip(Construct construct, GridRules rules)
+	public string RunUnloadShip(Construct construct, GridRules rules, out string notice)
 	{
+		notice = null;
 		if (!Active || !Handles(ShepherdJob.Sort, rules))
 		{
 			return null;
@@ -318,6 +319,7 @@ internal sealed class ShepherdLink
 			{
 				string missing = Leader != null ? $"its leader {Leader} isn't one of your loaded, working blocks" : $"{PanelName} isn't one of your working blocks on this grid";
 				construct.AddLog($"Unload docked ships: not run, {missing}");
+				notice = Notices.ShepherdNotRun();
 				return $"Not unloaded: {missing}. Run unloadShip on the leading SHEPHERD block yourself.";
 			}
 			targets.Add(leader);
@@ -329,6 +331,11 @@ internal sealed class ShepherdLink
 				block.Run("unloadShip", Sandbox.ModAPI.Ingame.UpdateType.Terminal);
 				construct.AddLog($"Ran {target.CustomName} with unloadShip");
 			}
+		}
+		notice = Health == null ? Notices.ShepherdRanAll(targets.Count) : Notices.ShepherdUnloading();
+		if (Health == null)
+		{
+			construct.AddLog("No [SHEPHERD] panel says which SHEPHERD block leads, so every one was run; add an LCD named [SHEPHERD]");
 		}
 		return Health == null
 			? $"Ran unloadShip on {targets.Count} SHEPHERD block(s): the leading one unloads the ships docked now, once. Add an LCD named [SHEPHERD] so Stockpile Manager can tell which one leads."
