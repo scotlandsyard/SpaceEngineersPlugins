@@ -23,6 +23,14 @@ public partial class TallyScreen
 
 	private QueuePlan _queuePlan;
 
+	private MyGuiControlCombobox _crate;
+
+	private MyGuiControlButton _send;
+
+	private List<Target> _crates = new List<Target>();
+
+	private bool _ssm;
+
 	private void BuildQueuePage()
 	{
 		List<MyGuiControlBase> page = _pages[Page.Queue];
@@ -36,11 +44,12 @@ public partial class TallyScreen
 				ShowPlan();
 			}
 		};
-		AddButton(0.34f, -0.355f, "Refresh list", () =>
+		AddButton(0.34f, -0.355f, "Refresh lists", () =>
 		{
 			FillTargets();
+			FillCrates();
 			ShowPlan();
-		}, page).SetToolTip("Looks again for assemblers and groups.");
+		}, page).SetToolTip("Looks again for assemblers, groups and crates.");
 
 		_countQueued = AddCheckbox(-0.31f, -0.3f, "Count what's already queued there", "What these assemblers already have queued, or finished and waiting in their output, counts as on its way, so pressing Queue twice doesn't queue the bill twice.", Settings.QueueCountQueued, page);
 		_minusCargo = AddCheckbox(0.12f, -0.3f, "Minus the assemblers' grid", "Takes off what's already in the inventories of the assemblers' grid and what's docked to it (blocks you have access to), so only the shortfall is queued. Open the grid's inventory first for current numbers. Greyed out when the tally already took that grid's cargo off.", Settings.QueueMinusCargo, page);
@@ -57,7 +66,18 @@ public partial class TallyScreen
 			};
 		}
 
-		_plan = new MyGuiControlMultilineText(new Vector2(0f, -0.26f), new Vector2(0.84f, 0.6f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
+		RightLabel(-0.25f, "SSM crate:", page);
+		_crate = AddCombo(-0.31f, -0.25f, 0.55f, "A cargo container of your own (not shared) for Sacrificial Stockpile Manager to stock with the components.", page);
+		_crate.ItemSelected += () =>
+		{
+			if (!_filling)
+			{
+				Settings.Crate = SelectedCrate()?.Key ?? Settings.Crate;
+			}
+		};
+		_send = AddButton(0.34f, -0.25f, "Send to SSM crate", SendToCrate, page);
+
+		_plan = new MyGuiControlMultilineText(new Vector2(0f, -0.21f), new Vector2(0.84f, 0.55f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
 		{
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
 		};
@@ -101,6 +121,85 @@ public partial class TallyScreen
 		finally
 		{
 			_filling = false;
+		}
+	}
+
+	/// <summary>Your own cargo containers, and whether Stockpile Manager is there to stock one.</summary>
+	private void FillCrates()
+	{
+		string kept = SelectedCrate()?.Key ?? Settings.Crate;
+		_filling = true;
+		try
+		{
+			_ssm = SsmCrate.Loaded();
+			_crates = _ssm ? SsmCrate.Crates() : new List<Target>();
+			_crate.ClearItems();
+			for (int i = 0; i < _crates.Count; i++)
+			{
+				string label = _crates[i].Label;
+				_crate.AddItem(i, label.Length > 80 ? label.Substring(0, 80) + "..." : label);
+			}
+			if (_crates.Count == 0)
+			{
+				_crate.AddItem(-1, _ssm ? "(no cargo container of your own nearby)" : "(needs Sacrificial Stockpile Manager, not loaded)");
+			}
+			_crate.SelectItemByKey(_crates.Count == 0 ? -1 : Math.Max(0, _crates.FindIndex(t => t.Key == kept)));
+			_crate.Enabled = _ssm;
+			_send.Enabled = _ssm && _crates.Count > 0;
+			_send.SetToolTip(_ssm
+				? "Sends the components to Sacrificial Stockpile Manager for the crate picked: it opens with a preview of the minimums to add, and nothing changes until you press Apply there."
+				: "Needs the Sacrificial Stockpile Manager plugin loaded: it stocks the crate from your other containers.");
+		}
+		finally
+		{
+			_filling = false;
+		}
+	}
+
+	private Target SelectedCrate()
+	{
+		long key = _crate?.GetSelectedKey() ?? -1;
+		return key >= 0 && key < _crates.Count ? _crates[(int)key] : null;
+	}
+
+	private void SendToCrate()
+	{
+		Target crate = SelectedCrate();
+		if (_bill == null || crate == null)
+		{
+			QueueReport(_bill == null ? "Tally something first." : "Pick a cargo container of your own.");
+			return;
+		}
+		if (SsmCrate.Items(_bill).Count == 0)
+		{
+			QueueReport("Nothing to send: every component is covered.");
+			return;
+		}
+		string status;
+		string reason;
+		try
+		{
+			status = SsmCrate.Send(_bill, crate.AssemblerIds[0], out reason);
+		}
+		catch (Exception ex)
+		{
+			MyLog.Default.WriteLineAndConsole($"[Tally] SSM send: {ex}");
+			QueueReport("Sending to Stockpile Manager failed: " + ex.Message);
+			return;
+		}
+		if (status == "preview")
+		{
+			// SSM's window is open on top with the preview; Tally steps aside like the plugin switcher does.
+			CloseScreen();
+		}
+		else if (status == "rejected")
+		{
+			QueueReport("Stockpile Manager didn't take it: " + reason);
+		}
+		else
+		{
+			FillCrates();
+			QueueReport("Stockpile Manager didn't answer; it may not be loaded any more.");
 		}
 	}
 

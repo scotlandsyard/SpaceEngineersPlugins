@@ -37,6 +37,9 @@ internal static class Settings
 	/// <summary>What's in the assemblers' grid is taken off before queuing.</summary>
 	public static bool QueueMinusCargo;
 
+	/// <summary>The cargo container last sent to Stockpile Manager (Target.Key).</summary>
+	public static string Crate = "";
+
 	public static void Load()
 	{
 		Dictionary<string, string> values = ReadFile(FileName);
@@ -56,6 +59,7 @@ internal static class Settings
 		QueueTarget = Get("QueueTarget") ?? "";
 		QueueCountQueued = Get("QueueCountQueued") != "no";
 		QueueMinusCargo = Get("QueueMinusCargo") == "yes";
+		Crate = Get("Crate") ?? "";
 	}
 
 	public static void Save()
@@ -71,7 +75,8 @@ internal static class Settings
 			["YieldPercent"] = YieldPercent.ToString(CultureInfo.InvariantCulture),
 			["QueueTarget"] = QueueTarget ?? "",
 			["QueueCountQueued"] = QueueCountQueued ? "yes" : "no",
-			["QueueMinusCargo"] = QueueMinusCargo ? "yes" : "no"
+			["QueueMinusCargo"] = QueueMinusCargo ? "yes" : "no",
+			["Crate"] = Crate ?? ""
 		});
 	}
 

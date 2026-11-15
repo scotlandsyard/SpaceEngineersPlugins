@@ -482,6 +482,7 @@ public partial class TallyScreen : MyGuiScreenBase
 			try
 			{
 				FillTargets();
+				FillCrates();
 				ShowPlan();
 			}
 			catch (Exception ex)
