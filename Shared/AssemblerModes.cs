@@ -115,7 +115,8 @@ internal static class AssemblerModes
 
 	public static bool SupportsCoop(IMyAssembler assembler)
 	{
-		return assembler is MyCubeBlock block && block.BlockDefinition is MyAssemblerDefinition definition && definition.EnableCooperativeMode;
+		// Survival kits have co-op in their definition but refuse it (no advanced functions), so they'd sit idle.
+		return assembler is Sandbox.Game.Entities.Cube.MyAssembler block && block.SupportsAdvancedFunctions && block.BlockDefinition is MyAssemblerDefinition definition && definition.EnableCooperativeMode;
 	}
 
 	private static void ApplySwitch(IMyAssembler assembler, AssemblerMode mode)
