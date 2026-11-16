@@ -16,7 +16,7 @@ Type `/hush` in chat (or pick Hush in the plugin list at the top left of another
 **Find** shortens either list as you type. While it's in use, **Mute Type on Grid**, **Unmute Type on Grid** and **Unmute Grid** only change the blocks it shows.
 
 **Types everywhere**
-- Every block type with a sound in the game and your mods. A muted type is silent on every grid, other players' included, in every world. The **Sound** column names the sound that type plays.
+- Every block type with a sound in the game and your mods (weapons by their shot sound), plus any type heard on your own grids since the world loaded. A muted type is silent on every grid, other players' included, in every world. The **Sound** column names the sound that type plays.
 
 **Chat**
 - Hush has a voice in our plugins' shared chat: a soft-spoken librarian, the quietest of them. The **Chat** dropdown at the top right of the window (or `/hush chat off|quiet|normal|chatty`) sets how much it talks; `/hush name <name>` renames it in chat, `/hush name` on its own puts it back. Only you see the lines.

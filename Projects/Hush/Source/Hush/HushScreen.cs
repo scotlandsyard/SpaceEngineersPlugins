@@ -418,6 +418,18 @@ public class HushScreen : MyGuiScreenBase
 				examples[definition.Id.TypeId] = definition;
 			}
 		}
+		// Types whose definitions name no sound but that have been heard on your own grids (e.g. the Separation Charge and
+		// Microwave Emitter, both plain Functional Blocks). Only your grids, so nothing about other players' grids shows.
+		Dictionary<MyObjectBuilderType, string> heard = new Dictionary<MyObjectBuilderType, string>();
+		foreach (MyCubeBlock block in _blocksByGrid.Values.SelectMany(list => list))
+		{
+			MyObjectBuilderType type = block.BlockDefinition.Id.TypeId;
+			if (!examples.ContainsKey(type))
+			{
+				examples[type] = block.BlockDefinition;
+				heard[type] = Mutes.Why(block) ?? "";
+			}
+		}
 		foreach (MyObjectBuilderType type in Mutes.MutedTypes())
 		{
 			if (!examples.ContainsKey(type))
@@ -429,7 +441,7 @@ public class HushScreen : MyGuiScreenBase
 		{
 			MyObjectBuilderType type = pair.Key;
 			string example = pair.Value?.DisplayNameText ?? "";
-			string sound = pair.Value == null ? "" : Mutes.WorkingSoundName(pair.Value);
+			string sound = heard.TryGetValue(type, out string why) ? why : pair.Value == null ? "" : Mutes.WorkingSoundName(pair.Value);
 			if (!ListSearch.Matches(_find, MutedText(type), Mutes.TypeName(type), example, sound, YourCount(type).ToString()))
 			{
 				continue;
@@ -568,7 +580,7 @@ public class HushScreen : MyGuiScreenBase
 		"Pick one of your grids in the Grid list (nearest first, with how many sound blocks it has). Only grids you own a block on, or that have a block shared with you, are listed, and only the blocks you could open in the terminal. A block shows up if its type has a working sound (thrusters, drills, refineries, doors, sound blocks and so on) or if it has played a working sound since the world loaded (damage and destruction sounds don't count: every block has those). The Why listed column says which: Sound and the sound's name for a type with a working sound, Played and the sound's name for a block heard since the world loaded, or Muted for a muted block that would not be listed otherwise. Subgrids on rotors, hinges and pistons are listed as their own grids.\n" +
 		"Select a row and press Mute / Unmute, or double-click it. The Muted column says Muted for a block you muted, and By type when its whole type is muted everywhere. Mute Type on Grid mutes every listed block of the selected block's type on this grid; Unmute Type on Grid undoes that. Unmute Grid unmutes every block on this grid. Blocks added later aren't muted by these buttons: mute them too, or use Types everywhere. Click a column header to sort. Refresh reads the grids again. Find shortens either list as you type; while it's in use, the Type and Grid buttons only change the blocks it shows.\n\n" +
 		"TYPES EVERYWHERE\n" +
-		"Every block type with a sound in the game and your mods. Muting a type silences it on every grid, other players' included, in every world. Sound is the sound that type plays. On your grids is how many of that type are on the grids the Blocks view lists.\n\n" +
+		"Every block type with a sound in the game and your mods (weapons by their shot sound), plus any type heard on your own grids since the world loaded. Muting a type silences it on every grid, other players' included, in every world. Sound is the sound that type plays. On your grids is how many of that type are on the grids the Blocks view lists.\n\n" +
 		"HOW IT'S SAVED\n" +
 		"Block mutes are kept for each world in Hush_Mutes_<world>.txt, and type mutes for every world in Hush_Settings.txt, both in %AppData%\\SpaceEngineers\\Storage\\Hush. A block is remembered by its grid and its place on the grid, so a mute survives a reload but not the block being rebuilt or the grid being pasted again. In single player, mutes on grids that no longer exist are forgotten when you open this window.\n\n" +
 		"COMMANDS\n" +

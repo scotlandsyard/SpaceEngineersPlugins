@@ -338,6 +338,15 @@ internal static class Mutes
 					AddSound(sounds, property.Name, property.GetValue(definition) as MySoundPair);
 				}
 			}
+			// Turrets, gatlings and launchers (the Torpedo Launcher too) keep their shot sound in the weapon definition,
+			// not the block's. Flight and ricochet sounds belong to the projectile, so only ShootSound counts.
+			if (definition is MyWeaponBlockDefinition weaponBlock && MyDefinitionManager.Static.TryGetWeaponDefinition(weaponBlock.WeaponDefinitionId, out MyWeaponDefinition weapon) && weapon.WeaponAmmoDatas != null)
+			{
+				foreach (MyWeaponDefinition.MyWeaponAmmoData ammo in weapon.WeaponAmmoDatas)
+				{
+					AddSound(sounds, "ShootSound", ammo?.ShootSound);
+				}
+			}
 		}
 		catch (Exception ex)
 		{
