@@ -101,7 +101,7 @@ All formulas are copied from the game's code:
 - **Heaviest mass to reach space**: a search over the ship's mass with the same climb.
 - **Ship mass**: `MyCubeGrid.GetCurrentMass` (physical mass, as the cockpit shows it, from the grids' collision shapes), over the grids joined by rotors, pistons and hinges. Not `Physics.Mass`, which reads 0 on multiplayer clients. If that comes back 0 too, the blocks and their cargo are added up instead; if the mass is still 0 the answer says so rather than guessing.
 
-Not counted: power used by the rest of the ship, ice in O2/H2 generators, ships docked by connector, conveyor connections (all tanks and thrusters are assumed connected), other planets' or moons' gravity. Solar and wind count their current output for the whole climb. Gas has no mass in the game, so the ship's mass stays the same.
+Not counted: power used by the rest of the ship, ice in O2/H2 generators, ships docked by connector, conveyor connections (all tanks and thrusters are assumed connected), other planets' or moons' gravity. Solar and wind count their current output for the whole climb. Gas has no mass in the game, so the ship's mass stays the same. Working Artificial Mass blocks and Space Balls are added to the ship's mass, because since Warfare 3 they pull down in natural gravity.
 
 ## Names used by this plugin
 

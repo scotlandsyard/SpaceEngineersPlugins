@@ -1752,6 +1752,8 @@ public class FatAlbertScreen : MyGuiScreenBase
 		"Hydrogen (or any gas) comes from the tanks on the ship. Electric thrusters get power from solar and wind first, then batteries, then reactors and hydrogen engines, as the game does it. If the electric thrusters want more power than the ship can make, they push less, and the answer shows it.\n\n" +
 		"NOT COUNTED\n" +
 		"Power the rest of the ship uses (turn off what you don't need), ice in oxygen/hydrogen generators, ships docked by connector, tanks and thrusters that aren't joined by conveyors, and other planets' or moons' gravity. Solar and wind count what they give right now for the whole climb. Gas has no weight in the game, so the ship's mass stays the same all the way up.\n\n" +
+		"ARTIFICIAL MASS\n" +
+		"Working Artificial Mass blocks and Space Balls pull down in a planet's gravity (since Warfare 3), so their mass is added to the ship's weight. Switch them off to leave it out.\n\n" +
 		"OPENING IT\n" +
 		"/fat in chat, the Fat Albert action on a cockpit's toolbar, or the plugin list at the top left of any of our plugins' windows.\n\n" +
 		"PARACHUTES\n" +

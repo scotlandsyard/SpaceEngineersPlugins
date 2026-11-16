@@ -52,6 +52,9 @@ internal static class ShipReader
 		public readonly List<IMyShipController> Controllers = new List<IMyShipController>();
 
 		public readonly List<MyCubeBlock> Parachutes = new List<MyCubeBlock>();
+
+		/// <summary>Artificial Mass blocks and Space Balls.</summary>
+		public readonly List<SpaceEngineers.Game.ModAPI.IMyVirtualMass> VirtualMasses = new List<SpaceEngineers.Game.ModAPI.IMyVirtualMass>();
 	}
 
 	private const double CacheSeconds = 10.0;
@@ -174,7 +177,7 @@ internal static class ShipReader
 			IsStatic = cache.Grids.Any(g => g.IsStatic),
 			SpeedLimit = MyGridPhysics.GetShipMaxLinearVelocity(main.GridSizeEnum)
 		};
-		ship.Mass = ReadMass(main, cache);
+		ship.Mass = ReadMass(main, cache) + ArtificialMass(cache);
 
 		IMyShipController reference = PickReference(cache);
 		ship.Reference = reference?.WorldMatrix ?? main.WorldMatrix;
@@ -218,6 +221,23 @@ internal static class ShipReader
 				ship.CargoBlocks++;
 			}
 		}
+	}
+
+	/// <summary>
+	/// Since Warfare 3, working Artificial Mass blocks and Space Balls add (virtual mass x gravity) of extra downward
+	/// force in natural gravity (MyGridVirtualMassSystem), which GetCurrentMass doesn't include. Counted as extra mass.
+	/// </summary>
+	private static double ArtificialMass(BlockCache cache)
+	{
+		double total = 0.0;
+		foreach (SpaceEngineers.Game.ModAPI.IMyVirtualMass block in cache.VirtualMasses)
+		{
+			if (block is MyCubeBlock cube && !cube.MarkedForClose && cube.IsWorking && !cube.CubeGrid.IsStatic)
+			{
+				total += Math.Max(0.0, block.VirtualMass);
+			}
+		}
+		return total;
 	}
 
 	/// <summary>
@@ -292,7 +312,10 @@ internal static class ShipReader
 				case MyGasTank tank:
 					cache.Tanks.Add(tank);
 					break;
-				case IMyPowerProducer _:
+				case SpaceEngineers.Game.ModAPI.IMyVirtualMass virtualMass:
+						cache.VirtualMasses.Add(virtualMass);
+						break;
+					case IMyPowerProducer _:
 					cache.Producers.Add(block);
 					break;
 				case MyCubeBlock _ when block.BlockDefinition is MyParachuteDefinition:

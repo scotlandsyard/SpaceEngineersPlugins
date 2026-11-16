@@ -35,6 +35,7 @@
   <ItemGroup>
     <Reference Include="Sandbox.Common"><HintPath>$(Bin64)\Sandbox.Common.dll</HintPath><Private>False</Private></Reference>
     <Reference Include="Sandbox.Game"><HintPath>$(Bin64)\Sandbox.Game.dll</HintPath><Private>False</Private></Reference>
+    <Reference Include="SpaceEngineers.Game"><HintPath>$(Bin64)\SpaceEngineers.Game.dll</HintPath><Private>False</Private></Reference>
     <Reference Include="Sandbox.Graphics"><HintPath>$(Bin64)\Sandbox.Graphics.dll</HintPath><Private>False</Private></Reference>
     <Reference Include="VRage"><HintPath>$(Bin64)\VRage.dll</HintPath><Private>False</Private></Reference>
     <Reference Include="VRage.Game"><HintPath>$(Bin64)\VRage.Game.dll</HintPath><Private>False</Private></Reference>
