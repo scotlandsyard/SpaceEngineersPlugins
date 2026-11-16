@@ -252,13 +252,14 @@ internal static class Filter
 	{
 		if (kind == SignalKind.Encounter)
 		{
-			// "12 min" or "less than a minute" left: the game counts each encounter down from the same lifetime.
+			// "T - 12 min" or "T - < 1 min" left: the game counts each encounter down from the same lifetime. The
+			// under-a-minute text carries a 1 since the 2026-11 update, so a '<' means 0, below a real "1 min".
 			string left = gps.ContainerRemainingTime;
 			if (string.IsNullOrEmpty(left))
 			{
 				return null;
 			}
-			return FirstNumber(left) ?? 0;
+			return left.IndexOf('<') >= 0 ? 0 : FirstNumber(left) ?? 0;
 		}
 		// "Unknown Signal 12": the number at the end.
 		string name = (gps.Name ?? "").TrimEnd();
