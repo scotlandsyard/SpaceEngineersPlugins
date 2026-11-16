@@ -681,7 +681,7 @@ internal class StockEngine
 		}
 		if (!destination.Inventory.CheckConstraint(id))
 		{
-			return "this block can't hold it";
+			return "this block doesn't take this item, remove the limit";
 		}
 		if (Items.IsIntegral(key))
 		{

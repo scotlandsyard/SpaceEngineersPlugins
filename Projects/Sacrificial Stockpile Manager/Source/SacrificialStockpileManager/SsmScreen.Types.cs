@@ -79,7 +79,8 @@ public partial class SsmScreen
 			int own = holders.Count(b => Store.BlockRules(b.Id)?.Limit(limit.Item) != null);
 			int below = holders.Count(b => Store.BlockRules(b.Id)?.Limit(limit.Item) == null && limit.HasMin && Have(b, limit.Item) < limit.Min);
 			int above = holders.Count(b => Store.BlockRules(b.Id)?.Limit(limit.Item) == null && limit.HasMax && Have(b, limit.Item) > limit.Max);
-			string state = below > 0 ? $"{below} below minimum" : above > 0 ? $"{above} above maximum" : holders.Count > 0 ? "All within limits" : "";
+			// After a game update a block type can stop taking an item (the Anti-Personnel Turret no longer takes MR-50A): say so.
+			string state = below > 0 ? $"{below} below minimum" : above > 0 ? $"{above} above maximum" : holders.Count > 0 ? "All within limits" : blocks.Count > 0 ? "No block of this type takes it" : "";
 			if (own > 0)
 			{
 				state += $"{(state.Length > 0 ? "; " : "")}{own} with their own limit";
