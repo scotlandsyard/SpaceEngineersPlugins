@@ -80,6 +80,21 @@ public partial class SsmScreen : MyGuiScreenBase
 
 	private const float ButtonsY = 0.39f;
 
+	/// <summary>The table's height per visible row, header included (15 rows: 0.54).</summary>
+	private const float TableRowHeight = 0.036f;
+
+	/// <summary>Text boxes are as tall as the combo boxes next to them.</summary>
+	private const float BoxHeight = 0.04f;
+
+	/// <summary>
+	/// A text box draws its frame taller than its size and from its top, so its middle sits about 0.004 below the
+	/// middle of a combo box at the same Y; this moves it up to line up (measured in Proving Ground screenshots).
+	/// </summary>
+	private const float BoxNudge = -0.004f;
+
+	/// <summary>A button draws about 0.004 above its middle: in a row with combo boxes it moves down by that.</summary>
+	private const float RowButtonNudge = 0.004f;
+
 	// Remembered between openings of the window.
 	private static long s_gridKey;
 
@@ -273,37 +288,40 @@ public partial class SsmScreen : MyGuiScreenBase
 		_viewCombo.ItemSelected += () => SwitchView((View)_viewCombo.GetSelectedKey());
 
 		float tableTop = -0.335f;
-		int rows = HasEditorRow(s_view) ? 13 : 15;
 		if (s_view == View.Block)
 		{
 			CreateBlockControls();
 			tableTop = -0.245f;
-			rows = 10;
 		}
 		else if (s_view == View.Bill)
 		{
 			CreateBillControls();
-			tableTop = -0.235f;
-			rows = 11;
+			tableTop = BillTableTop;
 		}
 		else if (s_view == View.Machine)
 		{
 			CreateMachineControls();
 			tableTop = -0.29f;
-			rows = 14;
 		}
 		else if (s_view == View.AllGrids)
 		{
 			CreateAllGridsControls();
 			tableTop = -0.29f;
-			rows = 14;
+		}
+		else if (s_view == View.Blocks)
+		{
+			CreateBlocksControls();
+			tableTop = -0.29f;
 		}
 		else if (s_view == View.Types)
 		{
 			CreateTypeControls();
 			tableTop = -0.29f;
-			rows = 12;
 		}
+		// As many rows as fit above the editor row or the status line, so every view's table ends the same distance
+		// above what follows it.
+		float tableBottom = HasEditorRow(s_view) ? EditorY - 0.045f : StatusY - 0.045f;
+		int rows = Math.Max(5, (int)((tableBottom - tableTop) / TableRowHeight + 0.001f));
 
 		if (s_view == View.Help)
 		{
@@ -595,9 +613,9 @@ public partial class SsmScreen : MyGuiScreenBase
 	private void CreateItemEditor()
 	{
 		AddLabel(Left, EditorY, "Find");
-		MyGuiControlTextbox searchBox = new MyGuiControlTextbox(new Vector2(-0.375f, EditorY), s_search, 30)
+		MyGuiControlTextbox searchBox = new MyGuiControlTextbox(new Vector2(-0.375f, EditorY + BoxNudge), s_search, 30)
 		{
-			Size = new Vector2(0.11f, 0.045f),
+			Size = new Vector2(0.11f, BoxHeight),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
 		};
 		searchBox.TextChanged += box =>
@@ -622,9 +640,9 @@ public partial class SsmScreen : MyGuiScreenBase
 		};
 
 		AddLabel(0.0f, EditorY, "Amount");
-		_amountBox = new MyGuiControlTextbox(new Vector2(0.08f, EditorY), s_amount, 12)
+		_amountBox = new MyGuiControlTextbox(new Vector2(0.08f, EditorY + BoxNudge), s_amount, 12)
 		{
-			Size = new Vector2(0.12f, 0.045f),
+			Size = new Vector2(0.12f, BoxHeight),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
 		};
 		_amountBox.TextChanged += box => s_amount = box.Text;
@@ -760,7 +778,7 @@ public partial class SsmScreen : MyGuiScreenBase
 
 	private MyGuiControlButton AddButton(float x, string text, Action onClick, float y = ButtonsY)
 	{
-		MyGuiControlButton button = new MyGuiControlButton(new Vector2(x, y), MyGuiControlButtonStyleEnum.Default, null, null, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER, null, new StringBuilder(text), 0.8f, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER, MyGuiControlHighlightType.WHEN_CURSOR_OVER, (MyGuiControlButton _) =>
+		MyGuiControlButton button = new MyGuiControlButton(new Vector2(x, y == ButtonsY ? y : y + RowButtonNudge), MyGuiControlButtonStyleEnum.Default, null, null, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER, null, new StringBuilder(text), 0.8f, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_CENTER, MyGuiControlHighlightType.WHEN_CURSOR_OVER, (MyGuiControlButton _) =>
 		{
 			try
 			{
@@ -986,7 +1004,7 @@ public partial class SsmScreen : MyGuiScreenBase
 		case View.Items:
 			return "Pick an item, type an amount: Set quota to keep at least that many (autocraft), Set maximum to disassemble above it." + offline;
 		case View.Blocks:
-			return "Double-click a block to edit its role, what it accepts and its stock limits." + offline;
+			return (ListSearch.IsActive(s_blocksFind) ? $"Find shows {_blocksFindShown}. " : "") + "Double-click a block to edit its role, what it accepts and its stock limits." + offline;
 		case View.Bill:
 			return BillHint(grid);
 		case View.Block:
@@ -1028,7 +1046,12 @@ public partial class SsmScreen : MyGuiScreenBase
 	private void RefreshRows()
 	{
 		GridSnapshot grid = Grid;
-		List<RowData> rows = s_view == View.AllGrids ? AllGridRows() : grid == null ? new List<RowData>() : BuildRows(grid);
+		// Block materials shows the bill's parts even before any grid is known.
+		List<RowData> rows = s_view == View.AllGrids ? AllGridRows() : s_view == View.Bill ? BillRows(grid) : grid == null ? new List<RowData>() : BuildRows(grid);
+		if (s_view == View.Blocks)
+		{
+			rows = FilterBlockRows(rows);
+		}
 		if ((s_view == View.Items || s_view == View.Block || s_view == View.Types) && s_search.Trim().Length > 0)
 		{
 			rows = rows.Where(r => !r.Key.StartsWith("i:", StringComparison.Ordinal) || MatchesSearch(r.Key.Substring(2))).ToList();
@@ -1049,7 +1072,7 @@ public partial class SsmScreen : MyGuiScreenBase
 				}
 			}
 		}
-		else if (grid == null)
+		else if (grid == null && rows.Count == 0)
 		{
 			rows.Add(Row("none", MutedColor, "No grids found yet."));
 		}
@@ -1187,6 +1210,9 @@ public partial class SsmScreen : MyGuiScreenBase
 			break;
 		case View.Displays:
 			AssignDisplay();
+			break;
+		case View.Bill:
+			ToggleBillParts();
 			break;
 		}
 	}

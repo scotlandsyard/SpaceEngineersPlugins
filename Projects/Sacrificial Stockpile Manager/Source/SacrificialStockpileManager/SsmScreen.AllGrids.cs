@@ -56,7 +56,7 @@ public partial class SsmScreen
 		};
 
 		AddLabel(-0.09f, Row2Y, ListSearch.Label);
-		MyGuiControlTextbox find = new MyGuiControlTextbox(new Vector2(-0.04f, Row2Y), _gridFind, ListSearch.MaxLength)
+		MyGuiControlTextbox find = new MyGuiControlTextbox(new Vector2(-0.04f, Row2Y + BoxNudge), _gridFind, ListSearch.MaxLength)
 		{
 			Size = new Vector2(0.46f, 0.04f),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER

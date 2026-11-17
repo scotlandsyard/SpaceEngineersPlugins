@@ -38,12 +38,12 @@ public partial class SsmScreen
 			return new List<Column>
 			{
 				new Column { Name = "Item", Width = 0.24f },
-				new Column { Name = "Category", Width = 0.11f },
-				new Column { Name = "Amount", Width = 0.12f, RightAligned = true },
+				new Column { Name = "Category", Width = 0.13f },
+				new Column { Name = "Amount", Width = 0.11f, RightAligned = true },
 				new Column { Name = "Quota", Width = 0.1f, RightAligned = true },
 				new Column { Name = "Maximum", Width = 0.11f, RightAligned = true },
 				new Column { Name = "Queued", Width = 0.1f, RightAligned = true },
-				new Column { Name = "Autocraft", Width = 0.22f }
+				new Column { Name = "Autocraft", Width = 0.21f }
 			};
 		case View.Types:
 			return new List<Column>
@@ -78,10 +78,10 @@ public partial class SsmScreen
 			return new List<Column>
 			{
 				new Column { Name = "Block", Width = 0.24f },
-				new Column { Name = "Type", Width = 0.15f },
+				new Column { Name = "Type", Width = 0.2f },
 				new Column { Name = "Role", Width = 0.12f },
 				new Column { Name = "Fill", Width = 0.07f, RightAligned = true },
-				new Column { Name = "Used / size", Width = 0.2f, RightAligned = true },
+				new Column { Name = "Used / size", Width = 0.15f, RightAligned = true },
 				new Column { Name = "Settings", Width = 0.22f }
 			};
 		case View.Bill:
@@ -135,13 +135,13 @@ public partial class SsmScreen
 		case View.Items:
 			return "No items on this grid.";
 		case View.Blocks:
-			return "No blocks with an inventory that you can access.";
+			return "No blocks with an inventory.";
 		case View.Bill:
-			return "Pick a block type and a count above, then Add line.";
+			return "Pick a block type above.";
 		case View.Block:
-			return "Empty, and no limits set. Pick an item below to add one.";
+			return "Empty, and no limits set.";
 		case View.Types:
-			return "No limits for this type yet. Pick an item below, type an amount and set a minimum or maximum.";
+			return "No limits for this type yet.";
 		case View.Production:
 			return "No production blocks.";
 		case View.Machine:

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Sandbox.Definitions;
 using Sandbox.Graphics.GUI;
+using TimShared;
 using VRage.Game;
 using VRage.Utils;
 using VRageMath;
@@ -77,15 +78,17 @@ public partial class SsmScreen
 			s_billBlockId = s_blockId;
 		}
 		AddLabel(Left, Row2Y, "Find");
-		MyGuiControlTextbox search = new MyGuiControlTextbox(new Vector2(-0.375f, Row2Y), s_billSearch, 30)
+		MyGuiControlTextbox search = new MyGuiControlTextbox(new Vector2(BillBoxX, Row2Y + BoxNudge), s_billSearch, 30)
 		{
-			Size = new Vector2(0.12f, 0.045f),
+			Size = new Vector2(0.12f, BoxHeight),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
 		};
+		search.SetToolTip("Type part of a block's name to shorten the block type list.");
 		search.TextChanged += box =>
 		{
 			s_billSearch = box.Text ?? "";
 			FillBillBlocks();
+			RefreshBillRows();
 		};
 		Controls.Add(search);
 
@@ -97,6 +100,7 @@ public partial class SsmScreen
 		{
 			s_billLarge = size.GetSelectedKey() == 1;
 			FillBillBlocks();
+			RefreshBillRows();
 		};
 
 		_billBlockCombo = AddCombo(-0.135f, Row2Y, 0.555f, 14);
@@ -106,29 +110,188 @@ public partial class SsmScreen
 			if (index >= 0 && index < _billBlockKeys.Count)
 			{
 				s_billPick = _billBlockKeys[index];
+				RefreshBillRows();
 			}
 		};
 		FillBillBlocks();
 
-		AddLabel(Left, Row3Y, "Count");
-		MyGuiControlTextbox count = new MyGuiControlTextbox(new Vector2(-0.355f, Row3Y), s_billCount, 5)
+		// Buttons are taller than combo boxes, so the rows with a button sit further apart than Row2Y and Row3Y.
+		AddLabel(Left, BillRow3Y, "Count");
+		MyGuiControlTextbox count = new MyGuiControlTextbox(new Vector2(BillBoxX, BillRow3Y + BoxNudge), s_billCount, 5)
 		{
-			Size = new Vector2(0.07f, 0.045f),
+			Size = new Vector2(0.07f, BoxHeight),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
 		};
 		count.TextChanged += box => s_billCount = box.Text;
 		Controls.Add(count);
-		AddButton(-0.18f, "Add line", AddBillLine, Row3Y);
+		AddButton(-0.205f, "Add line", AddBillLine, BillRow3Y);
 
-		AddLabel(-0.06f, Row3Y, "Mode");
-		MyGuiControlCombobox mode = AddCombo(0.0f, Row3Y, 0.18f, 2, "Fill once: stop refilling once the block holds it all; the minimums go when the items are taken out.\nKeep stocked: keep refilling until you remove them.");
+		AddLabel(-0.09f, BillRow3Y, "Mode");
+		MyGuiControlCombobox mode = AddCombo(-0.03f, BillRow3Y, 0.2f, 2, "Fill once: stop refilling once the block holds it all; the minimums go when the items are taken out.\nKeep stocked: keep refilling until you remove them.");
 		mode.AddItem(0, "Fill once", 0, null, sort: false);
 		mode.AddItem(1, "Keep stocked", 1, null, sort: false);
 		mode.SelectItemByKey(s_billKeep ? 1 : 0, sendEvent: false);
 		mode.ItemSelected += () => s_billKeep = mode.GetSelectedKey() == 1;
 
-		string target = Grid?.Block(s_billBlockId)?.Name ?? "(no block)";
-		AddLabel(0.2f, Row3Y, target.Length > 24 ? target.Substring(0, 23) + "~" : target);
+		AddLabel(Left, BillRow4Y, "Crate");
+		MyGuiControlTextbox crateFind = new MyGuiControlTextbox(new Vector2(BillBoxX, BillRow4Y + BoxNudge), s_billCrateFind, ListSearch.MaxLength)
+		{
+			Size = new Vector2(0.12f, BoxHeight),
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+		};
+		crateFind.SetToolTip("Type part of a container's name to find the crate to fill.");
+		crateFind.TextChanged += box =>
+		{
+			s_billCrateFind = box.Text ?? "";
+			FillBillCrates(pickFirst: ListSearch.IsActive(s_billCrateFind));
+		};
+		Controls.Add(crateFind);
+		_billCrateCombo = AddCombo(-0.245f, BillRow4Y, 0.45f, 14, "The crate (or any block with an inventory) the materials go into.");
+		_billCrateCombo.ItemSelected += () =>
+		{
+			int index = (int)_billCrateCombo.GetSelectedKey();
+			if (index >= 0 && index < _billCrateKeys.Count)
+			{
+				PickBillCrate(_billCrateKeys[index]);
+			}
+		};
+		_billStockButton = AddButton(0.315f, "Make it Stock", ToggleBillStock, BillRow4Y);
+		FillBillCrates(pickFirst: false);
+	}
+
+	/// <summary>Rows of the Block materials controls: Row2Y (block type), then the Count and Crate rows, spaced for a button.</summary>
+	private const float BillRow3Y = -0.27f;
+
+	private const float BillRow4Y = -0.21f;
+
+	private const float BillTableTop = -0.175f;
+
+	/// <summary>Where the text boxes start in every Block materials row, so they line up under each other.</summary>
+	private const float BillBoxX = -0.375f;
+
+	private static string s_billCrateFind = "";
+
+	/// <summary>Block ids whose parts are listed under their line (a new line opens; double-click toggles).</summary>
+	private static readonly HashSet<string> s_billOpen = new HashSet<string>();
+
+	private MyGuiControlCombobox _billCrateCombo;
+
+	private readonly List<long> _billCrateKeys = new List<long>();
+
+	private MyGuiControlButton _billStockButton;
+
+	private void RefreshBillRows()
+	{
+		_rowsSignature = null;
+		RefreshRows();
+	}
+
+	/// <summary>The grid's blocks with an inventory that match the crate Find text: containers first, then by name.</summary>
+	private void FillBillCrates(bool pickFirst)
+	{
+		if (_billCrateCombo == null)
+		{
+			return;
+		}
+		_billCrateCombo.ClearItems();
+		_billCrateKeys.Clear();
+		GridSnapshot grid = Grid;
+		IEnumerable<BlockSnapshot> blocks = grid == null ? Enumerable.Empty<BlockSnapshot>() : grid.Blocks
+			.Where(b => b.HasInventory && ListSearch.Matches(s_billCrateFind, b.Name, b.Type))
+			.OrderBy(b => b.Kind == BlockKind.Cargo ? 0 : 1)
+			.ThenBy(b => b.Name, StringComparer.OrdinalIgnoreCase);
+		foreach (BlockSnapshot block in blocks)
+		{
+			string role = block.NotYours ? "not yours" : RoleText(Store.BlockRules(block.Id), Construct.Resolve(block));
+			_billCrateCombo.AddItem(_billCrateKeys.Count, $"{block.Name}  ({block.Type}, {role})", _billCrateKeys.Count, null, sort: false);
+			_billCrateKeys.Add(block.Id);
+		}
+		int selected = _billCrateKeys.IndexOf(s_billBlockId);
+		if (selected < 0 && pickFirst && _billCrateKeys.Count > 0)
+		{
+			PickBillCrate(_billCrateKeys[0]);
+			selected = 0;
+		}
+		if (selected >= 0)
+		{
+			_billCrateCombo.SelectItemByKey(selected, sendEvent: false);
+		}
+		UpdateBillStockButton();
+	}
+
+	/// <summary>Makes this block the one the bill fills. The block lines stay; only the target changes.</summary>
+	private void PickBillCrate(long blockId)
+	{
+		s_billBlockId = blockId;
+		s_blockId = blockId;
+		UpdateBillStockButton();
+		RefreshBillRows();
+	}
+
+	private void UpdateBillStockButton()
+	{
+		if (_billStockButton == null)
+		{
+			return;
+		}
+		BlockSnapshot block = Grid?.Block(s_billBlockId);
+		bool stock = block != null && Store.BlockRules(block.Id)?.Role == BlockRole.Stock;
+		_billStockButton.Text = stock ? "Back to Auto" : "Make it Stock";
+		_billStockButton.Enabled = block != null && !block.NotYours;
+		_billStockButton.SetToolTip(stock
+			? "It's a Stock crate: it keeps only the items it has minimums or maximums for. Back to Auto lets the plugin use it as it would by default."
+			: "Stock crate: keeps only the items it has minimums or maximums for (these block materials included), and nothing else is sorted into it.");
+	}
+
+	/// <summary>Switches the crate between the Stock role and Auto, like the Role box in Block settings.</summary>
+	private void ToggleBillStock()
+	{
+		BlockSnapshot block = Grid?.Block(s_billBlockId);
+		if (block == null)
+		{
+			ShowMessage("Pick the crate first, under Crate.", WarningColor);
+			return;
+		}
+		if (block.NotYours)
+		{
+			ShowMessage($"{block.Name} isn't yours, so it's left alone.", WarningColor);
+			return;
+		}
+		BlockRules rules = Store.EditBlockRules(block.Id);
+		rules.Role = rules.Role == BlockRole.Stock ? BlockRole.Auto : BlockRole.Stock;
+		Store.SaveSettings();
+		Session?.RunNow(Live);
+		block = Grid?.Block(s_billBlockId) ?? block;
+		Effective role = Construct.Resolve(block);
+		ShowMessage($"{block.Name} is now {role.ToString().ToLowerInvariant()}. {RoleHelp(role)}", GoodColor);
+		FillBillCrates(pickFirst: false);
+		RefreshBillRows();
+	}
+
+	/// <summary>Opens or closes the parts list under the selected block line.</summary>
+	private void ToggleBillParts()
+	{
+		string key = SelectedKey;
+		if (key == null || !key.StartsWith("bl:", StringComparison.Ordinal) || !int.TryParse(key.Substring(3), out int index) || index >= s_billLines.Count)
+		{
+			return;
+		}
+		string id = s_billLines[index].Key;
+		if (!s_billOpen.Remove(id))
+		{
+			s_billOpen.Add(id);
+		}
+		RefreshBillRows();
+	}
+
+	/// <summary>One block type's parts, times the count, as rows under its line.</summary>
+	private static IEnumerable<RowData> PartRows(string keyPrefix, string blockId, int count)
+	{
+		Dictionary<string, double> parts = BlockBill.Sum(new List<string> { blockId }, new List<int> { count });
+		foreach (KeyValuePair<string, double> part in parts.OrderBy(p => (int)Items.Category(p.Key)).ThenBy(p => Items.Name(p.Key), StringComparer.OrdinalIgnoreCase))
+		{
+			yield return Row(keyPrefix + part.Key, MutedColor, "        " + Items.Name(part.Key), Items.Amount(part.Value), "", "", "", "");
+		}
 	}
 
 	/// <summary>Fills the block type list for the Find text and grid size, keeping the pick when it's still there.</summary>
@@ -179,6 +342,9 @@ public partial class SsmScreen
 		{
 			s_billLines.Add(new KeyValuePair<string, int>(s_billPick, count));
 		}
+		// The new line shows its parts; the others fold up so the totals stay in view.
+		s_billOpen.Clear();
+		s_billOpen.Add(s_billPick);
 		ShowMessage($"Added {count} x {BlockName(s_billPick)}.", GoodColor);
 		_rowsSignature = null;
 		RefreshAll();
@@ -225,11 +391,27 @@ public partial class SsmScreen
 		List<RowData> rows = new List<RowData>();
 		for (int i = 0; i < s_billLines.Count; i++)
 		{
-			rows.Add(Row("bl:" + i, GoodColor, $"{s_billLines[i].Value} x {BlockName(s_billLines[i].Key)}", "", "", "", "", "block line"));
+			string id = s_billLines[i].Key;
+			bool open = s_billOpen.Contains(id);
+			rows.Add(Row("bl:" + i, GoodColor, $"{(open ? "-" : "+")} {s_billLines[i].Value} x {BlockName(id)}", "", "", "", "", open ? "its parts below (double-click hides)" : "double-click for its parts"));
+			if (open)
+			{
+				rows.AddRange(PartRows($"bp:{i}:", id, s_billLines[i].Value));
+			}
 		}
 		if (s_billExtra.Count > 0)
 		{
 			rows.Add(Row("bx", GoodColor, $"From {s_billExtraSource}", "", "", "", "", $"{s_billExtra.Count} item(s)"));
+		}
+		if (s_billLines.Count == 0 && s_billExtra.Count == 0 && s_billPick != null)
+		{
+			// Nothing added yet: the parts of the block type picked above, so they show before Add line.
+			rows.Add(Row("bpick", MutedColor, $"Parts for 1 x {BlockName(s_billPick)} (not added yet)"));
+			rows.AddRange(PartRows("bp:pick:", s_billPick, 1));
+		}
+		else if (s_billLines.Count + (s_billExtra.Count > 0 ? 1 : 0) > 1 || s_billOpen.Overlaps(s_billLines.Select(l => l.Key)))
+		{
+			rows.Add(Row("bt", null, "Total for the bill"));
 		}
 		foreach (BlockBill.Line line in BillPreview(grid))
 		{
@@ -250,9 +432,13 @@ public partial class SsmScreen
 
 	private string BillHint(GridSnapshot grid)
 	{
+		if (grid?.Block(s_billBlockId) == null)
+		{
+			return "Pick the crate to fill under Crate (Find shortens the list), and the block types to build above.";
+		}
 		if (s_billLines.Count == 0 && s_billExtra.Count == 0)
 		{
-			return "Pick a block type and count, Add line, then Apply. Adds to the block's minimums; nothing is lowered.";
+			return "Pick a block type and count, Add line, then Apply. Adds to the crate's minimums; nothing is lowered.";
 		}
 		List<BlockBill.Line> preview = BillPreview(grid);
 		int shortItems = preview.Count(l => l.Short > 0.0 && l.Buildable);
@@ -301,7 +487,7 @@ public partial class SsmScreen
 		BlockSnapshot block = grid?.Block(s_billBlockId);
 		if (block == null)
 		{
-			ShowMessage("The block isn't on this grid any more.", WarningColor);
+			ShowMessage("Pick the crate to fill first, under Crate.", WarningColor);
 			return;
 		}
 		if (block.NotYours)
