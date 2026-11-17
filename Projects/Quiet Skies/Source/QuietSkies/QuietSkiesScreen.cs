@@ -66,7 +66,7 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		AddLabel(-0.21f, HeaderY, "On the HUD", _mainControls);
 		AddLabel(-0.03f, HeaderY, "Nearby km", _mainControls);
 		AddLabel(0.06f, HeaderY, "Keep newest", _mainControls);
-		AddLabel(0.15f, HeaderY, "Markers", _mainControls);
+		AddLabel(0.16f, HeaderY, "Markers", _mainControls);
 
 		float y = FirstRowY;
 		foreach (SignalKind kind in Signals.Kinds)
@@ -152,7 +152,7 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		};
 		Add(keep, _mainControls);
 
-		_counts[kind] = AddLabel(0.15f, y, "", _mainControls);
+		_counts[kind] = AddLabel(0.16f, y, "", _mainControls);
 
 		MyGuiControlButton delete = AddButton(0.34f, y, "Delete all", () => QuietSkiesSession.ConfirmDelete(kind, RefreshCounts), _mainControls);
 		delete.SetToolTip($"Deletes every {Signals.Name(kind)} from your GPS list, after asking with the count. Same as the G menu's Delete, five a second. Can't be undone.");
