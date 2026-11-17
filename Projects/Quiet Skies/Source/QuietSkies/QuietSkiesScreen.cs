@@ -14,13 +14,13 @@ namespace QuietSkies;
 /// <summary>The window: one row per kind of signal marker with its mode and Nearby only distance, and a Help page.</summary>
 public class QuietSkiesScreen : MyGuiScreenBase
 {
-	private const float HeaderY = -0.17f;
+	private const float HeaderY = -0.205f;
 
-	private const float FirstRowY = -0.11f;
+	private const float FirstRowY = -0.145f;
 
 	private const float RowStep = 0.07f;
 
-	private const float ButtonsY = 0.235f;
+	private const float ButtonsY = 0.27f;
 
 	private readonly List<MyGuiControlBase> _mainControls = new List<MyGuiControlBase>();
 
@@ -39,7 +39,7 @@ public class QuietSkiesScreen : MyGuiScreenBase
 	private int _pendingSince;
 
 	public QuietSkiesScreen()
-		: base(new Vector2(0.5f, 0.5f), MyGuiConstants.SCREEN_BACKGROUND_COLOR, new Vector2(0.92f, 0.6f))
+		: base(new Vector2(0.5f, 0.5f), MyGuiConstants.SCREEN_BACKGROUND_COLOR, new Vector2(0.92f, 0.67f))
 	{
 		EnabledBackgroundFade = true;
 		m_closeOnEsc = true;
@@ -75,11 +75,11 @@ public class QuietSkiesScreen : MyGuiScreenBase
 			y += RowStep;
 		}
 
-		_status = AddLabel(-0.42f, 0.135f, "", _mainControls);
-		AddLabel(-0.42f, 0.175f, "Hide also takes markers off the HUD on your other PCs. Nearby only is this PC only.", _mainControls).ColorMask = new Vector4(0.7f, 0.7f, 0.7f, 1f);
+		_status = AddLabel(-0.42f, 0.17f, "", _mainControls);
+		AddLabel(-0.42f, 0.21f, "Hide also hides them on your other PCs, except Jump Signatures. Nearby only is this PC only.", _mainControls).ColorMask = new Vector4(0.7f, 0.7f, 0.7f, 1f);
 		AddButton(0.34f, ButtonsY, "Help", () => ShowPage(_helpControls), _mainControls);
 
-		MyGuiControlMultilineText help = new MyGuiControlMultilineText(new Vector2(0f, -0.2f), new Vector2(0.86f, 0.4f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
+		MyGuiControlMultilineText help = new MyGuiControlMultilineText(new Vector2(0f, -0.235f), new Vector2(0.86f, 0.47f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
 		{
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
 		};
@@ -101,7 +101,9 @@ public class QuietSkiesScreen : MyGuiScreenBase
 			combo.AddItem((long)mode, Signals.ModeName(mode), sort: false);
 		}
 		combo.SelectItemByKey((long)Settings.Mode(kind), sendEvent: false);
-		combo.SetToolTip("Show: as the game does. Hide: off the HUD with the game's own Show on HUD switch; still in the G list. Nearby only: on the HUD only within the distance to the right.");
+		combo.SetToolTip(Signals.LocalOnly(kind)
+			? "Show: as the game does. Hide: off the HUD on this PC only; still in the G list, and it still expires on its own. Nearby only: on the HUD only within the distance to the right."
+			: "Show: as the game does. Hide: off the HUD with the game's own Show on HUD switch; still in the G list. Nearby only: on the HUD only within the distance to the right.");
 		combo.ItemSelected += () =>
 		{
 			QuietSkiesSession.SetMode(kind, (SignalMode)combo.GetSelectedKey());
@@ -240,22 +242,22 @@ public class QuietSkiesScreen : MyGuiScreenBase
 
 	private const string HelpText =
 		"WHAT IT DOES\n" +
-		"Quiet Skies filters the signal markers the game puts on your HUD: Unidentified Signal (global encounters), Unknown Signal (personal cargo drops) and Strong Unknown Signal (cargo drops anyone can claim). It never touches any other marker: not your own GPS, not Body Location, not contracts or mod markers.\n\n" +
+		"Quiet Skies filters the signal markers the game puts on your HUD: Unidentified Signal (global encounters), Unknown Signal (personal cargo drops), Strong Unknown Signal (cargo drops anyone can claim) and Jump Signature (where a heavy ship came out of a jump, on worlds with Jump Detection on; it expires on its own). It never touches any other marker: not your own GPS, not Body Location, not contracts or mod markers.\n\n" +
 		"THE MODES\n" +
 		"Show: the game's normal behaviour.\n" +
-		"Hide: takes the markers off your HUD with the game's own Show on HUD switch, the same as unticking it in the G menu. They stay in your G list, and the server remembers the switch, so they stay off the HUD even without the plugin.\n" +
+		"Hide: takes the markers off your HUD with the game's own Show on HUD switch, the same as unticking it in the G menu. They stay in your G list, and the server remembers the switch, so they stay off the HUD even without the plugin. Jump Signatures are the exception: Hide takes them off this PC's HUD only and sends nothing, because the game makes a Jump Signature permanent (it stops expiring) as soon as its Show on HUD switch changes.\n" +
 		"Nearby only: the markers show on your HUD only within the distance you set, measured from you or the ship you control. This one only changes your own screen and sends nothing; in the G list they still show as on the HUD. A marker comes back inside the distance and goes again a little beyond it, so it doesn't flicker at the edge.\n" +
 		"New markers follow the setting as they arrive (the game still plays its arrival sound). Settings are kept for each world.\n\n" +
 		"DELETING\n" +
-		"Delete all removes every marker of that kind from your GPS list, after asking with the count. Keep newest keeps only that many of a kind and deletes the oldest whenever there are more, hidden or not; 0 turns it off, and it's off by default. Both use the G menu's Delete, five markers a second, so 100 markers take about 20 seconds (the status line shows how many are left). Deleting can't be undone: the server removes the marker from your list, and it doesn't come back for that encounter or drop. The game keeps no time on a marker, so Quiet Skies notes the order markers arrive in; for markers that were already there, it goes by the cargo drop's number or an encounter's time left.\n\n" +
+		"Delete all removes every marker of that kind from your GPS list, after asking with the count. Keep newest keeps only that many of a kind and deletes the oldest whenever there are more, hidden or not; 0 turns it off, and it's off by default. Both use the G menu's Delete, five markers a second, so 100 markers take about 20 seconds (the status line shows how many are left). Deleting can't be undone: the server removes the marker from your list, and it doesn't come back for that encounter or drop. The game keeps no time on a marker, so Quiet Skies notes the order markers arrive in; for markers that were already there, it goes by the cargo drop's number, an encounter's time left or a Jump Signature's age.\n\n" +
 		"YOUR OWN CHOICES\n" +
 		"Show and Nearby only only turn a marker back on if Quiet Skies hid it. A marker you took off the HUD yourself in the G menu stays off. When a setting changes, or when you load the world, Quiet Skies applies it to every marker again.\n\n" +
 		"TOOLBAR\n" +
 		"In a cockpit or remote control, the toolbar has Quiet Skies: signal filter (opens this window), one action per kind that steps through Show, Hide and Nearby only, and one per kind that deletes them all (it asks first).\n\n" +
 		"COMMANDS\n" +
-		"/skies opens this window. /skies status lists each kind's mode and markers. /skies unidentified hide, /skies unknown show, /skies strong nearby 20 or /skies all hide set a mode (nearby takes an optional distance in km). /skies keep unknown 5 keeps the newest 5 (0 turns it off; all works too). /skies delete strong deletes every Strong Unknown Signal after asking. /skies chat off, quiet, normal or chatty sets how much it comments. /skies name and a name changes what its chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins.\n\n" +
+		"/skies opens this window. /skies status lists each kind's mode and markers. /skies unidentified hide, /skies unknown show, /skies strong nearby 20 or /skies all hide set a mode (nearby takes an optional distance in km). /skies keep unknown 5 keeps the newest 5 (0 turns it off; all works too). /skies delete strong deletes every Strong Unknown Signal after asking. Jump Signatures are jump (/skies jump hide, /skies keep jump 3). /skies chat off, quiet, normal or chatty sets how much it comments. /skies name and a name changes what its chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins.\n\n" +
 		"WHAT THE SERVER SEES\n" +
-		"Hide sends one Show on HUD request per marker. Show sends two for each marker Quiet Skies hid: Show on HUD, and Always visible (the game turns that off when a marker is hidden). Delete all and Keep newest send one Delete request per marker. They're all the same requests the G menu sends, at most five a second. Nearby only, the window, the commands and the toolbar actions send nothing. A toolbar action saved in a cockpit's toolbar is stored with the ship, like any other toolbar slot.\n\n" +
+		"Hide sends one Show on HUD request per marker (none for Jump Signatures, which are hidden on this PC only). Show sends two for each marker Quiet Skies hid: Show on HUD, and Always visible (the game turns that off when a marker is hidden). Delete all and Keep newest send one Delete request per marker. They're all the same requests the G menu sends, at most five a second. Nearby only, the window, the commands and the toolbar actions send nothing. A toolbar action saved in a cockpit's toolbar is stored with the ship, like any other toolbar slot.\n\n" +
 		"FILES\n" +
 		"The chat setting is in QuietSkies_Settings.txt and each world's modes, Keep newest and the markers' arrival order in QuietSkies_<world>_Settings.txt, in %AppData%\\SpaceEngineers\\Storage.";
 }

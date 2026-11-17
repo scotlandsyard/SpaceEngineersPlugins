@@ -30,7 +30,7 @@ internal static class Filter
 
 	private struct Request
 	{
-		public long EntityId;
+		public long Key;
 
 		public Op Op;
 	}
@@ -42,6 +42,9 @@ internal static class Filter
 		public SignalKind Kind;
 
 		public int Index;
+
+		/// <summary>Signals.Key: the entity id, or a Jump Signature's hash-based id.</summary>
+		public long Key;
 	}
 
 	private const int ScanTicks = 60;
@@ -168,9 +171,9 @@ internal static class Filter
 		session.Gpss.GetGpsList(session.LocalPlayerId, s_list);
 		for (int i = 0; i < s_list.Count; i++)
 		{
-			if (s_list[i] is MyGps gps && gps.EntityId != 0 && Signals.KindOf(gps) is SignalKind kind)
+			if (s_list[i] is MyGps gps && Signals.KindOf(gps) is SignalKind kind && Signals.Key(gps) is long key && key != 0)
 			{
-				s_markers.Add(new Marker { Gps = gps, Kind = kind, Index = i });
+				s_markers.Add(new Marker { Gps = gps, Kind = kind, Index = i, Key = key });
 			}
 		}
 	}
@@ -187,19 +190,19 @@ internal static class Filter
 		s_seen.Clear();
 		foreach (Marker marker in s_markers)
 		{
-			s_seen.Add(marker.Gps.EntityId);
+			s_seen.Add(marker.Key);
 		}
 		bool changed = Number();
 		Trim();
 		foreach (Marker marker in s_markers)
 		{
-			long id = marker.Gps.EntityId;
+			long id = marker.Key;
 			if (s_deleting.Contains(id))
 			{
 				continue;
 			}
 			SignalMode mode = Settings.Mode(marker.Kind);
-			if (!s_pending.ContainsKey(id) && (!s_applied.TryGetValue(id, out SignalMode applied) || applied != mode))
+			if (!Signals.LocalOnly(marker.Kind) && !s_pending.ContainsKey(id) && (!s_applied.TryGetValue(id, out SignalMode applied) || applied != mode))
 			{
 				changed |= ApplyServerSide(marker.Gps, id, mode);
 				s_applied[id] = mode;
@@ -208,7 +211,7 @@ internal static class Filter
 		}
 
 		// Forget markers that are gone (deleted, or the encounter or container went), once the world has had time to send them.
-		s_localHidden.RemoveWhere(g => !s_seen.Contains(g.EntityId));
+		s_localHidden.RemoveWhere(g => !s_seen.Contains(Signals.Key(g)));
 		s_deleting.RemoveWhere(id => !s_seen.Contains(id) && !s_pending.ContainsKey(id));
 		if (s_tick > PruneAfterTicks)
 		{
@@ -235,14 +238,14 @@ internal static class Filter
 	/// </summary>
 	private static bool Number()
 	{
-		List<Marker> fresh = s_markers.Where(m => !Settings.Seen.ContainsKey(m.Gps.EntityId)).ToList();
+		List<Marker> fresh = s_markers.Where(m => !Settings.Seen.ContainsKey(m.Key)).ToList();
 		if (fresh.Count == 0)
 		{
 			return false;
 		}
 		foreach (Marker marker in fresh.OrderBy(m => m.Kind).ThenBy(m => Newness(m.Gps, m.Kind) ?? long.MinValue).ThenBy(m => m.Index))
 		{
-			Settings.Seen[marker.Gps.EntityId] = Settings.NextSeen++;
+			Settings.Seen[marker.Key] = Settings.NextSeen++;
 		}
 		return true;
 	}
@@ -260,6 +263,11 @@ internal static class Filter
 				return null;
 			}
 			return left.IndexOf('<') >= 0 ? 0 : FirstNumber(left) ?? 0;
+		}
+		if (kind == SignalKind.Jump)
+		{
+			// Every Jump Signature lives the same time, so the one that expires last arrived last.
+			return gps.DiscardAt?.Ticks;
 		}
 		// "Unknown Signal 12": the number at the end.
 		string name = (gps.Name ?? "").TrimEnd();
@@ -296,15 +304,15 @@ internal static class Filter
 			{
 				continue;
 			}
-			List<Marker> live = s_markers.Where(m => m.Kind == kind && !s_deleting.Contains(m.Gps.EntityId)).ToList();
+			List<Marker> live = s_markers.Where(m => m.Kind == kind && !s_deleting.Contains(m.Key)).ToList();
 			int extra = live.Count - keep;
 			if (extra <= 0)
 			{
 				continue;
 			}
-			foreach (Marker marker in live.OrderBy(m => Settings.Seen.TryGetValue(m.Gps.EntityId, out long order) ? order : 0).Take(extra))
+			foreach (Marker marker in live.OrderBy(m => Settings.Seen.TryGetValue(m.Key, out long order) ? order : 0).Take(extra))
 			{
-				QueueDelete(marker.Gps.EntityId);
+				QueueDelete(marker.Key);
 			}
 			// One at a time as new ones arrive is the normal case; say so only when a batch goes.
 			if (extra > 1)
@@ -321,9 +329,9 @@ internal static class Filter
 		int count = 0;
 		foreach (Marker marker in s_markers)
 		{
-			if (marker.Kind == kind && !s_deleting.Contains(marker.Gps.EntityId))
+			if (marker.Kind == kind && !s_deleting.Contains(marker.Key))
 			{
-				QueueDelete(marker.Gps.EntityId);
+				QueueDelete(marker.Key);
 				count++;
 			}
 		}
@@ -365,7 +373,8 @@ internal static class Filter
 
 	private static void ApplyLocal(MyGps gps, SignalKind kind, SignalMode mode, Vector3D position)
 	{
-		if (mode != SignalMode.Nearby || !gps.ShowOnHud)
+		bool localHide = mode == SignalMode.Hide && Signals.LocalOnly(kind);
+		if ((mode != SignalMode.Nearby && !localHide) || !gps.ShowOnHud)
 		{
 			// Hide takes the marker off the HUD itself, so it isn't put back for a moment first.
 			if (s_localHidden.Remove(gps) && gps.ShowOnHud && mode != SignalMode.Hide)
@@ -374,10 +383,18 @@ internal static class Filter
 			}
 			return;
 		}
-		double limit = Settings.Km(kind) * 1000.0;
-		double distance = Vector3D.Distance(position, gps.Coords);
 		bool hidden = s_localHidden.Contains(gps);
-		bool hide = hidden ? distance > limit : distance > limit * Margin;
+		bool hide;
+		if (localHide)
+		{
+			hide = true;
+		}
+		else
+		{
+			double limit = Settings.Km(kind) * 1000.0;
+			double distance = Vector3D.Distance(position, gps.Coords);
+			hide = hidden ? distance > limit : distance > limit * Margin;
+		}
 		if (hide)
 		{
 			// Every scan, because the game puts a marker back on the HUD when it's edited.
@@ -393,21 +410,21 @@ internal static class Filter
 
 	private static void Enqueue(long id, Op op)
 	{
-		s_queue.Enqueue(new Request { EntityId = id, Op = op });
+		s_queue.Enqueue(new Request { Key = id, Op = op });
 		s_pending[id] = s_pending.TryGetValue(id, out int count) ? count + 1 : 1;
 	}
 
 	private static void Send(Request request)
 	{
-		if (s_pending.TryGetValue(request.EntityId, out int count))
+		if (s_pending.TryGetValue(request.Key, out int count))
 		{
 			if (count <= 1)
 			{
-				s_pending.Remove(request.EntityId);
+				s_pending.Remove(request.Key);
 			}
 			else
 			{
-				s_pending[request.EntityId] = count - 1;
+				s_pending[request.Key] = count - 1;
 			}
 		}
 		try
@@ -419,13 +436,19 @@ internal static class Filter
 			}
 			long identityId = session.LocalPlayerId;
 			// Look the marker up again and check its kind again: never send anything for any other marker.
-			MyGps gps = session.Gpss.GetGpsByEntityId(identityId, request.EntityId);
-			if (gps == null || !Signals.KindOf(gps).HasValue)
+			MyGps gps = Find(session, identityId, request.Key);
+			SignalKind? kind = Signals.KindOf(gps);
+			if (gps == null || !kind.HasValue || Signals.Key(gps) != request.Key)
 			{
-				s_deleting.Remove(request.EntityId);
+				s_deleting.Remove(request.Key);
 				return;
 			}
-			if (s_deleting.Contains(request.EntityId) && request.Op != Op.Delete)
+			if (s_deleting.Contains(request.Key) && request.Op != Op.Delete)
+			{
+				return;
+			}
+			// A Show on HUD or Always visible request would make a Jump Signature permanent: those kinds only ever get Delete.
+			if (Signals.LocalOnly(kind.Value) && request.Op != Op.Delete)
 			{
 				return;
 			}
@@ -456,10 +479,10 @@ internal static class Filter
 				s_localHidden.Remove(gps);
 				session.Gpss.SendDeleteGpsRequest(identityId, gps.Hash);
 				RequestsSent++;
-				s_deleting.Remove(request.EntityId);
-				s_applied.Remove(request.EntityId);
-				Settings.HiddenByUs.Remove(request.EntityId);
-				Settings.Seen.Remove(request.EntityId);
+				s_deleting.Remove(request.Key);
+				s_applied.Remove(request.Key);
+				Settings.HiddenByUs.Remove(request.Key);
+				Settings.Seen.Remove(request.Key);
 				if (s_deleting.Count == 0)
 				{
 					Settings.SaveWorld();
@@ -471,6 +494,12 @@ internal static class Filter
 		{
 			MyLog.Default.WriteLineAndConsole($"[Quiet Skies] Request failed: {ex.Message}");
 		}
+	}
+
+	/// <summary>The marker a key belongs to: by entity id, or for a Jump Signature by the hash its key was made from.</summary>
+	private static MyGps Find(MySession session, long identityId, long key)
+	{
+		return key < 0 ? session.Gpss.GetGps(identityId, (int)(uint)(-1L - key)) as MyGps : session.Gpss.GetGpsByEntityId(identityId, key);
 	}
 
 	/// <summary>For the window: how many markers of a kind are in your GPS list, and how many are on your HUD right now.</summary>
@@ -487,7 +516,7 @@ internal static class Filter
 		session.Gpss.GetGpsList(session.LocalPlayerId, list);
 		foreach (IMyGps item in list)
 		{
-			if (item is MyGps gps && gps.EntityId != 0 && Signals.KindOf(gps) == kind)
+			if (item is MyGps gps && Signals.KindOf(gps) == kind && Signals.Key(gps) != 0)
 			{
 				total++;
 				if (gps.ShowOnHud && !s_localHidden.Contains(gps))

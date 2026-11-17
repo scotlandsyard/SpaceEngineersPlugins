@@ -7,11 +7,12 @@ A client-side Pulsar plugin for Space Engineers that filters the signal markers 
 | **Unidentified Signal** | Global encounters |
 | **Unknown Signal** | Personal cargo drops |
 | **Strong Unknown Signal** | Cargo drops anyone can claim |
+| **Jump Signature** | Where a heavy ship came out of a jump (worlds with Jump Detection on). Temporary: it expires on its own |
 
 For each kind you pick one mode:
 
 - **Show**: the game's normal behaviour.
-- **Hide**: off the HUD, using the game's own *Show on HUD* switch (the same as unticking it in the G menu). The markers stay in your G list.
+- **Hide**: off the HUD, using the game's own *Show on HUD* switch (the same as unticking it in the G menu). The markers stay in your G list. Jump Signatures are hidden on this PC only: the game makes one permanent as soon as its *Show on HUD* switch changes, so Quiet Skies never sends that switch for them.
 - **Nearby only**: on the HUD only within a distance you set (1-500 km, default 10). This only changes your own screen.
 
 New markers follow the setting as they arrive. Settings are kept per world.
@@ -35,9 +36,9 @@ Quiet Skies never touches any other marker: not your own GPS, not Body Location,
 |---|---|
 | `/skies` | Opens the window |
 | `/skies status` | Lists each kind's mode and markers |
-| `/skies <unidentified\|unknown\|strong\|all> <show\|hide\|nearby> [km]` | Sets a mode, e.g. `/skies strong nearby 20`, `/skies all hide` |
-| `/skies keep <unidentified\|unknown\|strong\|all> <number>` | Keep newest, e.g. `/skies keep unknown 5`; 0 turns it off |
-| `/skies delete <unidentified\|unknown\|strong>` | Deletes every marker of that kind, after asking with the count |
+| `/skies <unidentified\|unknown\|strong\|jump\|all> <show\|hide\|nearby> [km]` | Sets a mode, e.g. `/skies strong nearby 20`, `/skies all hide` |
+| `/skies keep <unidentified\|unknown\|strong\|jump\|all> <number>` | Keep newest, e.g. `/skies keep unknown 5`; 0 turns it off |
+| `/skies delete <unidentified\|unknown\|strong\|jump>` | Deletes every marker of that kind, after asking with the count |
 | `/skies chat off\|quiet\|normal\|chatty` | How much it comments in chat |
 | `/skies name <name>` | The name its chat lines show under; on its own puts it back |
 
@@ -45,7 +46,7 @@ Quiet Skies never touches any other marker: not your own GPS, not Body Location,
 
 | Feature | Sent to the server |
 |---|---|
-| Hide | One *Show on HUD* request per marker: the same request as the G menu checkbox. The server stores it in your GPS list. |
+| Hide | One *Show on HUD* request per marker: the same request as the G menu checkbox. The server stores it in your GPS list. Jump Signatures: nothing (hidden on this PC only). |
 | Show (after Hide) | Two requests per marker Quiet Skies hid: *Show on HUD*, and *Always visible* (the game turns that off when a marker is hidden). |
 | Delete all, Keep newest | One *Delete* request per marker: the same request as the G menu's Delete button. The server removes the marker from your GPS list for good. |
 | Nearby only | Nothing. The marker is only taken off this PC's HUD. |

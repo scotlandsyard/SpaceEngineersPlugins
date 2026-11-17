@@ -258,7 +258,7 @@ public class QuietSkiesSession : MySessionComponentBase
 			SignalKind[] toDelete = words.Length > 2 ? ParseKinds(words[2].ToLowerInvariant()) : null;
 			if (toDelete == null || toDelete.Length != 1)
 			{
-				MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /skies delete unidentified, unknown or strong. It asks first, with the count.");
+				MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /skies delete unidentified, unknown, strong or jump. It asks first, with the count.");
 				return;
 			}
 			ConfirmDelete(toDelete[0]);
@@ -267,7 +267,7 @@ public class QuietSkiesSession : MySessionComponentBase
 			SignalKind[] toKeep = words.Length > 2 ? ParseKinds(words[2].ToLowerInvariant()) : null;
 			if (toKeep == null || words.Length < 4 || !int.TryParse(words[3], NumberStyles.Integer, CultureInfo.InvariantCulture, out int keep) || keep < 0)
 			{
-				MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Use /skies keep <unidentified|unknown|strong|all> <number>, up to {Settings.MaxKeep}; 0 turns it off.");
+				MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Use /skies keep <unidentified|unknown|strong|jump|all> <number>, up to {Settings.MaxKeep}; 0 turns it off.");
 				return;
 			}
 			foreach (SignalKind kind in toKeep)
@@ -281,7 +281,7 @@ public class QuietSkiesSession : MySessionComponentBase
 		SignalMode? mode = words.Length > 2 ? ParseMode(words[2]) : null;
 		if (kinds == null || !mode.HasValue)
 		{
-			MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /skies <unidentified|unknown|strong|all> <show|hide|nearby> [km], /skies keep <kind> <number>, /skies delete <kind>, /skies status, or /skies on its own for the window.");
+			MyAPIGateway.Utilities.ShowMessage(ChatSender, "Use /skies <unidentified|unknown|strong|jump|all> <show|hide|nearby> [km], /skies keep <kind> <number>, /skies delete <kind>, /skies status, or /skies on its own for the window.");
 			return;
 		}
 		double? km = null;
@@ -315,6 +315,9 @@ public class QuietSkiesSession : MySessionComponentBase
 			return new[] { SignalKind.Unknown };
 		case "strong":
 			return new[] { SignalKind.Strong };
+		case "jump":
+		case "jumps":
+			return new[] { SignalKind.Jump };
 		default:
 			return null;
 		}
