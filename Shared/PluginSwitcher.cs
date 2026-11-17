@@ -35,6 +35,9 @@ internal static class PluginSwitcher
 
 	private static bool s_registered;
 
+	/// <summary>Our window that last called AddSwitcher, closed when another of our windows opens.</summary>
+	private static MyGuiScreenBase s_window;
+
 	/// <summary>Call once the session has started (BeforeStart). openMenu opens this plugin's window.</summary>
 	public static void Register(string displayName, Action openMenu)
 	{
@@ -80,6 +83,7 @@ internal static class PluginSwitcher
 		}
 		s_plugins.Clear();
 		s_lastUsed = null;
+		s_window = null;
 	}
 
 	/// <summary>Call when this plugin's window opens, so /tim comes back to it.</summary>
@@ -102,6 +106,7 @@ internal static class PluginSwitcher
 	public static void AddSwitcher(MyGuiScreenBase screen, MyGuiControlLabel caption)
 	{
 		MenuOpened();
+		OneWindow(screen);
 		if (!s_registered || s_plugins.Count < 2 || screen?.Size == null || caption == null)
 		{
 			return;
@@ -131,6 +136,42 @@ internal static class PluginSwitcher
 			}
 		};
 		screen.Controls.Add(combo);
+	}
+
+	/// <summary>
+	/// One of our windows at a time: a window opened from chat, a toolbar action or /tim while another of ours is up
+	/// would otherwise stack on it, and ESC would close them one by one. Closes this plugin's previous window and tells
+	/// the others to close theirs.
+	/// </summary>
+	private static void OneWindow(MyGuiScreenBase screen)
+	{
+		if (screen == null || screen == s_window)
+		{
+			return;
+		}
+		CloseWindow();
+		s_window = screen;
+		if (s_registered)
+		{
+			try
+			{
+				Send("opened");
+			}
+			catch (Exception ex)
+			{
+				MyLog.Default.WriteLineAndConsole($"[{s_name}] Plugin switcher: {ex.Message}");
+			}
+		}
+	}
+
+	private static void CloseWindow()
+	{
+		MyGuiScreenBase old = s_window;
+		s_window = null;
+		if (old != null && old.State != MyGuiScreenState.CLOSED && old.State != MyGuiScreenState.CLOSING)
+		{
+			old.CloseScreen();
+		}
 	}
 
 	/// <summary>
@@ -232,6 +273,9 @@ internal static class PluginSwitcher
 			{
 				s_lastUsed = null;
 			}
+			break;
+		case "opened":
+			CloseWindow();
 			break;
 		case "used":
 			s_lastUsed = name;
