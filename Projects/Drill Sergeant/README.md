@@ -117,6 +117,8 @@ Sarge comments now and then in chat, in olive drab. `/sarge chat off|quiet|norma
 
 If any of our other plugins are loaded too, the top-left corner of the window has a dropdown with this plugin's name. Pick another plugin there to close this window and open that plugin's. Type `/tim` in chat to open whichever of these windows you used last. See [Shared/README.md](../../Shared/README.md).
 
+The terminal (K or I) also has a **Toolbox** tab that lists our loaded plugins, each with an Open button.
+
 ## Files
 
 Settings are in `DrillSergeant_Settings.txt`, each world's rigs in `DrillSergeant_<world>_Rigs.xml`, both in `%AppData%\SpaceEngineers\Storage`.

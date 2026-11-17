@@ -61,6 +61,8 @@ Both settings are yours alone and apply in every world. They're saved in `OreSco
 
 If any of our other plugins are loaded too (BaR Maid, Fat Albert, OreScout, Sacrificial Stockpile Manager, Script to Plugin), the top-left corner of the window has a dropdown with this plugin's name. Pick another plugin there to close this window and open that plugin's. Type `/tim` in chat to open whichever of these windows you used last. See [Shared/README.md](../../Shared/README.md).
 
+The terminal (K or I) also has a **Toolbox** tab that lists our loaded plugins, each with an Open button.
+
 ## Reporting bugs
 
 Open an issue on [GitHub](https://github.com/scotlandsyard/SpaceEngineersPlugins/issues) with the plugin's name in the title. Say what you did, what you expected and what happened instead, and attach the game log (`%AppData%\SpaceEngineers\SpaceEngineers_<date>.log`) and Pulsar's log (`%AppData%\Pulsar\Legacy\info.log`) if you can.

@@ -8,6 +8,7 @@ Without Wilson, each plugin says its own lines in chat. With Wilson loaded, the 
 
 - Type `/wilson` in chat, or
 - Pick **Wilson** in the plugin list at the top left of any of the family's windows (`/tim` opens the one used last).
+- Press **Open** next to Wilson in the Toolbox tab of the terminal (K or I).
 
 ## What he does
 

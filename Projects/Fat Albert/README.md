@@ -9,6 +9,7 @@ It reads the ship (thrusters, mass, tanks, batteries, reactors, engines) and the
 - Type `/fat` (or `/fatalbert`) in chat, or
 - Put **Fat Albert: lift-off check** from a cockpit or remote control onto a toolbar. It opens on that ship, or
 - Pick **Fat Albert** in the plugin list at the top left of any of our other plugins' windows (`/tim` opens the one used last).
+- Press **Open** next to Fat Albert in the Toolbox tab of the terminal (K or I).
 
 ## Inputs
 

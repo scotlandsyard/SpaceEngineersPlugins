@@ -66,7 +66,7 @@ public class QuietSkiesSession : MySessionComponentBase
 			}
 			MyAPIGateway.TerminalControls.CustomActionGetter += CustomActionGetter;
 			MyAPIGateway.Utilities.MessageEntered += OnMessageEntered;
-			PluginSwitcher.Register(Plugin.Name, OpenWindow);
+			PluginSwitcher.Register(Plugin.Name, OpenWindow, ToolboxStatus);
 			Personality.Level = Settings.Chattiness;
 			Personality.DisplayName = Settings.DisplayName;
 			Personality.Changed += Chatter.Save;
@@ -362,6 +362,20 @@ public class QuietSkiesSession : MySessionComponentBase
 		}
 		Chatter.SetLevel(level);
 		MyAPIGateway.Utilities.ShowMessage(ChatSender, $"Chat personality: {level}. {Chatter.LevelHint(level)}");
+	}
+
+	/// <summary>For the Toolbox tab in the terminal: how many signal markers you have, and how many are on the HUD.</summary>
+	private static string ToolboxStatus()
+	{
+		int total = 0;
+		int onHud = 0;
+		foreach (SignalKind kind in Enum.GetValues(typeof(SignalKind)))
+		{
+			Filter.Count(kind, out int t, out int h);
+			total += t;
+			onHud += h;
+		}
+		return total == 0 ? "No signal markers" : $"{total} signal marker{(total == 1 ? "" : "s")}, {onHud} on the HUD";
 	}
 
 	internal static void OpenWindow()

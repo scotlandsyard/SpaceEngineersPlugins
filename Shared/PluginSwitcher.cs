@@ -14,7 +14,7 @@ namespace TimShared;
 /// Shared/README.md), so each plugin compiles its own copy and works on its own; the plugins talk through the
 /// game's mod message channel, so none of them needs another one to be loaded.
 /// </summary>
-internal static class PluginSwitcher
+internal static partial class PluginSwitcher
 {
 	/// <summary>Private message channel for these plugins ("TIM_SWIT").</summary>
 	private const long Channel = 0x54494D5F53574954L;
@@ -38,8 +38,26 @@ internal static class PluginSwitcher
 	/// <summary>Our window that last called AddSwitcher, closed when another of our windows opens.</summary>
 	private static MyGuiScreenBase s_window;
 
-	/// <summary>Call once the session has started (BeforeStart). openMenu opens this plugin's window.</summary>
-	public static void Register(string displayName, Action openMenu)
+	// One-line status per plugin, from plugins that give one (Register's status argument).
+	private static readonly Dictionary<string, Func<string>> s_status = new Dictionary<string, Func<string>>(StringComparer.OrdinalIgnoreCase);
+
+	// Plugins whose copy of this file has the Toolbox tab (Toolbox.cs); the first of them alphabetically adds it.
+	private static readonly HashSet<string> s_toolbox = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+	private static Func<string> s_ownStatus;
+
+	private static bool s_hasToolbox;
+
+	// Implemented in Toolbox.cs; a plugin that doesn't link that file simply has no Toolbox tab.
+	static partial void ToolboxAttach();
+
+	static partial void ToolboxDetach();
+
+	/// <summary>
+	/// Call once the session has started (BeforeStart). openMenu opens this plugin's window; status, if given,
+	/// returns a short line for the Toolbox tab in the terminal (K/I), such as "Auto-close on".
+	/// </summary>
+	public static void Register(string displayName, Action openMenu, Func<string> status = null)
 	{
 		if (s_registered || MyAPIGateway.Utilities == null)
 		{
@@ -51,7 +69,19 @@ internal static class PluginSwitcher
 			s_open = openMenu;
 			s_plugins.Clear();
 			s_plugins[displayName] = openMenu;
+			s_ownStatus = status;
+			s_status.Clear();
+			if (status != null)
+			{
+				s_status[displayName] = status;
+			}
+			s_toolbox.Clear();
 			s_lastUsed = null;
+			ToolboxAttach();
+			if (s_hasToolbox)
+			{
+				s_toolbox.Add(displayName);
+			}
 			MyAPIGateway.Utilities.RegisterMessageHandler(Channel, OnMessage);
 			MyAPIGateway.Utilities.MessageEntered += OnMessageEntered;
 			s_registered = true;
@@ -74,6 +104,13 @@ internal static class PluginSwitcher
 		s_registered = false;
 		try
 		{
+			ToolboxDetach();
+		}
+		catch
+		{
+		}
+		try
+		{
 			Send("bye");
 			MyAPIGateway.Utilities.UnregisterMessageHandler(Channel, OnMessage);
 			MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
@@ -82,6 +119,8 @@ internal static class PluginSwitcher
 		{
 		}
 		s_plugins.Clear();
+		s_status.Clear();
+		s_toolbox.Clear();
 		s_lastUsed = null;
 		s_window = null;
 	}
@@ -235,10 +274,25 @@ internal static class PluginSwitcher
 		Run(s_plugins[target]);
 	}
 
-	/// <summary>Every message carries: kind, our name, our open action, and the plugin used last as far as we know.</summary>
+	/// <summary>
+	/// Every message carries: kind, our name, our open action, the plugin used last as far as we know, our status
+	/// line (or null) and whether we have the Toolbox tab. Older copies send only the first four.
+	/// </summary>
 	private static void Send(string kind)
 	{
-		MyAPIGateway.Utilities.SendModMessage(Channel, new object[] { kind, s_name, s_open, s_lastUsed });
+		MyAPIGateway.Utilities.SendModMessage(Channel, new object[] { kind, s_name, s_open, s_lastUsed, s_ownStatus, s_hasToolbox });
+	}
+
+	private static void Learn(string name, object[] parts)
+	{
+		if (parts.Length > 4 && parts[4] is Func<string> status)
+		{
+			s_status[name] = status;
+		}
+		if (parts.Length > 5 && parts[5] is bool toolbox && toolbox)
+		{
+			s_toolbox.Add(name);
+		}
 	}
 
 	private static void OnMessage(object message)
@@ -255,6 +309,7 @@ internal static class PluginSwitcher
 			{
 				s_plugins[name] = open;
 			}
+			Learn(name, parts);
 			Send("here");
 			break;
 		case "here":
@@ -262,6 +317,7 @@ internal static class PluginSwitcher
 			{
 				s_plugins[name] = open;
 			}
+			Learn(name, parts);
 			if (s_lastUsed == null && parts.Length > 3 && parts[3] is string lastUsed)
 			{
 				s_lastUsed = lastUsed;
@@ -269,6 +325,8 @@ internal static class PluginSwitcher
 			break;
 		case "bye":
 			s_plugins.Remove(name);
+			s_status.Remove(name);
+			s_toolbox.Remove(name);
 			if (name.Equals(s_lastUsed, StringComparison.OrdinalIgnoreCase))
 			{
 				s_lastUsed = null;

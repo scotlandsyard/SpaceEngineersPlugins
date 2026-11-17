@@ -52,6 +52,8 @@ Paste the "Script" region of [Script/Program.cs](Script/Program.cs) into a progr
 
 Open the window with `/tripwire`, or with `/tim` and the plugin list at the top left of any of our plugin windows.
 
+The terminal (K or I) also has a **Toolbox** tab that lists our loaded plugins, each with an Open button.
+
 **Alerts, no script needed.** While a grid is loaded on your PC, the plugin watches:
 - every block of grids you own (or your faction owns, if you tick that in Settings);
 - the blocks you own on other grids.

@@ -41,6 +41,16 @@ To add a plugin:
 2. In its session's `BeforeStart`, call `PluginSwitcher.Register("Name", openWindowAction)`. In `UnloadData`, call `PluginSwitcher.Unregister()`.
 3. In its window's `RecreateControls`, replace `AddCaption("…");` with `PluginSwitcher.AddSwitcher(this, AddCaption("…"));`.
 
+## Toolbox.cs
+
+The **Toolbox** tab in the terminal (K or I), beside Inventory, Control Panel, Production and the others. It lists our loaded plugins (the ones the switcher knows), each with a one-line status and an Open button. Open closes the terminal and opens that plugin's window, the same way the switcher dropdown does.
+
+- **Link it next to `PluginSwitcher.cs`.** Toolbox.cs is part of the same (partial) class. A plugin that links only PluginSwitcher.cs still shows in the list, it just never adds the tab itself.
+- **Status line (optional):** pass a third argument to `Register`, a `Func<string>` that returns a short line, for example `() => Settings.Enabled ? "Auto-close on" : "Auto-close off"`. It is called about once a second while the tab is showing, so keep it cheap. Doorman and Quiet Skies give one.
+- **One tab:** every plugin with Toolbox.cs says so in its switcher messages; the first of them alphabetically adds the tab, the same rule as `/tim`. The tab is also looked up by name before it is added.
+- **Not a patch:** the tab is added from `MyScreenManager.BeforeScreenDraw`, by reading the terminal's tab control (`m_terminalTabs`) and adding a page with its own key. Nothing in the game is patched. If the game renames or changes that control, the tab is left out, one line goes in the log and the terminal works as before. The terminal rebuilds its tabs when you switch grids, and the tab comes back on the next frame.
+- The header has a tooltip for anyone who remembers where `/tim` got its name.
+
 ## AssemblerModes.cs
 
 One assembler mode that every plugin that queues work respects, stored on the block so it's set once for all of them:

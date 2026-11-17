@@ -14,6 +14,7 @@ A client-side Pulsar plugin for Space Engineers that closes doors left open. Onc
 ## Controls
 
 - **Window**: `/doorman` in chat, the *Doorman: door settings* toolbar action, or `/tim` / the plugin switcher. The on/off switch and options at the top, a grid picker with the delay and hangar setting (*All grids* sets the defaults), the list of doors with each one's delay and what it's doing now, the selected door's own setting, and a Find box.
+- **Toolbox**: the terminal (K or I) has a Toolbox tab listing our loaded plugins, each with an Open button.
 - **Toolbar actions** on cockpits and remote controls: open the window, and switch auto-close on or off.
 - **Chat**:
 

@@ -23,6 +23,7 @@ The readout looks like this:
 
 - **Hotkey**: Ctrl+Alt+R turns the readout on and off, on foot too. Change it in the window.
 - **Window**: `/radar`, the *Radar Tech: window* toolbar action, or `/tim` / the plugin switcher. Readout on/off, range, closing speed on/off, warning times, hotkey, the last reading, a Ping button and a Help page.
+- **Toolbox**: the terminal (K or I) has a Toolbox tab listing our loaded plugins, each with an Open button.
 - **Toolbar actions** on cockpits and remote controls: *Radar Tech: readout on/off*, *Radar Tech: ping*, *Radar Tech: window*.
 - **Chat**:
 

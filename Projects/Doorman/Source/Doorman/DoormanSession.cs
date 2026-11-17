@@ -47,7 +47,7 @@ public class DoormanSession : MySessionComponentBase
 			});
 			MyAPIGateway.TerminalControls.CustomActionGetter += CustomActionGetter;
 			MyAPIGateway.Utilities.MessageEntered += OnMessageEntered;
-			PluginSwitcher.Register(Plugin.Name, OpenWindow);
+			PluginSwitcher.Register(Plugin.Name, OpenWindow, () => Settings.Enabled ? $"Auto-close on, {Settings.Delay:0.#} s" : "Auto-close off");
 			Personality.Level = Settings.Chattiness;
 			Personality.DisplayName = Settings.DisplayName;
 			Personality.Changed += Chatter.Save;

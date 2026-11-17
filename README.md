@@ -56,6 +56,7 @@ Each plugin has its own DLL name, action IDs, chat command and Custom Data secti
 With more than one of these plugins loaded:
 
 - **Switching windows:** the top-left corner of each plugin's window has a dropdown that jumps to another loaded plugin's window. Type `/tim` in chat to reopen the window you used last.
+- **Toolbox tab:** the terminal (K or I) has a Toolbox tab that lists our loaded plugins, each with a short status and an Open button.
 - **Chat personalities:** each plugin has a character who comments in chat when something happens, with an Off / Quiet / Normal / Chatty setting in that plugin. With Wilson loaded too, the characters talk to each other. Chat lines only show on your own screen.
 - **Assembler modes:** BaR Maid and Sacrificial Stockpile Manager share one mode per assembler: **Main** (takes the orders), **Co-op** (helps a Main one) or **Manual** (left alone). New assemblers start as Manual, so neither plugin touches an assembler until you opt it in. You can set the mode from either plugin.
 
