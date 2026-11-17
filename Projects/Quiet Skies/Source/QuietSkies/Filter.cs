@@ -137,10 +137,11 @@ internal static class Filter
 		}
 	}
 
-	/// <summary>Called after a setting changes, so it applies on the next tick instead of within a second.</summary>
+	/// <summary>Called after a setting changes: applies it now, so the status line printed straight after is already right.</summary>
 	public static void ScanSoon()
 	{
-		s_nextScan = s_tick;
+		s_nextScan = s_tick + ScanTicks;
+		Scan();
 	}
 
 	public static void Update()
@@ -374,7 +375,7 @@ internal static class Filter
 	private static void ApplyLocal(MyGps gps, SignalKind kind, SignalMode mode, Vector3D position)
 	{
 		bool localHide = mode == SignalMode.Hide && Signals.LocalOnly(kind);
-		if ((mode != SignalMode.Nearby && !localHide) || !gps.ShowOnHud)
+		if ((mode != SignalMode.Nearby) || !gps.ShowOnHud)
 		{
 			// Hide takes the marker off the HUD itself, so it isn't put back for a moment first.
 			if (s_localHidden.Remove(gps) && gps.ShowOnHud && mode != SignalMode.Hide)
