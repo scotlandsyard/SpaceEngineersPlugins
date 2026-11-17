@@ -63,10 +63,10 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		_counts.Clear();
 
 		AddLabel(-0.42f, HeaderY, "Marker", _mainControls);
-		AddLabel(-0.19f, HeaderY, "On the HUD", _mainControls);
-		AddLabel(0.0f, HeaderY, "Nearby km", _mainControls);
-		AddLabel(0.1f, HeaderY, "Keep newest", _mainControls);
-		AddLabel(0.2f, HeaderY, "Markers", _mainControls);
+		AddLabel(-0.21f, HeaderY, "On the HUD", _mainControls);
+		AddLabel(-0.03f, HeaderY, "Nearby km", _mainControls);
+		AddLabel(0.06f, HeaderY, "Keep newest", _mainControls);
+		AddLabel(0.15f, HeaderY, "Markers", _mainControls);
 
 		float y = FirstRowY;
 		foreach (SignalKind kind in Signals.Kinds)
@@ -95,7 +95,7 @@ public class QuietSkiesScreen : MyGuiScreenBase
 	{
 		AddLabel(-0.42f, y, Signals.Name(kind), _mainControls);
 
-		MyGuiControlCombobox combo = new MyGuiControlCombobox(new Vector2(-0.19f, y), new Vector2(0.17f, 0.04f), originAlign: MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
+		MyGuiControlCombobox combo = new MyGuiControlCombobox(new Vector2(-0.21f, y), new Vector2(0.17f, 0.04f), originAlign: MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
 		foreach (SignalMode mode in new[] { SignalMode.Show, SignalMode.Hide, SignalMode.Nearby })
 		{
 			combo.AddItem((long)mode, Signals.ModeName(mode), sort: false);
@@ -111,7 +111,7 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		};
 		Add(combo, _mainControls);
 
-		MyGuiControlTextbox km = new MyGuiControlTextbox(new Vector2(0.0f, y), QuietSkiesSession.FormatKm(Settings.Km(kind)), 6)
+		MyGuiControlTextbox km = new MyGuiControlTextbox(new Vector2(-0.03f, y), QuietSkiesSession.FormatKm(Settings.Km(kind)), 6)
 		{
 			Size = new Vector2(0.08f, 0.045f),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
@@ -129,7 +129,7 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		};
 		Add(km, _mainControls);
 
-		MyGuiControlTextbox keep = new MyGuiControlTextbox(new Vector2(0.1f, y), Settings.Keep(kind).ToString(CultureInfo.InvariantCulture), 3)
+		MyGuiControlTextbox keep = new MyGuiControlTextbox(new Vector2(0.06f, y), Settings.Keep(kind).ToString(CultureInfo.InvariantCulture), 3)
 		{
 			Size = new Vector2(0.07f, 0.045f),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
@@ -152,10 +152,9 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		};
 		Add(keep, _mainControls);
 
-		_counts[kind] = AddLabel(0.2f, y, "", _mainControls);
+		_counts[kind] = AddLabel(0.15f, y, "", _mainControls);
 
-		MyGuiControlButton delete = AddButton(0.375f, y, "Delete all", () => QuietSkiesSession.ConfirmDelete(kind, RefreshCounts), _mainControls);
-		delete.Size = new Vector2(0.1f, 0.04f);
+		MyGuiControlButton delete = AddButton(0.34f, y, "Delete all", () => QuietSkiesSession.ConfirmDelete(kind, RefreshCounts), _mainControls);
 		delete.SetToolTip($"Deletes every {Signals.Name(kind)} from your GPS list, after asking with the count. Same as the G menu's Delete, five a second. Can't be undone.");
 	}
 
