@@ -31,7 +31,41 @@ public partial class TallyScreen : MyGuiScreenBase
 		Ore
 	}
 
-	private const float ButtonsY = 0.39f;
+	// Layout: content runs from Left to Right (the window is 0.9 wide), rows 0.06 apart so buttons (0.052 high) never
+	// touch the row above or below, and the bottom buttons sit in four evenly spaced slots that line up with the table.
+	private const float Left = -0.42f;
+
+	private const float Right = 0.42f;
+
+	/// <summary>A Default-style button's width (its texture's minimum size).</summary>
+	private const float ButtonWidth = 0.176f;
+
+	private const float Slot1 = Left + ButtonWidth / 2f;
+
+	private const float Slot2 = Slot1 + (Right - Left - ButtonWidth) / 3f;
+
+	private const float Slot3 = Slot1 + 2f * (Right - Left - ButtonWidth) / 3f;
+
+	private const float Slot4 = Right - ButtonWidth / 2f;
+
+	/// <summary>Where combo boxes, text boxes and the first column of tick boxes start; labels end just left of it.</summary>
+	private const float FieldX = -0.29f;
+
+	private const float Column2 = -0.05f;
+
+	private const float Column3 = 0.19f;
+
+	private const float Row1 = -0.345f;
+
+	private const float Row2 = -0.285f;
+
+	private const float Row3 = -0.225f;
+
+	private const float Row4 = -0.165f;
+
+	private const float TabsY = -0.1f;
+
+	private const float ButtonsY = 0.4f;
 
 	private static readonly string[] Kinds = { Source.Projector, Source.Library, Source.Grid };
 
@@ -122,8 +156,8 @@ public partial class TallyScreen : MyGuiScreenBase
 		List<MyGuiControlBase> page = _pages[Page.Tally];
 		_filling = true;
 
-		RightLabel(-0.355f, "Tally:", page);
-		_kind = AddCombo(-0.31f, -0.355f, 0.22f, "What to count: a projector's projection, a blueprint from your F10 library, or one of your grids.", page);
+		RightLabel(Row1, "Tally:", page);
+		_kind = AddCombo(FieldX, Row1, 0.22f, "What to count: a projector's projection, a blueprint from your F10 library, or one of your grids.", page);
 		_kind.AddItem(0, "Projector");
 		_kind.AddItem(1, "Blueprint (F10)");
 		_kind.AddItem(2, "My grid");
@@ -136,10 +170,10 @@ public partial class TallyScreen : MyGuiScreenBase
 				FillSources();
 			}
 		};
-		_source = AddCombo(-0.08f, -0.355f, 0.5f, "The projector, blueprint or grid to tally.", page);
+		_source = AddCombo(Column2, Row1, Right - Column2, "The projector, blueprint or grid to tally.", page);
 
-		RightLabel(-0.31f, "Find:", page);
-		_find = AddTextbox(-0.31f, -0.31f, 0.22f, "Type part of a name to shorten the list.", page);
+		RightLabel(Row2, "Find:", page);
+		_find = AddTextbox(FieldX, Row2, 0.22f, "Type part of a name to shorten the list.", page);
 		_find.TextChanged += _ =>
 		{
 			if (!_filling)
@@ -147,18 +181,18 @@ public partial class TallyScreen : MyGuiScreenBase
 				FillSources();
 			}
 		};
-		AddButton(0.0f, -0.31f, "Refresh list", FillSources, page).SetToolTip("Looks again for projectors, blueprints and grids.");
+		AddButton(Column2 + ButtonWidth / 2f, Row2, "Refresh list", FillSources, page).SetToolTip("Looks again for projectors, blueprints and grids.");
 
-		_stillNeeded = AddCheckbox(-0.31f, -0.26f, "Still needed", "Projector: only what isn't built yet, plus what half-built blocks lack. Grid: what unfinished or damaged blocks lack. Off: the full cost. Blueprints are always the full cost.", Settings.StillNeeded, page);
-		_carried = AddCheckbox(-0.08f, -0.26f, "Minus what I carry", "Takes off what's in your own inventory: components you carry aren't made, so their ingots and ore aren't needed either.", Settings.Carried, page);
-		_cargo = AddCheckbox(0.17f, -0.26f, "Minus the grid's cargo", "Projector or grid: also takes off what's in the inventories of that grid and what's docked to it (blocks you have access to). The server only keeps those up to date while you have one open in the terminal, so open the grid's inventory first for current numbers.", Settings.Cargo, page);
+		_stillNeeded = AddCheckbox(FieldX, Row3, "Still needed", "Projector: only what isn't built yet, plus what half-built blocks lack. Grid: what unfinished or damaged blocks lack. Off: the full cost. Blueprints are always the full cost.", Settings.StillNeeded, page);
+		_carried = AddCheckbox(Column2, Row3, "Minus what I carry", "Takes off what's in your own inventory: components you carry aren't made, so their ingots and ore aren't needed either.", Settings.Carried, page);
+		_cargo = AddCheckbox(Column3, Row3, "Minus the grid's cargo", "Projector or grid: also takes off what's in the inventories of that grid and what's docked to it (blocks you have access to). The server only keeps those up to date while you have one open in the terminal, so open the grid's inventory first for current numbers.", Settings.Cargo, page);
 		foreach (MyGuiControlCheckbox box in new[] { _stillNeeded, _carried, _cargo })
 		{
 			box.IsCheckedChanged += _ => OptionsChanged();
 		}
 
-		RightLabel(-0.21f, "Refinery yield %:", page);
-		_yield = AddTextbox(-0.31f, -0.21f, 0.1f, "The yield of the refinery that makes your ingots, in percent, as its terminal shows it (Effectiveness), e.g. 141 for a vanilla refinery with four yield modules. Modded refineries differ. Leave it empty for this world's best refinery without modules.", page);
+		RightLabel(Row4, "Refinery yield %:", page);
+		_yield = AddTextbox(FieldX, Row4, 0.1f, "The yield of the refinery that makes your ingots, in percent, as its terminal shows it (Effectiveness), e.g. 141 for a vanilla refinery with four yield modules. Modded refineries differ. Leave it empty for this world's best refinery without modules.", page);
 		_yield.Text = Settings.YieldPercent > 0 ? Settings.YieldPercent.ToString("0.##", CultureInfo.InvariantCulture) : "";
 		_yield.TextChanged += box =>
 		{
@@ -167,20 +201,20 @@ public partial class TallyScreen : MyGuiScreenBase
 				OptionsChanged();
 			}
 		};
-		page.Add(AddControl(new MyGuiControlLabel(new Vector2(-0.07f, -0.21f), null, "Datapad:", null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_RIGHT_AND_VERTICAL_CENTER)));
-		_pad = AddCombo(-0.06f, -0.21f, 0.48f, "Which datapad in your inventory gets the list. Auto uses an empty one, or the ones already holding this list. Tally can't make datapads.", page);
+		page.Add(AddControl(new MyGuiControlLabel(new Vector2(Column2 - 0.01f, Row4), null, "Datapad:", null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_RIGHT_AND_VERTICAL_CENTER)));
+		_pad = AddCombo(Column2, Row4, Right - Column2, "Which datapad in your inventory gets the list. Auto uses an empty one, or the ones already holding this list. Tally can't make datapads.", page);
 
-		float x = -0.34f;
+		float x = Slot1;
 		foreach (Tab tab in Enum.GetValues(typeof(Tab)))
 		{
 			Tab shown = tab;
-			_tabs[tab] = AddButton(x, -0.155f, tab.ToString(), () => ShowTab(shown), page);
-			x += 0.17f;
+			_tabs[tab] = AddButton(x, TabsY, tab.ToString(), () => ShowTab(shown), page);
+			x += ButtonWidth + 0.01f;
 		}
 
 		_table = new MyGuiControlTable
 		{
-			Position = new Vector2(0f, -0.125f),
+			Position = new Vector2(0f, TabsY + 0.045f),
 			Size = new Vector2(0.84f, 0.4f),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP,
 			ColumnsCount = 4,
@@ -197,17 +231,17 @@ public partial class TallyScreen : MyGuiScreenBase
 		_table.SetColumnComparison(3, (a, b) => (Item(a)?.Short ?? 0).CompareTo(Item(b)?.Short ?? 0));
 		page.Add(AddControl(_table));
 
-		_status = new MyGuiControlMultilineText(new Vector2(0f, 0.285f), new Vector2(0.84f, 0.075f), null, "Blue", 0.75f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
+		_status = new MyGuiControlMultilineText(new Vector2(0f, 0.3f), new Vector2(0.84f, 0.06f), null, "Blue", 0.75f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
 		{
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
 		};
 		page.Add(AddControl(_status));
 
-		AddButton(-0.34f, ButtonsY, "Tally", () => Calculate(), page).SetToolTip("Counts the picked projector, blueprint or grid and works out the components, ingots and ore.");
-		AddButton(-0.17f, ButtonsY, "Write datapad", WriteDatapad, page).SetToolTip("Writes the list shown onto the datapad picked above (more than one if it's long).");
-		AddButton(0f, ButtonsY, "Copy", Copy, page).SetToolTip("Copies the list as text, the same as on the datapad.");
-		AddButton(0.17f, ButtonsY, "Queue in assemblers", OpenQueue, page).SetToolTip("Queues the components in an assembler or a group of them: you pick which and see what it would add before anything is sent.");
-		AddButton(0.34f, ButtonsY, "Help", () => ShowPage(Page.Help), page);
+		AddButton(Slot1, ButtonsY, "Tally", () => Calculate(), page).SetToolTip("Counts the picked projector, blueprint or grid and works out the components, ingots and ore.");
+		AddButton(Slot2, ButtonsY, "Write datapad", WriteDatapad, page).SetToolTip("Writes the list shown onto the datapad picked above (more than one if it's long).");
+		AddButton(Slot4, TabsY, "Copy", Copy, page).SetToolTip("Copies the list as text, the same as on the datapad.");
+		AddButton(Slot3, ButtonsY, "Queue in assemblers", OpenQueue, page).SetToolTip("Queues the components in an assembler or a group of them: you pick which and see what it would add before anything is sent.");
+		AddButton(Slot4, ButtonsY, "Help", () => ShowPage(Page.Help), page);
 		_filling = false;
 	}
 
@@ -441,13 +475,13 @@ public partial class TallyScreen : MyGuiScreenBase
 	private void BuildHelpPage()
 	{
 		List<MyGuiControlBase> page = _pages[Page.Help];
-		MyGuiControlMultilineText help = new MyGuiControlMultilineText(new Vector2(0f, -0.37f), new Vector2(0.84f, 0.69f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
+		MyGuiControlMultilineText help = new MyGuiControlMultilineText(new Vector2(0f, Row1 - 0.02f), new Vector2(Right - Left, 0.69f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
 		{
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
 		};
 		help.AppendText(HelpText);
 		page.Add(AddControl(help));
-		AddButton(0.34f, ButtonsY, "Back", () => ShowPage(Page.Tally), page);
+		AddButton(Slot4, ButtonsY, "Back", () => ShowPage(Page.Tally), page);
 	}
 
 	private void ShowPage(Page page)
@@ -500,7 +534,7 @@ public partial class TallyScreen : MyGuiScreenBase
 
 	private void RightLabel(float y, string text, List<MyGuiControlBase> page)
 	{
-		page.Add(AddControl(new MyGuiControlLabel(new Vector2(-0.32f, y), null, text, null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_RIGHT_AND_VERTICAL_CENTER)));
+		page.Add(AddControl(new MyGuiControlLabel(new Vector2(FieldX - 0.01f, y), null, text, null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_RIGHT_AND_VERTICAL_CENTER)));
 	}
 
 	private MyGuiControlCombobox AddCombo(float x, float y, float width, string tip, List<MyGuiControlBase> page)

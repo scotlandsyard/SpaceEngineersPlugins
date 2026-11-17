@@ -34,8 +34,8 @@ public partial class TallyScreen
 	private void BuildQueuePage()
 	{
 		List<MyGuiControlBase> page = _pages[Page.Queue];
-		RightLabel(-0.355f, "Queue in:", page);
-		_target = AddCombo(-0.31f, -0.355f, 0.55f, "The assembler, or group of assemblers, to queue the components in. Only assemblers you have access to.", page);
+		RightLabel(Row1, "Queue in:", page);
+		_target = AddCombo(FieldX, Row1, 0.52f, "The assembler, or group of assemblers, to queue the components in. Only assemblers you have access to.", page);
 		_target.ItemSelected += () =>
 		{
 			if (!_filling)
@@ -44,15 +44,15 @@ public partial class TallyScreen
 				ShowPlan();
 			}
 		};
-		AddButton(0.34f, -0.355f, "Refresh lists", () =>
+		AddButton(Slot4, Row1, "Refresh lists", () =>
 		{
 			FillTargets();
 			FillCrates();
 			ShowPlan();
 		}, page).SetToolTip("Looks again for assemblers, groups and crates.");
 
-		_countQueued = AddCheckbox(-0.31f, -0.3f, "Count what's already queued there", "What these assemblers already have queued, or finished and waiting in their output, counts as on its way, so pressing Queue twice doesn't queue the bill twice.", Settings.QueueCountQueued, page);
-		_minusCargo = AddCheckbox(0.12f, -0.3f, "Minus the assemblers' grid", "Takes off what's already in the inventories of the assemblers' grid and what's docked to it (blocks you have access to), so only the shortfall is queued. Open the grid's inventory first for current numbers. Greyed out when the tally already took that grid's cargo off.", Settings.QueueMinusCargo, page);
+		_countQueued = AddCheckbox(FieldX, Row2, "Count what's already queued there", "What these assemblers already have queued, or finished and waiting in their output, counts as on its way, so pressing Queue twice doesn't queue the bill twice.", Settings.QueueCountQueued, page);
+		_minusCargo = AddCheckbox(0.12f, Row2, "Minus the assemblers' grid", "Takes off what's already in the inventories of the assemblers' grid and what's docked to it (blocks you have access to), so only the shortfall is queued. Open the grid's inventory first for current numbers. Greyed out when the tally already took that grid's cargo off.", Settings.QueueMinusCargo, page);
 		foreach (MyGuiControlCheckbox box in new[] { _countQueued, _minusCargo })
 		{
 			box.IsCheckedChanged += _ =>
@@ -66,8 +66,8 @@ public partial class TallyScreen
 			};
 		}
 
-		RightLabel(-0.25f, "SSM crate:", page);
-		_crate = AddCombo(-0.31f, -0.25f, 0.55f, "A cargo container of your own (not shared) for Sacrificial Stockpile Manager to stock with the components.", page);
+		RightLabel(Row3, "SSM crate:", page);
+		_crate = AddCombo(FieldX, Row3, 0.52f, "A cargo container of your own (not shared) for Sacrificial Stockpile Manager to stock with the components.", page);
 		_crate.ItemSelected += () =>
 		{
 			if (!_filling)
@@ -75,17 +75,17 @@ public partial class TallyScreen
 				Settings.Crate = SelectedCrate()?.Key ?? Settings.Crate;
 			}
 		};
-		_send = AddButton(0.34f, -0.25f, "Send to SSM crate", SendToCrate, page);
+		_send = AddButton(Slot4, Row3, "Send to SSM crate", SendToCrate, page);
 
-		_plan = new MyGuiControlMultilineText(new Vector2(0f, -0.21f), new Vector2(0.84f, 0.55f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
+		_plan = new MyGuiControlMultilineText(new Vector2(0f, Row4 - 0.025f), new Vector2(0.84f, 0.52f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
 		{
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP
 		};
 		page.Add(AddControl(_plan));
 
-		AddButton(-0.34f, ButtonsY, "Queue", Queue, page).SetToolTip("Queues the components listed above, after asking.");
-		AddButton(-0.17f, ButtonsY, "Undo last queue", UndoQueue, page).SetToolTip("Takes Tally's last queue back out of the assemblers, as far as it hasn't been started or passed on to co-op assemblers.");
-		AddButton(0.34f, ButtonsY, "Back", () => ShowPage(Page.Tally), page);
+		AddButton(Slot1, ButtonsY, "Queue", Queue, page).SetToolTip("Queues the components listed above, after asking.");
+		AddButton(Slot2, ButtonsY, "Undo last queue", UndoQueue, page).SetToolTip("Takes Tally's last queue back out of the assemblers, as far as it hasn't been started or passed on to co-op assemblers.");
+		AddButton(Slot4, ButtonsY, "Back", () => ShowPage(Page.Tally), page);
 	}
 
 	/// <summary>Tallies again (so the queue matches what's built and carried now), then shows the Queue page.</summary>
