@@ -7,21 +7,51 @@ internal static partial class EmbeddedText
 {
 	public const string Personality = @"# Drill Sergeant's chat lines, read by Shared/Personality.cs (see Shared/README.md).
 # [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
-# Placeholder lines until the character is written through the personality workflow.
+# Written with Gemini through the Chat Lines Studio (2026-11-10); the sheet is in SpaceEngineers-Private\Personality\Characters.md.
 
 [menu_opened]
-- Fall in. Let's see the rigs.
+- Drill Sergeant reporting for inspection! State your business, review the stroke lengths, and keep it snappy!
+- Orderly room is open, captain! Lay out your drill specs, check the rotor speeds, and square away your gear!
+- Fall in! Adjusting the drilling schedule? Set your step increments and keep those pistons in dress-right-dress!
+- Drill console open! Lay out the marching orders for your rigs, chief! Make sure those tolerances are regulation!
+- Inspection time, hotshot! Reviewing rig parameters, cargo thresholds, and extension limits. Make it count!
+- Attention on deck! What are the orders for the heavy metal today, ace? Fast bore or steady parade pace?
+- Command terminal engaged! Check your piston limits and rotor arcs before I send the recruits down into the dirt!
 
 [rig_started]
-- {rig}, you're on the clock. Dig.
+- Rig {rig}, forward march! Rotor turning, pistons extending, by the numbers! Chew that bedrock, recruit!
+- Eyes front! {rig} has stepped off! Keep those piston rods dressing right and show that asteroid some discipline!
+- Company, advance! {rig} is boring down! Left, right, step, grind! Eat that rock until it begs for mercy, chief!
+- Sound off! {rig} has engaged the drill head! Smooth rotor sweep, steady extension, zero slacking on my watch!
+- Drill discipline in effect! {rig} has commenced the bore! Keep that shaft straight and true, hotshot!
+- Fall in! Rig {rig} is chewing dirt! Pistons down, teeth spinning, no wandering off the vertical axis!
+- {rig} is on the march, captain! Grinding stone and taking names! Move out, double time!
 
 [cargo_full]
-- {rig} is stuffed to the gills. Empty it, soldier.
+- Halt! Rig {rig}, stand at ease! Cargo bins are choked to the gills, so hold the bore until they digest!
+- Rig {rig}, hold your fire! You ate too fast, recruit! Conveyor line is backing up, wait for an empty hopper!
+- Stop the count on {rig}! Storage is at maximum density! Stand down, wipe your teeth, and let the pipes breathe!
+- Mark time, {rig}! Cargo holds are bulging at the seams! Not another pebble until the quartermaster clears room!
+- Company halt on {rig}! We are not spilling payload across the parade ground, ace! Wait for the sorters to catch up!
+- At ease, {rig}! You dug faster than the base can chew! Idling pistons until the cargo bays clear out!
+- Hold position, {rig}! Pockets are full, teeth are locked! Take a breather while logistics unloads your pack, chief!
 
 [!rig_finished]
-- {rig} has dug everything it can reach. Outstanding.
+- Outstanding! Rig {rig} has reached the absolute deck! That bore is complete and the bedrock has learned respect!
+- Rig {rig}, mission accomplished! Reached the bottom of the shaft with textbook piston discipline! Well done, ace!
+- That is how it is done! {rig} hit final depth! Secure the drills, lock the rotors, and stand tall, captain!
+- Parade rest for {rig}! Final extension reached! Clean borehole, zero bent pistons, dismiss the company!
+- Bottom of the trench! Rig {rig} punched all the way through! Excellent alignment from top to bottom, hotshot!
+- Rig {rig} has reported bottom! That asteroid just got a proper military haircut! Secure the rig, chief!
+- Borehole complete on {rig}! Reached maximum stroke without breaking a single weld! Outstanding form, recruits!
 
 [rollcall]
-- Drill Sergeant, present. {command} for the rigs.
+- Drill Sergeant present and accounted for! Rigs are aligned, teeth are sharp! Punch in {command} for marching orders!
+- Attention on deck! Drill Sergeant on post! Keep those pistons locked and type {command} to inspect the rigs, chief!
+- Sounding off! The parade ground is squared away and ready to bore! Enter {command} to set your drilling cadence!
+- Drill Sergeant reporting for duty, captain! No bent rods on my watch! Call up {command} to organize your boreholes!
+- Fall in! Rigs are ready to march through solid rock! Use {command} to pull up the drill roster and give the command!
+- Present! Rotor locks tight, piston discipline flawless! Hit {command} whenever you need to put steel to stone, ace!
+- On post and watching the line! Keep your formations straight, hotshot, and enter {command} to run your drill rigs!
 ";
 }

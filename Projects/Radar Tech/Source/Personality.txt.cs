@@ -7,24 +7,60 @@ internal static partial class EmbeddedText
 {
 	public const string Personality = @"# Radar's chat lines, read by Shared/Personality.cs (see Shared/README.md).
 # [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
-# Placeholder lines until the character is written through the personality workflow.
+# Written with Gemini through the Chat Lines Studio (2026-11-10); the sheet is in SpaceEngineers-Private\Personality\Characters.md.
 
 [menu_opened]
-- Radar here. What are we ranging?
+- Sensor station open. Reviewing beam pulse power, collision thresholds, and telemetry units, captain.
+- Radar console online. Configure your display preferences, warning buffers, or pulse ranges, chief.
+- Tracking interface engaged. Calibrate your crosshair offsets or dial in impact audio alerts, ace.
+- Console active. Let's set your safety margins before you test your hull against solid iron, hotshot.
+- Rangefinder settings open. Adjust warning timers, telemetry gates, and display readouts on the board.
+- Terminal queried. Ranging sensors aligned; enter your parameters for collision tracking, captain.
+- Sensor config displayed. Tell me when you want the proximity siren singing and when you want quiet, chief.
 
 [readout_on]
-- Readout's up. Put the crosshair on it and I'll call the range.
+- Live telemetry streaming. Continuous closure, range, and impact clock active on HUD, captain.
+- Tracking overlay engaged. If you point the nose at it, I'll calculate the crunch time, chief.
+- Rangefinder live on HUD. Distance and closing vectors locked in. Mind the braking markers, ace.
+- Real-time telemetry feed active. Crosshair data streaming to your visor. Fly the numbers, hotshot.
+- Active tracking running. Range, bearing, and deceleration margins updating dynamically on screen.
+- Telemetry link established. Constant range calculations down the centerline, captain. Watch the clock.
+- Continuous ranging enabled. Crosshairs calibrated, collision margins monitoring your flight path.
 
 [readout_off]
-- Readout off. Ping me if you need a range.
+- Rangefinder feed secured. HUD overlay offline, return to visual piloting, captain.
+- Telemetry readout stood down. Crosshair numbers dismissed; flying on instinct now, chief.
+- Live tracking muted. Sensor beam parked on standby. Holler if you need distance checks, ace.
+- Ranging overlay disabled. Centerline data cleared from your visor. Visual vector only, hotshot.
+- Feed suspended. Impact calculations stopped; sensor board returned to passive monitoring.
+- Range telemetry dismissed. HUD clutter dropped. You're flying by the seat of your suit, captain.
+- Live tracking cut. Remember that space doesn't get softer just because the display is dark, chief.
 
 [ping_hit]
-- {target}, {distance}.
+- Hard return on boresight: {target} locked at {distance}. Check your closure rate, captain.
+- Solid echo down the pipe. Painted {target} at {distance}. Plenty of stopping room if you brake now.
+- Ping return confirmed: {target} bearing dead ahead at {distance}. Adjusting telemetry track, chief.
+- Direct contact: {target} registered at {distance}. Keep an eye on the velocity vector, hotshot.
+- Ranging pulse resolved. Boresight target is {target} at {distance}. Clean signal, no clutter.
+- Echo received: {target} sitting at {distance}. That closing speed looks a little ambitious, ace.
+- Target tagged: {target} at {distance}. Data feed locked, don't forget where reverse thrust is.
 
 [ping_none]
-- Nothing out to {range}.
+- Pulse dissipated: zero returns within {range}. Lane is clear straight down the crosshairs, captain.
+- Beam swept clean to {range}. Nothing on the boresight, chief. Just empty vacuum out to the limit.
+- Negative return. Ranging pulse reached {range} with zero contacts. Clear flight vector ahead, ace.
+- Scope shows empty out to {range}. No obstacles painting on the centerline. Throttle is yours, hotshot.
+- Null ping: no hard echoes inside {range}. You've got an open corridor directly ahead, captain.
+- Boresight is clear. Ranging beam faded at {range} without tagging a single contact. Clean lanes, chief.
+- Zero obstruction detected within {range}. If there's iron out there, it's well beyond the beam limit.
 
 [rollcall]
-- Radar, on the scope. {command} for the range finder.
+- Radar on the boards. Crosshairs aligned, rangefinder pulsing. Enter {command} to tune the sensor feed, captain.
+- Range station manned. Tracking vectors and distance down the pipe. Punch in {command} for telemetry controls.
+- Radar reporting in, chief. Collision warnings primed, scope calibrated. Use {command} to adjust HUD readouts.
+- Sensor watch active. Keeping your nose off the rock face. Hit {command} to configure the rangefinder, ace.
+- Stationed at the telemetry console. Boresight clean and tracking. Type {command} to open sensor parameters.
+- Radar checked in, captain. Distance clocks and closure rates standing by. Call up {command} to set your gates.
+- On the scope, hotshot. Pingers ready and crosshairs zeroed. Type {command} whenever you need range telemetry.
 ";
 }

@@ -48,12 +48,25 @@ internal static class Cast
 		new Member("drillsergeant", "Drill Sergeant", "Drill Sergeant", "/sarge"),
 		new Member("radartech", "Radar", "Radar Tech", "/radar"),
 		new Member("digby", "Digby", "Digby", "/digby"),
-		new Member("doorman", "Doorman", "Doorman", "/doorman")
+		new Member("doorman", "Doorman", "Doorman", "/doorman"),
+		new Member("tripwire", "Tripwire", "Tripwire", "/tripwire"),
+		new Member("tally", "Tally", "Tally", "/tally"),
+		new Member("hush", "Hush", "Hush", "/hush")
+	};
+
+	/// <summary>
+	/// Guest voices another plugin speaks for (Personality.SayAs): they trigger and speak in exchanges like the others,
+	/// but have no roll call, chat command or window entry. The plugin is the one that voices them.
+	/// </summary>
+	public static readonly Member[] Guests =
+	{
+		new Member("shepherd", "Shepherd (SSM)", "Sacrificial Stockpile Manager", "/ssm")
 	};
 
 	public static Member ByChatName(string name)
 	{
-		return Array.Find(Others, m => m.ChatName.Equals(name, StringComparison.OrdinalIgnoreCase));
+		return Array.Find(Others, m => m.ChatName.Equals(name, StringComparison.OrdinalIgnoreCase))
+			?? Array.Find(Guests, m => m.ChatName.Equals(name, StringComparison.OrdinalIgnoreCase));
 	}
 
 	public static bool IsWilson(string name)

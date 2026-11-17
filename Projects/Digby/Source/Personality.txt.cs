@@ -7,21 +7,51 @@ internal static partial class EmbeddedText
 {
 	public const string Personality = @"# Digby's chat lines, read by Shared/Personality.cs (see Shared/README.md).
 # [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
-# Placeholder lines until the character is written through the personality workflow.
+# Written with Gemini through the Chat Lines Studio (2026-11-10); the sheet is in SpaceEngineers-Private\Personality\Characters.md.
 
 [menu_opened]
-- Where are we digging today?
+- Pithead office is open, captain! Let's eyeball the strata and plot where we're sinking the next shaft.
+- Digby's survey desk online! Pick your target ore, set your descent slope, and let's draw up a tidy adit, chief.
+- Looking over the planetary survey? Show me the depth and we'll calculate the plumb-line, hotshot.
+- Planning room active! Adjust your collar coordinates or tweak the turn angle before we break ground, ace.
+- Welcome to the shaft planner! Let's see what kind of stone we're sinking iron through today, captain.
+- Unrolling the geological charts! Tell me where the pay-seam is hiding and I'll line up the crosshairs, chief.
+- Survey console engaged! Check the overburden thickness and let's draft a straight shot to the good stuff, ace.
 
 [plan_made]
-- Plan's ready: {length} of tunnel. Mind your head.
+- Plumb as a string, captain! That's {length} of sweet bore straight down through the strata to the pay-seam!
+- Beautiful cut mapped out! A clean {length} heading, true vertical, right through the overburden, chief!
+- Dialed in the angle! That shaft runs {length} from collar to pit floor. Follow the line and she'll chew like butter!
+- Now that's a handsome adit: {length} long, dead straight, and zero doglegs to worry about, hotshot!
+- Staked out the drift! We've got {length} of solid rock to sink through before we hit the treasure, ace.
+- Laid out a tidy bore-line! Exactly {length} from the collar down into the good stone. Let the drills bite!
+- What a sweet heading! {length} of clean descent planned out. Keep the collar square and sink her deep, captain!
 
 [pad_written]
-- Plan's on the datapad. Hand it round.
+- Survey burned to datapad! Waypoints, bearings, and depths all tucked into your pocket, captain!
+- Written down neat and tidy on the pad! Keep it in your overalls so you don't lose the heading, chief.
+- Transferred the shaft map to datapad! Start marker, the elbow, and the pit floor all charted out, ace.
+- Logged on the slate! That datapad holds the whole drift profile from collar to pay-seam, hotshot.
+- The bore plan is inked to datapad! Take it down to the pithead and give the drill crew their marks!
+- Fresh survey burned to the pad! Elevation marks, turn vectors, and depth lines all safe in hand, captain.
+- Everything's down on the datapad! Follow those numbers and you won't scrape a single unnecessary pebble, chief.
 
 [no_datapad]
-- No datapad on you. I can't make one; bring me a blank.
+- Can't ink the survey, captain! You haven't got a blank datapad on you for me to write the heading onto!
+- Need a datapad in your pocket, chief! I can't scratch a bore plan onto the dirt floor with a nail!
+- No slate in your pack, ace! Fetch an empty datapad so I can copy down the waypoints and collar marks!
+- Hand's ready, but the pockets are empty! Slip a datapad into your suit so I can write down the dig plan, hotshot.
+- Missing a datapad, captain! I've got the whole shaft mapped in my head, but you need it written down to guide the rig!
+- Give me some digital parchment, chief! No datapad found to record the turn angles and target depths!
+- Hold your horses on the drill rig! You need a datapad in inventory before I can hand over the bore specs, ace.
 
 [rollcall]
-- Digby, tunnel planning. {command} for the dig planner.
+- Digby here! Plumb-bob is steady and the boots are muddy. Enter {command} to map out your next mining shaft, captain!
+- Down in the trench, ready to sink! Punch in {command} whenever you need a clean, straight heading to the ore, chief.
+- Digby reporting from the pithead! Keeping the collars square and true. Hit {command} to plan your drift, ace!
+- Ready to chew some dirt, hotshot! Staked out and listening. Type {command} to pull up the shaft planner!
+- Old Digby's on post! The rocks are soft and the angles are true. Call up {command} to sketch your borehole, captain.
+- Tunnelier checked in! Smelling the stone dust and checking the grade. Enter {command} to lay down your dig lines, chief.
+- Present at the pit mouth! Don't go digging crooked doglegs, ace; type {command} and we'll draw a proper plumb-line!
 ";
 }

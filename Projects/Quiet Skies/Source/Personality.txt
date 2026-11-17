@@ -1,18 +1,48 @@
 # Quiet Skies' chat lines, read by Shared/Personality.cs (see Shared/README.md).
 # [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
-# Placeholder lines until the character is written through the personality workflow.
+# Written with Gemini through the Chat Lines Studio (2026-11-10); the sheet is in SpaceEngineers-Private\Personality\Characters.md.
 
 [menu_opened]
-- Too many blips? Let's turn some down.
+- Tower console open. Take your time, captain; tell me which fireflies you want swept off the glass.
+- Adjusting the horizon filters? Dial down the static or pick which squawks get to speak.
+- Quiet Skies console online. Let's trim the beacon hedges and give those eyes a well-earned rest.
+- Filter board active, chief. Set your ranges, silence the junk, and let's clean up this night sky.
+- Signal gate ready. Tell me what gets through the gate and what stays quiet out in the velvet.
+- Scope controls are live. Pick your poisons, ace: total radio silence or a crowded canopy?
+- Canopy manager standing by. Let's dial out the buzzing so you can actually admire the stars.
 
 [signals_hidden]
-- {kind} markers are off your HUD. Still in the G list if you want them.
+- Dials turned down, chief. Dropped {kind} from your scope. Enjoy the deep velvet out there.
+- Swept {kind} right off your visor. Nothing between you and the starfield now but clean glass.
+- Filtered out {kind}. Less radio chatter, fewer fireflies. Just peaceful cruising, captain.
+- Put a mute on {kind}. The night sky looks a whole lot better without all those neon pins in it.
+- Canopy cleared of {kind}. Space is big, dark, and finally quiet enough to hear yourself steer.
+- Dialed the gain back on {kind}. If you miss the blinking, you can always invite them back later, ace.
+- Wiped {kind} off the horizon. Deep breath, eyes forward. The clutter is officially gone.
 
 [signals_nearby]
-- {kind} markers only show within {km} km now.
+- Set a perimeter on {kind}. Only ringing your bell if they drift within {km} km of the nose, chief.
+- Leashed {kind} to a {km} km bubble. If they're further out, they don't get to clutter your view.
+- Keeping {kind} on a short tether: {km} km out. Far enough to ignore, close enough to dodge.
+- Squawk distance set for {kind}. Scope stays clean until one wanders inside {km} km, captain.
+- Dampened the noise floor. {kind} will only show their faces if they cross inside {km} km.
+- Tuned the sweep for {kind}. Anything beyond {km} km can blink in the dark without bothering your glass.
+- Gated {kind} at {km} km. Close contacts only, ace; no need to watch lanterns on the far horizon.
 
 [signals_shown]
-- {kind} markers are back on your HUD.
+- Unmuted {kind}. The scope's lighting back up, so get ready for a few more fireflies, captain.
+- Brought {kind} back onto your glass. Keep an eye on the horizon, the beacons are alive again.
+- Restored the squawk on {kind}. Canopy's a little busier now, but the channels are all yours.
+- Opened the filters back up for {kind}. Don't say I didn't warn you when the visor gets crowded, ace.
+- Painting {kind} across the screen again. Dialed the gain back in so nothing slips past in the dark.
+- Transponders active for {kind}. Full sweep returned to your display, chief. Watch your lanes.
+- Welcomed {kind} back to the canopy. Glass is peppered with markers again, but you're in the loop.
 
 [rollcall]
-- Quiet Skies, keeping the HUD tidy. {command} for the signal filter.
+- Quiet Skies listening. Scope is dark and the glass is clean. Use {command} to trim down your HUD clutter.
+- Night watch is awake. Transponders filtered, stars in view. Call up {command} to quiet down your canopy.
+- Quiet Skies checked in. Keeping the fireflies off your visor, captain. Type {command} to set your filters.
+- Calm skies on my end. Airwaves are peaceful and uncluttered. Enter {command} to dial out the noise, chief.
+- Watching the quiet sector. Radar's clean, horizon's clear. Punch in {command} whenever the blinkers get rowdy.
+- Quiet Skies on the horn. Got the gain dialed low and the glass clear. Hit {command} to hush the beacons.
+- Night tower present. Space is quiet until you turn on the markers; type {command} to manage your signals.

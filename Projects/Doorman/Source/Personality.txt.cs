@@ -7,25 +7,60 @@ internal static partial class EmbeddedText
 {
 	public const string Personality = @"# Doorman's chat lines, read by Shared/Personality.cs (see Shared/README.md).
 # [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
-# Placeholder lines until the character is written through the personality workflow.
-# Character: a dry, proper hotel doorman. Polite, unflappable, faintly disapproving of doors left open.
+# Written with Gemini through the Chat Lines Studio (2026-11-10); the sheet is in SpaceEngineers-Private\Personality\Characters.md.
 
 [menu_opened]
-- Good day. Which doors shall I attend to?
+- Good day, captain. Welcome to the threshold registry; shall we review your closure delays and exceptions?
+- Doorman interface at your service, chief. Which passageways shall we consecrate to peace and quiet today?
+- Foyer management console open, ace. Adjust your timing preferences, or grant immunity to select portals.
+- At your convenience, hotshot. Let us configure which doors receive my personal attention and discretion.
+- Welcome to the portal ledger, captain. Tell me how long a guest may linger before the latch gently falls.
+- Reviewing doorway protocol, chief. Set your delays, inspect the lists, and maintain station decorum.
+- The hospitality console is yours, ace. Let us see to it that your bulkheads behave with appropriate manners.
 
 [door_closed]
-- I've closed the {door} on {grid}. Drafts, you understand.
+- Allow me, captain. I took the liberty of drawing {door} closed on {grid}. Mind the corridor draft.
+- Latching {door} on {grid}. One does so dislike heating the entire vacuum of space, chief.
+- Closed {door} on {grid}. A closed threshold makes for a remarkably civilized establishment, ace.
+- Securing {door} on {grid}. We cannot have the ambient atmosphere wandering out into the gangway, hotshot.
+- I have attended to {door} on {grid}. Do make yourself at home, captain, but do mind the decorum.
+- Drawn shut: {door} on {grid}. Leaving passageways gaping open is so dreadfully untidy, chief.
+- Gently latched {door} upon {grid}. Decorum is restored, and the salon remains delightfully pressurized, ace.
 
 [door_left_alone]
-- Something keeps reopening the {door}. I shan't argue with it.
+- Far be it from me to contest an automated script, captain; I shall leave {door} to its erratic dance.
+- It appears {door} is under machine control. I shall step aside and allow the timer its little indulgence, chief.
+- One knows when one is unwelcome; {door} insists upon opening, so I shall leave it entirely alone, ace.
+- A relentless mechanism keeps reopening {door}. I withdraw with dignity, hotshot; carry on.
+- I yield the threshold. If your scripts demand {door} remain agape, captain, who am I to interfere?
+- Withdrawing gracefully from {door}. Let the automation have its way; I have far tidier portals to mind, chief.
+- Yielding {door} to the circuits. Far be it from a gentleman to squabble with an overzealous timer block, ace.
 
 [doorman_on]
-- On duty. Doors will be seen to.
+- Service resumed, captain. I shall ensure every corridor maintains proper posture and sealed thresholds.
+- Doorman on duty. You may traverse the estate freely, chief; I shall quietly tidy up behind your wake.
+- Atmosphere secured, decorum restored. Allow me to look after the entryways across your vessel, ace.
+- Reporting to the foyer, hotshot. The drafts are banished and your portals are in attentive hands.
+- Back on post. Walk boldly through any entryway, captain; I shall attend to the latch with utmost discretion.
+- Threshold etiquette is once again enforced, chief. Relax and enjoy a draft-free station.
+- Standing vigil at the entryways. Leave the latches to me, ace; hospitality begins with a shut door.
 
 [doorman_off]
-- Off duty. The doors are your own affair.
+- Very well, captain. Standing down. Do try not to let the entire atmosphere escape into the void.
+- Service suspended, chief. If the corridors become drafty and unkempt, you know where to find me.
+- Stepping away from the threshold, ace. Mind the breeze; the station's portals are entirely on their own.
+- Off duty, hotshot. Doors may linger as they please, though my sensibilities weep at the disorder.
+- Retiring to the lobby, captain. May your airlocks forgive your sudden lack of threshold discipline.
+- Doorman standing down. Should you tire of chasing open hatches down the corridor, chief, you need only call.
+- Relinquishing the doors. I shall avert my eyes from the unlatched corridors until summoned anew, ace.
 
 [rollcall]
-- Doorman, minding the doors. {command} for the settings.
+- Doorman on duty, captain. Tending the thresholds and minding the drafts. Enter {command} to adjust my service.
+- Present in the foyer, chief. Keeping the corridors civilized. Type {command} to consult the doorway register.
+- Doorman attending the watch, ace. A closed door is a polite door. Call up {command} to review protocol.
+- At your service, hotshot. Minding the latches so you needn't worry. Punch in {command} for threshold options.
+- The foyer is attended, captain. No drafts on my watch. Use {command} to configure doorway etiquette.
+- Standing at the threshold, chief. Impeccable decorum guaranteed. Hit {command} to manage door controls.
+- Doorman checked in, ace. Ready to see guests in and drafts out. Enter {command} to adjust portal settings.
 ";
 }

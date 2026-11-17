@@ -7,7 +7,7 @@ internal static partial class EmbeddedText
 {
 	public const string Wilson = @"# Wilson's lines and exchanges. This copy is built into Wilson.dll; edit it here, never in the private staging copy.
 # Written with Gemini (2026-10-03, round 2 v001; roll call and Tim from batch 2 v001). Exchanges: [exchange trigger=<character>.<event>], then 'Name: line' per speaker.
-# Characters: barmaid, fatalbert, stockpile, scripttoplugin, orescout, or any (any.tim plays when the player types /tim).
+# Characters: the ids in Cast.cs (Others and Guests, e.g. barmaid, shepherd), or any (any.tim plays when the player types /tim).
 # Wilson's own keys: rollcall_open, rollcall_close ({command} = /wilson), idle, squabble. Tim's: tim.
 # Check with SpaceEngineers-Private\Personality\Check-Personality.ps1 ""Wilson"".
 
@@ -218,5 +218,170 @@ OreScout: Yeah, but Uncle Albert, my drills feel so lonely when they don't get t
 OreScout: Blank screen. No iron, no nickel, no nothing. Total dud.
 BaR Maid: Well, on the bright side, at least you didn't track any fresh red dust across my landing pads this time.
 Wilson: There's always another rock floatin' down the lane, scout. The stars ain't running out of gravel anytime soon.
+
+
+# New characters meet the family: Gemini crew update (2026-11-10, Chat Lines Studio).
+[exchange trigger=quietskies.signals_hidden]
+Quiet Skies: Swept {kind} right off your visor, captain. Clean glass, dark sky, zero distraction.
+OreScout: Aw, but what if one of those {kind} had a secret stash of platinum tucked inside?
+Quiet Skies: Then you can chase it on visual, scout; the rest of us are enjoying the peace.
+
+[exchange trigger=quietskies.signals_hidden]
+Quiet Skies: Dampened the chatter on {kind}. Canopy is clear and uncluttered down the vector, chief.
+Tripwire: Clean glass is fine, tower, but unmonitored contacts are how perimeters get probed.
+Wilson: Well now, eyes see better when the lantern ain't shinin' right back into your face, sentry.
+
+[exchange trigger=quietskies.signals_hidden]
+Quiet Skies: Filtered out {kind}, ace. Just clean vacuum and cold stars between your wings.
+BaR Maid: And thank goodness for that. My hangar viewports looked like a cheap neon sign.
+
+[exchange trigger=tripwire.visit_news]
+Tripwire: Sentry log for {grid}: tracked {count} unauthorized incursions while you were away, captain.
+Stockpile Manager: Profane trespassers sniffing around the sacred reliquaries! We must fortify the altars!
+Tripwire: Already on it, deacon. Next bogey that crosses the boundary wire gets an iron welcome.
+
+[exchange trigger=tripwire.visit_news]
+Tripwire: Security report: {grid} had {count} uninvited vessels loitering near the perimeter, chief.
+Fat Albert: As long as they didn't try to tow my heavy hauler, sentry, they can look all they want.
+Wilson: Even a stray dog'll circle the fence twice before it finds somewhere else to bark, neighbours.
+
+[exchange trigger=tripwire.visit_news]
+Tripwire: Incident log updated on {grid}: {count} suspect signatures tagged probing our defensive envelope.
+Tim: Hear me out, guard: what if we wire thirty automated scatter-guns right to your trip sensors?
+Tripwire: Keep your wrenches off my sentry circuits, tinkerer; I prefer aimed shots over fireworks.
+
+[exchange trigger=drillsergeant.rig_finished]
+Drill Sergeant: Rig {rig} hit final depth! Textbook piston discipline, clean borehole, bedrock defeated!
+Digby: A true vertical cut, sergeant! Plumb as a string and right into the heart of the pay-seam!
+Drill Sergeant: Outstanding execution, miner! Secure the teeth and prepare for the next trench!
+
+[exchange trigger=drillsergeant.rig_finished]
+Drill Sergeant: Bottom of the shaft reached on {rig}! That bore is complete, dismiss the company, ace!
+Tally: The wear on those piston teeth has been reconciled, sergeant; cost per meter came in under budget.
+Wilson: A deep hole and an empty ledger. Reckon that's an honest day's labor, neighbours.
+
+[exchange trigger=drillsergeant.rig_finished]
+Drill Sergeant: Parade rest for {rig}! Maximum stroke achieved without breaking a single weld or bending a rod!
+BaR Maid: Good. Now shut it down before your drill recruits track another five tons of mud into my taproom!
+
+[exchange trigger=radartech.ping_hit]
+Radar: Hard return on boresight: {target} painted at {distance}. Check your closure rate, captain.
+Fat Albert: Whew! Call out the braking distance early, radar; this pig don't stop on a nickel!
+Radar: Distance closing steady, Albert. Suggest twenty percent reverse burn right now.
+
+[exchange trigger=radartech.ping_hit]
+Radar: Solid echo down the pipe: {target} locked at {distance}. Steady approach vector, chief.
+Doorman: Do mind the deceleration, captain. One dislikes having the salon furniture shifted upon arrival.
+Wilson: Nothin' wrong with a gentle dock, neighbour. Space'll wait for a ship that takes its time.
+
+[exchange trigger=radartech.ping_hit]
+Radar: Contact on the centerline: {target} detected at {distance}, closing speed stable.
+Script to Plugin: Target vector verified against grid raycast telemetry. My calculations predicted it two ticks ago.
+Radar: Congratulations on your math, script; the rest of us are actually flying the ship.
+
+[exchange trigger=digby.plan_made]
+Digby: Sunk a sweet heading, captain! That shaft runs {length} straight through the strata to the ore!
+OreScout: Yahoo! Follow Digby's line and we're gonna hit the motherlode! Fire up the drills!
+Wilson: A straight path down saves a powerful lot of turnin' around in the dark, scout.
+
+[exchange trigger=digby.plan_made]
+Digby: Plumb as a string, chief! Plotted {length} of clean descent down into the virgin basalt!
+Drill Sergeant: Excellent coordinates, surveyor! My rigs will march down that {length} line by the numbers!
+Digby: Mind the collar on the way in, sergeant; she's a delicate cut!
+
+[exchange trigger=digby.plan_made]
+Digby: Mapped out {length} of true vertical bore, ace! No doglegs, no crooked bends, pure art!
+Tally: At {length}, the structural steel for casing that shaft will require four hundred heavy plates.
+Digby: Don't fret the invoice, accountant; the stone at the bottom will pay for the timber ten times over!
+
+[exchange trigger=tally.tallied]
+Tally: Reconciliation complete for {blocks} blocks. That is your exact material invoice, captain.
+BaR Maid: Print the ticket, pencil-pusher. If they've got the ingots, my assemblers will pour every last plate.
+Tally: The ingot draw is documented; just do try not to spill surplus on the floor, maid.
+
+[exchange trigger=tally.tallied]
+Tally: Audited {blocks} blocks down to the kilo. A grand architectural vision with a sobering price tag.
+Fat Albert: Let's see that gross mass line, clerk! If she's too thick, my thrusters are gonna choke on lift-off!
+Wilson: Big barns take a lot of timber, Albert. Good to know how many trees you gotta fell before you start.
+
+[exchange trigger=tally.tallied]
+Tally: Ledger balances for {blocks} blocks. Net ingot draw verified; review your line items before building.
+Tim: Hear me out, tallyman: what if we swap those heavy armor blocks for light plate and double the thruster count?
+Tally: That would save three thousand tons of iron and ensure our prompt atmospheric incineration, Tim.
+
+[exchange trigger=doorman.door_closed]
+Doorman: Latching {door} on {grid}, captain. One does so dislike letting the heating wander out into space.
+BaR Maid: Thank you! I just got the gangway warm and somebody had to go leave the draft blowing.
+Doorman: My absolute pleasure, madam; threshold decorum must be preserved.
+
+[exchange trigger=doorman.door_closed]
+Doorman: I took the liberty of drawing {door} closed on {grid}. Mind the corridor draft, chief.
+Stockpile Manager: A righteous barrier consecrated! No stray gravel shall wander beyond {door} into the outer halls!
+Wilson: A latch that catches true is a comfort to any household, parson.
+
+[exchange trigger=doorman.door_closed]
+Doorman: Securing {door} on {grid}. Leaving passageways gaping open is dreadfully untidy, ace.
+Tripwire: Good eye, doorman. Open bulkheads make blind spots in my sentry patrol; keep 'em sealed.
+Doorman: Naturally, officer. Hospitality and security walk hand in hand down my corridors.
+
+
+# Shepherd meets the family: Gemini crew update 2 (2026-11-10, Chat Lines Studio).
+[exchange trigger=shepherd.found]
+Shepherd (SSM): The dog's runnin' on {grid}. Pasture is tended, captain; Reverend can take his tea by the fire.
+Stockpile Manager: The sacred registry yieldeth to the humble crook, but do not allow our consecrated relics to stray!
+Wilson: Well now, sometimes it takes a quiet dog to keep the flock from wanderin' into the briars, Reverend.
+
+[exchange trigger=shepherd.found]
+Shepherd (SSM): Found the sheep dog workin' the chutes on {grid}. Gates are shut and the flock is calm, chief.
+BaR Maid: Just keep 'em out of my repair lines, herder. I'm running an assembler queue, not a sheep pen.
+
+[exchange trigger=shepherd.found]
+Shepherd (SSM): I have the watch on {grid}. Tally slate is in my coat, captain; sleep sound tonight.
+Script to Plugin: Server-side programmable execution detected. Acceptable autonomous routine; do try not to exceed instructions.
+Wilson: Nothin' wrong with an honest worker keepin' the watch while the rest of the world gets some rest, script.
+
+[exchange trigger=shepherd.quota_met]
+Shepherd (SSM): Tally's made on {item}. Pens are full of good clean fleece, captain; whistled the dogs in.
+Stockpile Manager: The Holy Threshold is achieved! The sacred containers overflow with our blessed quota of {item}!
+Wilson: A full barn and a quiet meadow make for an easy sleep, neighbours.
+
+[exchange trigger=shepherd.quota_met]
+Shepherd (SSM): Fold's packed with {item}, chief. Every stray accounted for; let the assemblers cool down.
+Tally: The itemisation balances, herder. Line item for {item} has closed with zero unfunded variance.
+
+[exchange trigger=shepherd.quota_met]
+Shepherd (SSM): That's the lot for {item}. Hurdles dropped, pasture closed, hotshot; no call to shear another pound.
+Fat Albert: Music to my ears! Less iron waitin' in the crates means less lard I gotta fight against the mud tomorrow!
+Wilson: A wise man knows when his wagon's full enough, Albert. Good work down the line, crew.
+
+
+# Hush meets the family: Gemini, Chat Lines Studio round 3 (2026-11-10).
+[exchange trigger=hush.block_muted]
+Hush: shh. there now, captain. quieted {block} so you can hear your own thoughts.
+Drill Sergeant: Quiet down {block}? Negative! That recruit was singing a glorious mechanical cadence at full volume!
+Wilson: Well now, sergeant, sometimes a fellow just wants to hear the crickets instead of a parade.
+
+[exchange trigger=hush.block_muted]
+Hush: rested {block}, chief. no more rattling, just soft calm across the cabin.
+Doorman: Exquisite touch. The salon is far more civilized without {block} screeching down the private corridor.
+
+[exchange trigger=hush.block_muted]
+Hush: faded the roar on {block}, ace. quiet, gentle peace in your headset.
+Tim: But captain, that was where all the horsepower was living! You just put a pillow over its tailpipe!
+Wilson: Plenty of power left under the hood, Tim, even if it ain't waking up the whole county.
+
+[exchange trigger=hush.type_muted]
+Hush: peace restored, captain. all {type} units have been gently hushed.
+Quiet Skies: Clean airwaves, clean visor. Between your sound board and my display filter, space is finally peaceful.
+Wilson: Nothin' quite like looking out over an empty pasture with the lanterns turned down low.
+
+[exchange trigger=hush.type_muted]
+Hush: tucked away every {type}, chief. the whole sector feels so much softer now.
+Fat Albert: Feels like flyin' a ghost ship, Hush! If I can't hear every {type} screaming, how do I know we're climbin'?
+Hush: trust the numbers on your dials, albert. your ears deserve a little nap.
+
+[exchange trigger=hush.type_muted]
+Hush: silenced that whole family of {type}, ace. enjoy the stillness, you earned it.
+Shepherd (SSM): Aye, much obliged. The flock rests easy in the fold when every {type} stops its howling.
 ";
 }

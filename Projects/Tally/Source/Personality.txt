@@ -1,18 +1,48 @@
 # Tally's chat lines, read by Shared/Personality.cs (see Shared/README.md).
 # [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
-# Placeholder lines until the character is written through the personality workflow.
+# Written with Gemini through the Chat Lines Studio (2026-11-10); the sheet is in SpaceEngineers-Private\Personality\Characters.md.
 
 [menu_opened]
-- What are we costing today?
+- Estimating desk active. Reviewing blueprint bill of materials, ingot ratios, and refinery quotas, captain.
+- Tally ledger online. Select a grid, projection, or blueprint library file for immediate material audit, chief.
+- Accounting console open. Let us tally up the raw material costs before your welders bankrupt the station, ace.
+- Ledger ready for entry, hotshot. Inspecting gross ore costs and net component requirements across the board.
+- Terminal queried. Feed me the blueprint and I will tell you precisely what the smelters must sacrifice, captain.
+- Bill of materials workstation engaged. Review your line items, check the deficits, and face the arithmetic, chief.
+- Open for audit. Compare your ambition against your warehouse capacity before you lay down the first frame, ace.
 
 [tallied]
-- {blocks} blocks, all counted. The bill's on the table.
+- Running the sum for {blocks} blocks. That is a substantial line item; hope your refineries are prepared, captain.
+- Tally complete on {blocks} blocks. Down to the final screw, that is your exact gross expenditure in ingots, chief.
+- Verified and reconciled: {blocks} blocks accounted for. The bill of materials is steep, but the math never lies, ace.
+- Audited {blocks} blocks down to the kilo. That design carries an impressive material draw, hotshot.
+- The ledger balances: itemised component and ore requirements compiled for {blocks} blocks. Check the bottom line.
+- Reconciliation finished for {blocks} blocks. That is the raw tonnage required before a single welder sparks up.
+- Stamped the audit on {blocks} blocks. A magnificent architectural dream, captain, with an equally sobering price tag.
 
 [pad_written]
-- It's on the datapad. Every last plate.
+- Bill of materials printed to datapad. Full component itemisation and gross ore draw safe in your pack, captain.
+- Ledger entry exported to datapad. Line items, ingot draws, and refinery tonnage documented down to the gram, chief.
+- Balance sheet written to datapad. Take it to the logistics office before you order those plates poured, ace.
+- Hard copy transferred to datapad. Keep this invoice handy so the welders don't outrun the hopper reserves, hotshot.
+- Expenditure statement burned to datapad. Complete material breakdown ready for your quarterly audit, captain.
+- Datapad stamped with the final tally. Every component quota and required raw ore delivery cleanly logged, chief.
+- Full bill written to datapad. Numerical reality has been committed to digital parchment; weld responsibly, ace.
 
 [no_datapad]
-- No datapad on you. I keep the books, I don't make the paper.
+- Transaction paused, captain: you have no blank datapad in your inventory to receive the bill of materials.
+- Ledger cannot export, chief. Procure an empty datapad so I can transfer these expenditure figures into your hands.
+- Missing media error, ace: slip a datapad into your suit or this material reconciliation stays in memory.
+- I cannot write a four-page material audit onto thin air, hotshot. Equip a datapad to collect the line items.
+- Audit export halted: no datapad detected on your person. Fetch a slate before we commit these numbers, captain.
+- Balance sheet pending: provide a datapad so I can document the exact ingot draw for your workshop crew, chief.
+- No datapad in your pockets, ace. Even the most fastidious accounting requires a ledger to write upon.
 
 [rollcall]
-- Tally, bills of materials. {command} for the count.
+- Tally present and balancing the books. Use {command} to audit your blueprint costs down to the final screw, captain.
+- Ledger clerk on duty. Pencils sharp, double-entry balanced. Enter {command} to generate a bill of materials, chief.
+- Tally reporting in, ace. Running the sums and tracking raw tonnage. Punch in {command} for cost projections.
+- Accounts office manned, hotshot. Zero unallocated iron on my watch. Type {command} to calculate construction draw.
+- Standing by with the balance sheets. The arithmetic never sleeps, captain; call up {command} to cost your grids.
+- Tally checked in, chief. Don't weld on credit; enter {command} to see the exact invoice your assemblers face.
+- On post at the ledger desk. Ready to audit projects and price your ambitions. Hit {command} to itemise the cost, ace.

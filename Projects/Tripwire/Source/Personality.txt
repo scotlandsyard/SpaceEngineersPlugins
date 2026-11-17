@@ -1,21 +1,57 @@
 # Tripwire's chat lines, read by Shared/Personality.cs (see Shared/README.md).
 # [key] starts an event, [!key] marks it important (said even on Quiet). One line per thing to say.
-# Placeholder lines until the character is written through the personality workflow.
+# Written with Gemini through the Chat Lines Studio (2026-11-10); the sheet is in SpaceEngineers-Private\Personality\Characters.md.
 
 [menu_opened]
-- Logbook's open. Let's see who's been knocking.
+- Sentry console active. Reviewing perimeter alarms, exclusion zones, and hardpoint status reports, captain.
+- Security interface engaged. What defensive parameters are we adjusting on the perimeter today, chief?
+- Accessing the watch post. Sector grids mapped, tripwire sensors armed, ready for command input.
+- Sentry station online. Reviewing engagement envelopes, incident archives, and sector alert thresholds.
+- Terminal queried, captain. Sentry monitors green across the wire; enter your security directives.
+- Guardhouse console open. Adjust your exclusion bubbles, audit the incident logs, or check our hardpoints.
+- Security command link ready. Standing by to update watch protocols and review perimeter integrity, chief.
 
 [!under_attack]
-- Someone's taking {grid} apart. I'd hurry.
+- Contact! Incoming fire on {grid}! Hardpoints engaged, weapons free, get to battle stations now!
+- Red alert, captain! Hostile ordnance impacting {grid}! Perimeter breached, return fire immediately!
+- Under attack! Kinetic impacts confirmed across {grid}. Defensive turrets engaging hostiles on vector!
+- Hull alarms screaming on {grid}! Active assault in progress, captain! Scramble interceptors and man the guns!
+- Weapons lock detected! {grid} is taking sustained hostile fire! Secure bulkheads and repel boarders!
+- Direct hits registered on {grid}! Sentry grid lit up red! All hands to defense stations, double time!
+- Firing line active! Hostiles are actively hammering {grid}! Grab a rifle and hold the perimeter, chief!
 
 [damaged]
-- {grid} is taking hits.
+- Damage report for {grid}: structural integrity compromised. Blocks destroyed or ground down on outer hull.
+- Hull trauma confirmed on {grid}. Grinder contact or projectile penetration logged on secondary armor.
+- Sentry alert: armor breach on {grid}! We took heavy component losses in that sector, captain.
+- Block integrity dropped on {grid}! Grinder signatures detected on our plating. Someone was chewing on our hull.
+- Structural breach registered on {grid}. Armor plates severed and systems stripped. Assess and repair, chief.
+- Perimeter probe resulted in casualties: critical blocks knocked offline on {grid}. Securing the sector now.
+- Hull loss on {grid}! Hardpoint destroyed under enemy pressure. Tagging the compromised bulkhead for rebuild.
 
 [visit_news]
-- {grid} kept a diary while you were gone: {count} entries.
+- Sentry debrief for {grid}: radar logged {count} unauthorized incursions inside our perimeter while you were away.
+- Recon report: {grid} had {count} perimeter contacts during your absence. Transponders recorded in the log.
+- Security sweep complete for {grid}: {count} uninvited vessels probed our exclusion zone while we were dark.
+- Traffic analysis on {grid}: {count} suspect signatures tracked through our defensive envelope during your patrol.
+- Sector activity logged: {count} bogeys crossed the boundary wire near {grid} while you were off-station, captain.
+- While you were off-grid, sentry sensors tracked {count} unauthorized flybys near {grid}. Keep weapons armed.
+- Sentry log summary: {count} foreign transponders tagged sniffing around {grid}. Perimeter held, but stay frosty.
 
 [datapad_saved]
-- Written down. Paper trails win arguments.
+- Incident telemetry burned to datapad. Timestamps, hull trauma, and transponder records secured for debrief.
+- Security log exported to datapad, captain. Every perimeter trip and contact vector compiled and locked down.
+- Sentry debrief archived to datapad. Full forensic breakdown ready for operational review whenever you need it.
+- Log burned clean to datapad. Keep it on your flight suit, chief; that record documents every breach on our watch.
+- Hard copy written to datapad. Hull integrity metrics, contact logs, and radar traces safely preserved.
+- Sentry records transferred to datapad. Comprehensive incident report ready for tactical analysis, captain.
+- Tactical audit locked onto datapad. Signatures, timestamps, and armor casualties accounted for in the log.
 
 [rollcall]
-- Tripwire, on watch. {command} if you want the logbook.
+- Tripwire on guard. Perimeter secure, turrets tracking, logs clean. Punch in {command} to review the security grid.
+- Sentry station manned and armed. Monitoring defensive wire. Call up {command} for incident logs and alert status.
+- Tripwire reporting for duty, captain. Outer perimeter locked down. Type {command} to access sentry controls.
+- Watch post active. Radar sweeps tight, exclusion zones enforced. Use {command} to inspect perimeter reports, chief.
+- Standing watch on the defensive line. Sentry sensors hot. Enter {command} to review our security parameters.
+- Tripwire checked in. Eyes on the fence, finger on the alarm. Hit {command} to bring up the sentry console, captain.
+- Perimeter watch awake and alert. No hostiles slipping past my wire. Punch {command} to configure grid defense.
