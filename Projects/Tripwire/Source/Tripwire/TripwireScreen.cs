@@ -46,6 +46,9 @@ public class TripwireScreen : MyGuiScreenBase
 
 	private MyGuiControlButton _muteButton;
 
+	/// <summary>Text in the Find box, kept while the window is open.</summary>
+	private string _find = "";
+
 	private List<string> _gridOptions = new List<string>();
 
 	private readonly List<MyGuiControlBase> _mainControls = new List<MyGuiControlBase>();
@@ -71,7 +74,15 @@ public class TripwireScreen : MyGuiScreenBase
 	protected override void OnClosed()
 	{
 		// Everything you could see has now been seen: "since your last visit" starts again from here.
-		ScriptLogs.MarkRead();
+		// With Find in use you could only see part of it, so lines it hides stay new.
+		if (ListSearch.IsActive(_find))
+		{
+			ScriptLogs.MarkRead(Shown());
+		}
+		else
+		{
+			ScriptLogs.MarkRead();
+		}
 		base.OnClosed();
 	}
 
@@ -130,15 +141,29 @@ public class TripwireScreen : MyGuiScreenBase
 
 		_status = AddLabel(-0.42f, 0.2f, "", _mainControls, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
 
-		AddButton(-0.315f, 0.255f, "Copy to Datapad", CopyToDatapad, _mainControls);
-		AddButton(-0.105f, 0.255f, "Mark All Read", MarkAllRead, _mainControls);
+		AddButton(-0.315f, 0.255f, "Copy to Datapad", CopyToDatapad, _mainControls).SetToolTip("Writes the rows in the list right now onto an empty datapad: what Show, Grid and Find leave showing.");
+		AddButton(-0.105f, 0.255f, "Mark All Read", MarkAllRead, _mainControls).SetToolTip("Marks the script logs as seen. While Find is in use, only the lines it shows, until you leave the world.");
 		AddButton(0.105f, 0.255f, "Refresh", () =>
 		{
 			ScriptLogs.Scan();
 			RefreshRows();
 		}, _mainControls);
-		AddButton(0.315f, 0.255f, "Clear My Alerts", ClearAlerts, _mainControls);
+		AddButton(0.315f, 0.255f, "Clear My Alerts", ClearAlerts, _mainControls).SetToolTip("Deletes this world's alerts after asking. While Find is in use, only the alerts it shows.");
 		_muteButton = AddButton(-0.315f, 0.315f, "", ToggleMute, _mainControls);
+		// The rest of the Mute button's row is free.
+		AddLabel(-0.21f, 0.315f, ListSearch.Label, _mainControls, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
+		MyGuiControlTextbox find = new MyGuiControlTextbox(new Vector2(-0.16f, 0.315f), _find, ListSearch.MaxLength)
+		{
+			Size = new Vector2(0.37f, 0.04f),
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+		};
+		find.SetToolTip(ListSearch.ToolTip);
+		find.TextChanged += box =>
+		{
+			_find = box.Text ?? "";
+			RefreshRows();
+		};
+		Add(find, _mainControls);
 		AddButton(0.105f, 0.375f, "Settings", () => ShowPage(_settingsControls), _mainControls);
 		AddButton(0.315f, 0.375f, "Help", () => ShowPage(_helpControls), _mainControls);
 
@@ -245,9 +270,10 @@ public class TripwireScreen : MyGuiScreenBase
 		_gridBox.SelectItemByKey(_gridOptions.IndexOf(s_grid), sendEvent: false);
 		_gridBox.ItemSelected += OnGridSelected;
 
+		object selected = _table.SelectedRow?.UserData;
 		_table.Clear();
 		// Newest first; a header click sorts by that column instead.
-		foreach (LogEntry entry in all.Where(e => s_grid == AllGrids || e.Grid == s_grid).OrderByDescending(e => e.Time))
+		foreach (LogEntry entry in all.Where(e => (s_grid == AllGrids || e.Grid == s_grid) && ListSearch.Matches(_find, e.TimeText, e.Grid, e.EventText, e.Subject, e.Detail, e.Nearby)).OrderByDescending(e => e.Time))
 		{
 			MyGuiControlTable.Row row = new MyGuiControlTable.Row(entry);
 			Color? color = entry.IsNew ? Color.Yellow : entry.IsAlert ? (Color?)null : Color.LightGray;
@@ -258,6 +284,17 @@ public class TripwireScreen : MyGuiScreenBase
 			row.AddCell(new MyGuiControlTable.Cell(entry.Detail, entry, entry.Detail, color));
 			row.AddCell(new MyGuiControlTable.Cell(entry.Nearby, entry, entry.Nearby, color));
 			_table.Add(row);
+		}
+		// Keeps the column the player clicked (does nothing until they click one) and the selected row if it's still listed.
+		_table.Sort(switchSort: false);
+		if (selected != null)
+		{
+			int index = _table.FindIndex(r => Equals(r.UserData, selected));
+			if (index >= 0)
+			{
+				_table.SetSelectedRow(index);
+				_table.ScrollToSelection();
+			}
 		}
 		int newCount = ScriptLogs.Entries.Count(e => e.IsNew);
 		string source = $"{AlertLog.Entries.Count} alert(s), {ScriptLogs.Entries.Count()} script log line(s) from {ScriptLogs.ConstructCount} grid(s)";
@@ -290,7 +327,14 @@ public class TripwireScreen : MyGuiScreenBase
 
 	private void MarkAllRead()
 	{
-		ScriptLogs.MarkRead();
+		if (ListSearch.IsActive(_find))
+		{
+			ScriptLogs.MarkRead(Shown());
+		}
+		else
+		{
+			ScriptLogs.MarkRead();
+		}
 		RefreshRows();
 	}
 
@@ -301,11 +345,36 @@ public class TripwireScreen : MyGuiScreenBase
 			SetStatus("There are no alerts to clear.");
 			return;
 		}
+		if (ListSearch.IsActive(_find))
+		{
+			ClearShownAlerts();
+			return;
+		}
 		MyGuiSandbox.AddScreen(MyGuiSandbox.CreateMessageBox(MyMessageBoxStyleEnum.Info, MyMessageBoxButtonsType.YES_NO, messageCaption: new StringBuilder("Clear my alerts"), messageText: new StringBuilder($"Delete all {AlertLog.Entries.Count} alert(s) this plugin logged in this world? Script logs aren't touched."), callback: answer =>
 		{
 			if (answer == MyGuiScreenMessageBox.ResultEnum.YES)
 			{
 				AlertLog.Clear();
+				RefreshRows();
+			}
+		}));
+	}
+
+	/// <summary>Clear My Alerts while Find is in use: only the alerts it shows go; the rest stay.</summary>
+	private void ClearShownAlerts()
+	{
+		List<LogEntry> shown = Shown().Where(e => e.IsAlert).ToList();
+		if (shown.Count == 0)
+		{
+			SetStatus("Find shows no alerts, so there's nothing to clear.");
+			return;
+		}
+		int kept = AlertLog.Entries.Count - shown.Count;
+		MyGuiSandbox.AddScreen(MyGuiSandbox.CreateMessageBox(MyMessageBoxStyleEnum.Info, MyMessageBoxButtonsType.YES_NO, messageCaption: new StringBuilder("Clear my alerts"), messageText: new StringBuilder($"Delete the {shown.Count} alert(s) showing in the list? The other {kept} alert(s), hidden by the filters or Find, stay. Script logs aren't touched."), callback: answer =>
+		{
+			if (answer == MyGuiScreenMessageBox.ResultEnum.YES)
+			{
+				AlertLog.Remove(shown);
 				RefreshRows();
 			}
 		}));
@@ -374,7 +443,7 @@ public class TripwireScreen : MyGuiScreenBase
 		"The Tripwire PB script runs on the server in a programmable block, so it keeps watching while you're away. It records visitors its sensors (and turrets) see, before they touch anything, and what happens to the grid's blocks. Its log goes into the PB's Custom Data and into the Custom Data of every block with [Tripwire] in its name (LCDs also show it on screen), so grinding one copy doesn't erase it. The game only tells a script the names of owners, faction members and friends; anyone else is logged as a numbered visitor such as V3 Human, and the script can't know more than that.\n" +
 		"Tripwire reads those logs from grids you could open in the terminal right now: you have access to the block, and you're on the grid, standing at it, or connected to it through antennas. New lines since your last visit show in yellow, and chat tells you when a grid with news comes within reach. Closing this window or Mark All Read marks everything as seen.\n\n" +
 		"THE WINDOW\n" +
-		"Show picks your alerts, the script logs, both, or only the new script lines. Grid shows one grid. Click a header to sort, again to reverse. Copy to Datapad writes the rows shown onto an empty datapad in your inventory (up to 10,000 characters; it never writes over a datapad with text), as a record you can keep or hand to an admin. Mark All Read marks the script logs as seen. Refresh reads the logs again. Clear My Alerts deletes this world's alerts. Mute 10 min silences the chat lines; the log keeps going. Esc closes the window.\n\n" +
+		"Show picks your alerts, the script logs, both, or only the new script lines. Grid shows one grid. Find keeps the rows with what you type; while it's in use, Mark All Read, Clear My Alerts and closing the window only count the rows it shows. Click a header to sort, again to reverse. Copy to Datapad writes the rows shown onto an empty datapad in your inventory (up to 10,000 characters; it never writes over a datapad with text), as a record you can keep or hand to an admin. Mark All Read marks the script logs as seen. Refresh reads the logs again. Clear My Alerts deletes this world's alerts. Mute 10 min silences the chat lines; the log keeps going. Esc closes the window.\n\n" +
 		"WHAT THE SERVER SEES\n" +
 		"Alerts and reading logs send nothing: they use what the game has already sent to your PC. Copy to Datapad sends the same request as editing a datapad by hand.\n\n" +
 		"COMMANDS\n" +

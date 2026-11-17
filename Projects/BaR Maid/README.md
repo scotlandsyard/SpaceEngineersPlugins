@@ -25,7 +25,7 @@ The menu opens on the group of the block you used. From chat, it opens on a grou
 | Rescan | Looks for systems and assemblers again straight away (this also happens every 5 seconds by itself). It reports how many systems were found and how many you have no access to, and names any of yours that are left out of a group |
 | Help | Opens the in-game help page; Back returns to the view you came from |
 
-The window closes with the X in its corner or with Esc. Tables update every half second. Click a column header to sort. Until you do, targets are listed in the mod's own order.
+The window closes with the X in its corner or with Esc. Tables update every half second. Click a column header to sort. Until you do, targets are listed in the mod's own order. **Find**, under each list except Status, shortens it as you type; in Missing components, **Queue now** then only queues what's still listed.
 
 **BaR settings** lists the Build and Repair settings the server's mod settings allow: search, work and weld mode, projections, colours, janitor options, grind order, push options, work area size and offset, sound and effects, and script control. Select one and press **Lower / Previous** or **Raise / Next** (hold Shift for 10x steps), or double-click it to step it forward. The change is made on every system in the group through the mod's own terminal properties, so it syncs exactly like a terminal change, and settings the server has locked don't move. **Weld priority** and **Grind priority** are read-only: the mod only saves order changes made in its own terminal list.
 
@@ -43,7 +43,8 @@ Build and Repair blocks get four actions:
 |---|---|
 | BaR Maid | Opens the menu on this block's group |
 | BaR Maid Auto-queue On/Off | Flips auto-queue for this block's group; the slot shows On or Off |
-| BaR Maid Auto-queue On / Off | Switches it on or off |
+| BaR Maid Auto-queue On | Switches auto-queue on for this block's group |
+| BaR Maid Auto-queue Off | Switches auto-queue off for this block's group |
 
 They work from your own toolbar (cockpit or character). Button panels, timers and event controllers run their actions on the server, where the plugin isn't loaded.
 

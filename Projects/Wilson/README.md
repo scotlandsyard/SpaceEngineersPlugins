@@ -49,6 +49,7 @@ Each plugin keeps its name and chat setting in its own settings, so they stay wh
 - **Chat:** (top right): Wilson's own setting.
 - **Crew** (the main page): Wilson, Tim and the five plugin characters: the name each goes by, its colour in chat, its plugin, its chat setting and whether it can be in exchanges right now, with renaming and chat settings for the one picked.
 - **Decision log:** the latest events and what came of them (who spoke, which exchange played, or why it passed).
+- **Find:** on the Crew and Decision log pages, shortens the list as you type. Rename and Chat leave a character alone while Find hides its row.
 - **Try an exchange** (or `/wilson try`): plays a random exchange now between the loaded characters, with made-up names and numbers, ignoring the timers.
 - **Roll call** (or `/wilson rollcall`): calls the roll again now.
 - **Help:** everything above, in game.

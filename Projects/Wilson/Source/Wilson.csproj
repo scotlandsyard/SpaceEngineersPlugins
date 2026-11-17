@@ -44,6 +44,7 @@
        Personality.cs for the shared rhythm, names and colours; he never registers as a plugin character. -->
   <ItemGroup>
     <Compile Include="../../../Shared/PluginSwitcher.cs" Link="Shared/PluginSwitcher.cs" />
+    <Compile Include="../../../Shared/ListSearch.cs" Link="Shared/ListSearch.cs" />
     <Compile Include="../../../Shared/Personality.cs" Link="Shared/Personality.cs" />
     <Compile Include="../../../Shared/PluginStorage.cs" Link="Shared/PluginStorage.cs" />
   </ItemGroup>

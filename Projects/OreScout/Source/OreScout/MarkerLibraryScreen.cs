@@ -78,6 +78,9 @@ public class MarkerLibraryScreen : MyGuiScreenBase
 
 	private string _oreName = AllOres;
 
+	/// <summary>Text in the Find box, kept while the window is open. It works together with the Type and Ore dropdowns.</summary>
+	private string _find = "";
+
 	/// <summary>The marker the "From marker" column measures from, or null to leave that column empty.</summary>
 	private LibraryEntry _reference;
 
@@ -179,13 +182,30 @@ public class MarkerLibraryScreen : MyGuiScreenBase
 		AddButton(-0.315f, 0.255f, "Export from GPS", ExportFromGps);
 		AddButton(-0.105f, 0.255f, "Mark / Unmark", ToggleMarkSelected);
 		AddButton(0.105f, 0.255f, "Import Marked", ImportMarked);
-		AddButton(0.315f, 0.255f, "Import All Shown", ImportAllShown);
+		AddButton(0.315f, 0.255f, "Import All Shown", ImportAllShown).SetToolTip("Imports the markers in the list right now: what Type, Ore and Find leave showing, nothing they hide.");
 		AddButton(-0.315f, 0.315f, "Measure From Row", MeasureFromSelected);
 		AddButton(-0.105f, 0.315f, "Measure From Me", MeasureFromMe);
 		AddButton(0.105f, 0.315f, "Delete", DeleteSelected);
 		AddButton(0.315f, 0.315f, "Delete Marked", DeleteMarked);
 		// Help / Back share the bottom-right spot, like the other plugins. Esc closes the window.
 		AddButton(0.315f, 0.375f, "Help", () => SetHelp(true));
+		// The bottom row is free left of Help.
+		MyGuiControlLabel findLabel = new MyGuiControlLabel(new Vector2(-0.42f, 0.375f), null, ListSearch.Label, null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
+		Controls.Add(findLabel);
+		_libraryControls.Add(findLabel);
+		MyGuiControlTextbox find = new MyGuiControlTextbox(new Vector2(-0.37f, 0.375f), _find, ListSearch.MaxLength)
+		{
+			Size = new Vector2(0.37f, 0.04f),
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+		};
+		find.SetToolTip(ListSearch.ToolTip);
+		find.TextChanged += box =>
+		{
+			_find = box.Text ?? "";
+			RefreshRows(SelectedEntry());
+		};
+		Controls.Add(find);
+		_libraryControls.Add(find);
 
 		_helpText = new MyGuiControlMultilineText(new Vector2(0f, -0.315f), new Vector2(0.84f, 0.55f), null, "Blue", 0.8f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_CENTER_AND_VERTICAL_TOP)
 		{
@@ -245,11 +265,10 @@ public class MarkerLibraryScreen : MyGuiScreenBase
 			row.AddCell(new MyGuiControlTable.Cell(_marked.Contains(entry) ? "X" : "", entry));
 			row.AddCell(new MyGuiControlTable.Cell(entry.Prefix ?? "", entry));
 			row.AddCell(new MyGuiControlTable.Cell(entry.Label ?? "", entry));
-			row.AddCell(new MyGuiControlTable.Cell(entry.MassKg > 0 ? $"{entry.MassKg:N0} kg" : "", entry));
+			row.AddCell(new MyGuiControlTable.Cell(AmountText(entry), entry));
 			row.AddCell(new MyGuiControlTable.Cell(entry.Info, entry));
 			row.AddCell(new MyGuiControlTable.Cell(GpsMarkers.FormatDistance(DistanceFromYou(entry)), entry));
-			string fromReference = _reference == null ? "" : entry == _reference ? "(this one)" : GpsMarkers.FormatDistance(DistanceFromReference(entry));
-			row.AddCell(new MyGuiControlTable.Cell(fromReference, entry));
+			row.AddCell(new MyGuiControlTable.Cell(FromReferenceText(entry), entry));
 			_table.Add(row);
 		}
 		// Start alphabetical by ore; after that keep whatever column and direction the player picked.
@@ -274,7 +293,7 @@ public class MarkerLibraryScreen : MyGuiScreenBase
 		}
 		// The header names the marker being measured from, e.g. "From Ice"; its own row says "(this one)".
 		_table.SetColumnName(ColumnFromReference, new StringBuilder(_reference == null ? "From marker" : $"From {_reference.Label}"));
-		string shown = _typeName == AllTypes && _oreName == AllOres ? $"{entries.Count} saved marker(s)" : $"{_table.RowsCount} of {entries.Count} marker(s) shown";
+		string shown = _typeName == AllTypes && _oreName == AllOres && !ListSearch.IsActive(_find) ? $"{entries.Count} saved marker(s)" : $"{_table.RowsCount} of {entries.Count} marker(s) shown";
 		string marked = _marked.Count > 0 ? $", {_marked.Count} marked" : "";
 		SetStatus(_statusText.Length > 0 ? _statusText : $"{shown}{marked}. Click a header to sort; double-click a row to mark it.");
 	}
@@ -290,14 +309,29 @@ public class MarkerLibraryScreen : MyGuiScreenBase
 		return TypeLabels.TryGetValue(prefix, out string label) ? label : prefix;
 	}
 
-	/// <summary>True if the marker passes both dropdowns. The Ore filter only ever keeps ore markers.</summary>
+	private static string AmountText(LibraryEntry entry)
+	{
+		return entry.MassKg > 0 ? $"{entry.MassKg:N0} kg" : "";
+	}
+
+	private string FromReferenceText(LibraryEntry entry)
+	{
+		return _reference == null ? "" : entry == _reference ? "(this one)" : GpsMarkers.FormatDistance(DistanceFromReference(entry));
+	}
+
+	/// <summary>True if the marker passes both dropdowns and the Find box. The Ore filter only ever keeps ore markers.</summary>
 	private bool Matches(LibraryEntry entry)
 	{
 		if (_typeName != AllTypes && !string.Equals(TypeLabel(entry), _typeName, StringComparison.OrdinalIgnoreCase))
 		{
 			return false;
 		}
-		return _oreName == AllOres || (entry.MassKg > 0 && string.Equals(entry.Label, _oreName, StringComparison.OrdinalIgnoreCase));
+		if (_oreName != AllOres && !(entry.MassKg > 0 && string.Equals(entry.Label, _oreName, StringComparison.OrdinalIgnoreCase)))
+		{
+			return false;
+		}
+		// Every column that shows text; the X column isn't a name.
+		return !ListSearch.IsActive(_find) || ListSearch.Matches(_find, entry.Prefix, entry.Label, AmountText(entry), entry.Info, GpsMarkers.FormatDistance(DistanceFromYou(entry)), FromReferenceText(entry));
 	}
 
 	/// <summary>
@@ -414,7 +448,26 @@ public class MarkerLibraryScreen : MyGuiScreenBase
 			SetStatus("Mark some markers first: select a row and press Mark / Unmark, or double-click it.");
 			return;
 		}
-		_statusText = Import(_marked.ToList());
+		List<LibraryEntry> marked = _marked.ToList();
+		int hidden = marked.Count(e => !Matches(e));
+		if (hidden == 0)
+		{
+			ImportAndClearMarks(marked);
+			return;
+		}
+		// Marks on rows that aren't showing shouldn't go to GPS unannounced.
+		MyGuiSandbox.AddScreen(MyGuiSandbox.CreateMessageBox(MyMessageBoxStyleEnum.Info, MyMessageBoxButtonsType.YES_NO, messageCaption: new StringBuilder("Import marked markers"), messageText: new StringBuilder($"Import {marked.Count} marked marker(s) to GPS?\n\n{hidden} of them are hidden by the current Type / Ore filter or Find."), callback: answer =>
+		{
+			if (answer == MyGuiScreenMessageBox.ResultEnum.YES)
+			{
+				ImportAndClearMarks(marked);
+			}
+		}));
+	}
+
+	private void ImportAndClearMarks(List<LibraryEntry> marked)
+	{
+		_statusText = Import(marked);
 		_marked.Clear();
 		RefreshRows(SelectedEntry());
 	}
@@ -479,7 +532,7 @@ public class MarkerLibraryScreen : MyGuiScreenBase
 		}
 		List<LibraryEntry> doomed = _marked.ToList();
 		int hidden = doomed.Count(e => !Matches(e));
-		string hiddenNote = hidden > 0 ? $"\n\n{hidden} of them are hidden by the current Type / Ore filter." : "";
+		string hiddenNote = hidden > 0 ? $"\n\n{hidden} of them are hidden by the current Type / Ore filter or Find." : "";
 		MyGuiSandbox.AddScreen(MyGuiSandbox.CreateMessageBox(MyMessageBoxStyleEnum.Info, MyMessageBoxButtonsType.YES_NO, messageCaption: new StringBuilder("Delete marked markers"), messageText: new StringBuilder($"Delete {doomed.Count} marked marker(s) from the library? This can't be undone.{hiddenNote}"), callback: answer =>
 		{
 			if (answer != MyGuiScreenMessageBox.ResultEnum.YES)
@@ -555,7 +608,7 @@ public class MarkerLibraryScreen : MyGuiScreenBase
 		"DETECTOR SETTINGS\n" +
 		"The first time you run a scan from a detector, its Custom Data gets two sections, OreScout and OreScout Deposits. Ores is a comma-separated list of the rare ores the vanilla detector shows (blank means all of them; other names are ignored). If the Custom Data is not valid, it is left alone and the defaults are used. MinDepositVoxels is the smallest deposit to report, in cubic metres. YieldBonusPercent adds yield for modded drills, for example 50. MergeRadius (OreScout section) is how close asteroids must be to share a marker, in metres; 0 turns merging off. DepositSpacing (OreScout Deposits section) is how far apart ore can be and still count as one deposit. CreateGps and ShowChat turn the markers and the chat lines on or off.\n\n" +
 		"THE LIBRARY\n" +
-		"This window keeps ore markers out of your GPS list until you need them. Export from GPS moves your Scout Ore markers here (deposit markers stay in GPS). The Type and Ore dropdowns above the list filter it: Type picks Asteroids or Planets (each shows how many there are, even 0), and Ore then narrows the list to one ore. Click a column header to sort, and click it again to reverse. From you is each marker's distance from where you are. Measure From Row makes the From marker column show every marker's distance from the selected one (its header takes that marker's name), which finds the ore nearest a spot; Measure From Me clears it. To bring markers back, select a row and press Mark / Unmark (or double-click it) to tick it with an X, then Import Marked; Import All Shown imports everything the filter shows. Markers already in your GPS list are skipped, and the distance is worked out again from where you are. Delete removes the selected row. Delete Marked removes every row ticked with an X after asking you to confirm, and tells you if some of them are hidden by the filters. Esc closes the window. The library is saved for each world in OreScout_Markers_<world>.xml in %AppData%\\SpaceEngineers\\Storage.\n\n" +
+		"This window keeps ore markers out of your GPS list until you need them. Export from GPS moves your Scout Ore markers here (deposit markers stay in GPS). The Type and Ore dropdowns above the list filter it: Type picks Asteroids or Planets (each shows how many there are, even 0), and Ore then narrows the list to one ore. Find at the bottom narrows it further as you type; marks stay on rows it hides. Click a column header to sort, and click it again to reverse. From you is each marker's distance from where you are. Measure From Row makes the From marker column show every marker's distance from the selected one (its header takes that marker's name), which finds the ore nearest a spot; Measure From Me clears it. To bring markers back, select a row and press Mark / Unmark (or double-click it) to tick it with an X, then Import Marked; Import All Shown imports everything the filters and Find show. Markers already in your GPS list are skipped, and the distance is worked out again from where you are. Delete removes the selected row. Delete Marked removes every row ticked with an X after asking you to confirm, and tells you if some of them are hidden by the filters or Find; Import Marked asks too if any are hidden. Esc closes the window. The library is saved for each world in OreScout_Markers_<world>.xml in %AppData%\\SpaceEngineers\\Storage.\n\n" +
 		"COMMANDS\n" +
 		"/scout opens this window. /scout name and a name (up to 24 characters) changes what OreScout's chat lines show under; /scout name on its own puts OreScout back. /tim opens whichever of our plugin windows you used last, and the list at the top left of this window switches to another of our plugins.\n\n" +
 		"CHAT\n" +

@@ -213,7 +213,7 @@ internal static class ScriptLogs
 		DateTime seen = s_lastVisit.TryGetValue(construct.Key, out DateTime last) ? last : DateTime.MinValue;
 		foreach (LogEntry entry in construct.Lines.Values)
 		{
-			entry.IsNew = entry.Time > seen;
+			entry.IsNew = entry.Time > seen && !entry.ReadEarly;
 		}
 	}
 
@@ -241,6 +241,23 @@ internal static class ScriptLogs
 	}
 
 	private static readonly HashSet<long> s_wasInReach = new HashSet<long>();
+
+	/// <summary>
+	/// Marks only these lines as seen, for while the Find box hides others. "Since your last visit" is one time per grid,
+	/// so it can't hold part of a log: this isn't saved, and after leaving the world they count as new again, which loses
+	/// nothing.
+	/// </summary>
+	public static void MarkRead(IEnumerable<LogEntry> entries)
+	{
+		foreach (LogEntry entry in entries)
+		{
+			if (!entry.IsAlert)
+			{
+				entry.IsNew = false;
+				entry.ReadEarly = true;
+			}
+		}
+	}
 
 	/// <summary>Marks everything read so far as seen ("since your last visit" starts again from here).</summary>
 	public static void MarkRead()

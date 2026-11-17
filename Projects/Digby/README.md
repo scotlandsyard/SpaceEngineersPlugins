@@ -35,7 +35,7 @@ For extending a grid toward the deposit without hinges or rotors: P1 and P2 are 
 
 **Save to library** moves the plan's markers into Digby's library for this world (off your GPS list). The Library page can use a point as From or Target, show it on the HUD as a local marker, or remove it. Library points also appear in the point lists.
 
-If another plugin's marker library has points for this world (for example OreScout's), it shows in the Library list, read only, with **Copy to Digby** and **Copy all**.
+If another plugin's marker library has points for this world (for example OreScout's), it shows in the Library list, read only, with **Copy to Digby** and **Copy all**. **Find** shortens the list as you type; **Copy all** then only copies what it shows.
 
 ## Planet names
 

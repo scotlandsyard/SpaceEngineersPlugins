@@ -48,6 +48,15 @@ internal static class AlertLog
 		Save();
 	}
 
+	/// <summary>Deletes just these alerts (Clear My Alerts while the Find box hides others).</summary>
+	public static void Remove(IEnumerable<LogEntry> entries)
+	{
+		HashSet<LogEntry> doomed = new HashSet<LogEntry>(entries);
+		Entries.RemoveAll(doomed.Contains);
+		s_dirty = true;
+		Save();
+	}
+
 	private static string Clean(string text)
 	{
 		return (text ?? "").Replace('|', '/').Replace('\n', ' ').Replace('\r', ' ');

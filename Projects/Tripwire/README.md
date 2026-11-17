@@ -71,6 +71,8 @@ Open the window with `/tripwire`, or with `/tim` and the plugin list at the top 
 
 **Script logs.** The plugin reads Tripwire logs from grids you could open in the vanilla terminal right now: you have access to the block, and you're on the grid, standing at it, or connected to it through antennas. Lines you haven't seen yet are yellow, and chat tells you when a grid with news comes within reach. Closing the window or **Mark All Read** marks them as seen.
 
+**Find** keeps the rows with what you type. While it's in use, Mark All Read, Clear My Alerts and closing the window only count the rows it shows.
+
 **Copy to Datapad** writes the rows shown onto an empty datapad in your inventory, up to 10,000 characters. You can keep it or hand it to an admin. It never writes over a datapad that has text.
 
 **Optional, off by default: names near a damaged block.** It adds the names of players within 50 m of the damaged block, but only players whose name the game's HUD is already drawing for you at that moment (relayed by your antennas), and only in worlds that show player names on the HUD. It never gives a position, distance or direction.

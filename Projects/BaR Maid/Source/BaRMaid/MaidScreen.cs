@@ -99,6 +99,12 @@ public class MaidScreen : MyGuiScreenBase
 	/// <summary>Setup and BaR settings have a second row of controls above the bottom buttons, so the table is shorter.</summary>
 	private static bool HasSecondButtonRow => s_view == View.Setup || s_view == View.Settings;
 
+	/// <summary>Text in the Find box, kept while the window is open.</summary>
+	private string _find = "";
+
+	/// <summary>Every list has the Find box except Status (a short dashboard) and Help.</summary>
+	private static bool FindApplies => s_view != View.Status && s_view != View.Help;
+
 	private readonly List<string> _comboKeys = new List<string>();
 
 	private readonly Dictionary<string, IMyTerminalBlock> _rowBlocks = new Dictionary<string, IMyTerminalBlock>();
@@ -228,6 +234,26 @@ public class MaidScreen : MyGuiScreenBase
 		_status = new MyGuiControlLabel(new Vector2(-0.42f, HasSecondButtonRow ? 0.205f : 0.285f), null, "", null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
 		Controls.Add(_status);
 
+		if (FindApplies)
+		{
+			// In the gap between the table's bottom edge and the status line, which is lower when there's no second button row.
+			float findY = HasSecondButtonRow ? 0.165f : 0.25f;
+			Controls.Add(new MyGuiControlLabel(new Vector2(-0.42f, findY), null, ListSearch.Label, null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER));
+			MyGuiControlTextbox find = new MyGuiControlTextbox(new Vector2(-0.35f, findY), _find, ListSearch.MaxLength)
+			{
+				Size = new Vector2(0.43f, 0.04f),
+				OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+			};
+			find.SetToolTip(ListSearch.ToolTip);
+			find.TextChanged += box =>
+			{
+				_find = box.Text ?? "";
+				_rowsSignature = null;
+				RefreshAll();
+			};
+			Controls.Add(find);
+		}
+
 		// Four button slots per view; the window closes with the X in the corner or Esc.
 		_autoQueueButton = null;
 		_groupNameBox = null;
@@ -268,7 +294,7 @@ public class MaidScreen : MyGuiScreenBase
 			break;
 		default:
 			_autoQueueButton = AddButton(-0.315f, "Auto-queue", ToggleAutoQueue);
-			AddButton(-0.105f, "Queue now", QueueNow);
+			AddButton(-0.105f, "Queue now", QueueNow).SetToolTip("Queues what's missing once. In Missing components, while Find is in use, only the components it shows.");
 			AddButton(0.105f, "Rescan", Rescan);
 			AddButton(0.315f, "Help", ShowHelp);
 			break;
@@ -470,8 +496,22 @@ public class MaidScreen : MyGuiScreenBase
 			ShowMessage(NoAssemblerReason(group) + ".", WarningColor);
 			return;
 		}
-		int kinds = group.QueueMissing(BaRMaidSession.Now);
-		ShowMessage(kinds > 0 ? $"Queued {kinds} kind(s) of component." : "Nothing new to queue. Anything queued in the last 15 s is waiting for the server to confirm it.", kinds > 0 ? GoodColor : (Color?)null);
+		// The Missing components list says what Queue now will order, so with Find in use it only orders what's still listed.
+		bool filtered = s_view == View.MissingComponents && ListSearch.IsActive(_find);
+		HashSet<string> shown = new HashSet<string>();
+		if (filtered)
+		{
+			for (int i = 0; i < _table.RowsCount; i++)
+			{
+				if (_table.GetRow(i).UserData is string key)
+				{
+					shown.Add(key);
+				}
+			}
+		}
+		int kinds = group.QueueMissing(BaRMaidSession.Now, filtered ? id => shown.Contains("m" + id) : (Func<MyDefinitionId, bool>)null);
+		string scope = filtered ? " Only what Find shows." : "";
+		ShowMessage((kinds > 0 ? $"Queued {kinds} kind(s) of component." : "Nothing new to queue. Anything queued in the last 15 s is waiting for the server to confirm it.") + scope, kinds > 0 ? GoodColor : (Color?)null);
 		_rowsSignature = null;
 		RefreshAll();
 	}
@@ -625,6 +665,14 @@ public class MaidScreen : MyGuiScreenBase
 		else if (rows.Count == 0)
 		{
 			rows.Add(Row("none", MutedColor, EmptyText(s_view)));
+		}
+		else if (FindApplies && ListSearch.IsActive(_find))
+		{
+			rows = rows.Where(r => ListSearch.Matches(_find, r.Texts)).ToList();
+			if (rows.Count == 0)
+			{
+				rows.Add(Row("none", MutedColor, "No match for Find."));
+			}
 		}
 
 		StringBuilder signature = new StringBuilder();

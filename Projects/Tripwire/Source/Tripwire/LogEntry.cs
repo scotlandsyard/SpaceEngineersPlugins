@@ -29,6 +29,9 @@ internal class LogEntry
 
 	public bool IsNew;
 
+	/// <summary>Marked read on its own while the Find box hid other lines; lasts until the world is left.</summary>
+	public bool ReadEarly;
+
 	/// <summary>The line as stored: the script's own line, or the alert log's line.</summary>
 	public string Raw = "";
 

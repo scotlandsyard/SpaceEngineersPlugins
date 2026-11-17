@@ -4,6 +4,7 @@ using System.Linq;
 using System.Text;
 using Sandbox.Graphics.GUI;
 using Sandbox.ModAPI;
+using TimShared;
 using VRage.Game;
 using VRage.Utils;
 using VRageMath;
@@ -29,7 +30,14 @@ public partial class DigbyScreen
 	/// <summary>Index 0 is Digby's own library; the rest match <see cref="_foreign"/>.</summary>
 	private List<ForeignLibraries.Source> _foreign = new List<ForeignLibraries.Source>();
 
+	/// <summary>Every point of the library picked in the list.</summary>
+	private List<LibraryEntry> _allPoints = new List<LibraryEntry>();
+
+	/// <summary>The points left in the table by the Find box.</summary>
 	private List<LibraryEntry> _shown = new List<LibraryEntry>();
+
+	/// <summary>Text in the Find box, kept while the window is open.</summary>
+	private string _find = "";
 
 	private bool _sortedOnce;
 
@@ -41,6 +49,16 @@ public partial class DigbyScreen
 		RightLabel(-0.355f, "Library:", page);
 		_source = AddCombo(-0.31f, -0.355f, 0.4f, "Digby's own library, or another plugin's marker library for this world (read only: copy points over to use them later).", page);
 		_source.ItemSelected += FillTable;
+
+		// The rest of the Library row is free: the Chat dropdown above it ends higher up in this taller window.
+		AddLabel(0.105f, -0.355f, ListSearch.Label, page);
+		MyGuiControlTextbox find = AddTextbox(0.155f, -0.355f, 0.265f, ListSearch.ToolTip, page);
+		find.Text = _find;
+		find.TextChanged += box =>
+		{
+			_find = box.Text ?? "";
+			FillRows();
+		};
 
 		_table = new MyGuiControlTable
 		{
@@ -68,7 +86,7 @@ public partial class DigbyScreen
 		AddButton(0.17f, ButtonsY2, "Hide markers", HideShown, page).SetToolTip("Removes the library markers Show on HUD added.");
 		_removeOrCopy = AddButton(0.34f, ButtonsY2, "Remove", RemoveOrCopy, page);
 		_copyAll = AddButton(-0.34f, ButtonsY, "Copy all", CopyAll, page);
-		_copyAll.SetToolTip("Copies every point of this library into Digby's, skipping ones already there.");
+		_copyAll.SetToolTip("Copies every point of this library into Digby's, skipping ones already there. While Find is in use, only the points it shows.");
 		AddButton(0.17f, ButtonsY, "Plan", () => ShowPage(Page.Plan), page);
 		AddButton(0.34f, ButtonsY, "Help", () => ShowPage(Page.Help), page);
 	}
@@ -91,10 +109,19 @@ public partial class DigbyScreen
 	private void FillTable()
 	{
 		bool foreign = Foreign;
-		_shown = foreign ? ForeignLibraries.Read(_foreign[(int)_source.GetSelectedKey() - 1]) : global::Digby.Library.Entries.ToList();
+		_allPoints = foreign ? ForeignLibraries.Read(_foreign[(int)_source.GetSelectedKey() - 1]) : global::Digby.Library.Entries.ToList();
 		_removeOrCopy.Text = foreign ? "Copy to Digby" : "Remove";
 		_removeOrCopy.SetToolTip(foreign ? "Copies the selected point into Digby's library." : "Removes the selected point from Digby's library.");
 		_copyAll.Visible = foreign && _page == Page.Library;
+		FillRows();
+	}
+
+	/// <summary>Fills the table from the points already read, through the Find box, keeping the sort and the selected point.</summary>
+	private void FillRows()
+	{
+		bool foreign = Foreign;
+		LibraryEntry selected = _table.SelectedRow?.UserData as LibraryEntry;
+		_shown = _allPoints.Where(e => ListSearch.Matches(_find, e.Name, e.Source, Markers.FormatDistance(DistanceFromYou(e)))).ToList();
 		_table.Clear();
 		foreach (LibraryEntry entry in _shown)
 		{
@@ -113,9 +140,19 @@ public partial class DigbyScreen
 			_table.SortByColumn(0);
 			_sortedOnce = true;
 		}
-		_libraryStatus.Text = _shown.Count == 0
+		if (selected != null)
+		{
+			int index = _table.FindIndex(r => r.UserData == selected);
+			if (index >= 0)
+			{
+				_table.SetSelectedRow(index);
+				_table.ScrollToSelection();
+			}
+		}
+		string count = ListSearch.IsActive(_find) ? $"{_shown.Count} of {_allPoints.Count} point(s)." : $"{_shown.Count} point(s).";
+		_libraryStatus.Text = _allPoints.Count == 0
 			? (foreign ? "That library has no points for this world." : "No points yet. Save to library on the Plan page keeps a plan's markers here; other plugins' libraries show in the list above when they have one for this world.")
-			: $"{_shown.Count} point(s)." + (foreign ? " Read from the other plugin's file; nothing is changed there." : "");
+			: count + (foreign ? " Read from the other plugin's file; nothing is changed there." : "");
 	}
 
 	private static LibraryEntry Entry(MyGuiControlTable.Cell cell)
@@ -205,6 +242,7 @@ public partial class DigbyScreen
 			return;
 		}
 		int added = ForeignLibraries.CopyToLibrary(_shown);
-		_libraryStatus.Text = $"Copied {added} point(s) to Digby's library ({_shown.Count - added} were already there).";
+		int hidden = _allPoints.Count - _shown.Count;
+		_libraryStatus.Text = $"Copied {added} point(s) to Digby's library ({_shown.Count - added} were already there)." + (hidden > 0 ? $" Find hid {hidden}, so they weren't copied." : "");
 	}
 }

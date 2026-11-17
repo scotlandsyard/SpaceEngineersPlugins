@@ -155,8 +155,9 @@ internal class MaidGroup
 
 	/// <summary>
 	/// Queues whatever the group is missing into its assemblers. Returns how many component kinds were queued.
+	/// With <paramref name="only"/>, just the components it accepts (the Find box's list for Queue now).
 	/// </summary>
-	public int QueueMissing(double now)
+	public int QueueMissing(double now, Func<MyDefinitionId, bool> only = null)
 	{
 		List<IMyAssembler> assemblers = UsableAssemblers();
 		if (assemblers.Count == 0)
@@ -175,7 +176,7 @@ internal class MaidGroup
 		string starved = null;
 		foreach (KeyValuePair<MyDefinitionId, int> item in missing)
 		{
-			if (item.Value <= 0 || (_lastAttempt.TryGetValue(item.Key, out double last) && now < last))
+			if (item.Value <= 0 || (only != null && !only(item.Key)) || (_lastAttempt.TryGetValue(item.Key, out double last) && now < last))
 			{
 				continue;
 			}

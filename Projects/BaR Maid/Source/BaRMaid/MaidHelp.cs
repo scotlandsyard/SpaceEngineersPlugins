@@ -44,6 +44,7 @@ internal static class MaidHelp
 		"- Weld priority / Grind priority: which kinds of block are handled first. Read only here; change the order in the block's terminal.",
 		"- Setup: groups: every Build and Repair system and assembler on this grid, with its group and state. Green rows belong to the group picked at the top.",
 		"Click a column header to sort a list; click it again to reverse. Everything refreshes by itself.",
+		"Find, under each list except Status, shortens it as you type. In Missing components, Queue now then only queues what's still listed.",
 		"",
 		"# Buttons",
 		"- Auto-queue: switches auto-queuing on or off for the group. While it's on, BaR Maid checks every 3 seconds and queues what is missing, minus what is already in stock on the ship or station or queued.",

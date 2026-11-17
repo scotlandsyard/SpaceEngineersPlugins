@@ -24,7 +24,7 @@ public partial class DigbyScreen
 		"You can rename and edit datapads yourself too: open your inventory and right-click a datapad.\n\n" +
 		"LIBRARY\n" +
 		"Save to library moves the plan's markers into Digby's library for this world (off your GPS list), so they survive leaving the world. The Library page lists them: Use as From or Use as Target puts a point in the plan, Show on HUD adds it as a local marker, Hide markers takes those off again, Remove deletes a point. Library points also appear in the From, Target and rig lists.\n" +
-		"If another plugin's marker library has points for this world (OreScout's, for example), pick it in the Library list to see them, read only, and Copy to Digby or Copy all to bring them over.\n\n" +
+		"If another plugin's marker library has points for this world (OreScout's, for example), pick it in the Library list to see them, read only, and Copy to Digby or Copy all to bring them over. Find shortens the list as you type; Copy all then only copies what it shows.\n\n" +
 		"PLANET NAMES\n" +
 		"The game only knows a planet's type (EarthLike, Mars...). Servers often call their planets something else: stand on the planet and type /digby planet name <name> to use that name in this world. If you use Fat Albert and named the planet there, Digby uses that name too.\n\n" +
 		"COMMANDS\n" +

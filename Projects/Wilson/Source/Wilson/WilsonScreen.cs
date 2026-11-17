@@ -31,6 +31,12 @@ public class WilsonScreen : MyGuiScreenBase
 
 	private const float NoteY = 0.1f;
 
+	/// <summary>Crew page: the Find row, under the note.</summary>
+	private const float CrewFindY = 0.16f;
+
+	/// <summary>Decision log page: the Find row, between the table's bottom edge and the status line.</summary>
+	private const float LogFindY = 0.25f;
+
 	private const float StatusY = 0.345f;
 
 	private const float ButtonsY = 0.41f;
@@ -80,6 +86,12 @@ public class WilsonScreen : MyGuiScreenBase
 	private bool _recreatePending;
 
 	private bool _suppressEvents;
+
+	/// <summary>Text in the Find box, kept while the window is open.</summary>
+	private string _find = "";
+
+	/// <summary>The character picked stays picked while Find hides its row; Rename and Chat then refuse to touch it.</summary>
+	private bool _selectedHidden;
 
 	private static Color MutedColor => new Color(150, 160, 170);
 
@@ -153,6 +165,7 @@ public class WilsonScreen : MyGuiScreenBase
 			_summary = new MyGuiControlLabel(new Vector2(Left, SettingY), null, "", MutedColor.ToVector4(), 0.75f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
 			Controls.Add(_summary);
 			_log = AddTable(CastTop, 15, new[] { "What Wilson decided (newest first)" }, new[] { 1f });
+			AddFindBox(LogFindY);
 			break;
 		default:
 			CreateCrewPage();
@@ -188,6 +201,7 @@ public class WilsonScreen : MyGuiScreenBase
 			if (_cast.SelectedRow?.UserData is string name && name != s_selected)
 			{
 				s_selected = name;
+				_selectedHidden = false;
 				_nameBox?.SetText(new StringBuilder(Director.DisplayFor(name)));
 				ShowSelectedLevel();
 			}
@@ -227,6 +241,36 @@ public class WilsonScreen : MyGuiScreenBase
 
 		_summary = new MyGuiControlLabel(new Vector2(Left, NoteY), null, "", MutedColor.ToVector4(), 0.75f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
 		Controls.Add(_summary);
+
+		AddFindBox(CrewFindY);
+	}
+
+	private void AddFindBox(float y)
+	{
+		Controls.Add(new MyGuiControlLabel(new Vector2(Left, y), null, ListSearch.Label, null, 0.8f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER));
+		MyGuiControlTextbox find = new MyGuiControlTextbox(new Vector2(-0.31f, y), _find, ListSearch.MaxLength)
+		{
+			Size = new Vector2(0.3f, 0.04f),
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
+		};
+		find.SetToolTip(ListSearch.ToolTip);
+		find.TextChanged += box =>
+		{
+			_find = box.Text ?? "";
+			Refresh();
+		};
+		Controls.Add(find);
+	}
+
+	/// <summary>Says so and returns true if Find is hiding the character the buttons would change.</summary>
+	private bool RefuseHiddenSelection()
+	{
+		if (!_selectedHidden)
+		{
+			return false;
+		}
+		SetStatus($"{s_selected} is hidden by Find. Clear Find or pick a row in the table.", BadColor);
+		return true;
 	}
 
 	/// <summary>Puts the picked character's chat setting in the dropdown, or explains why it has none here.</summary>
@@ -278,6 +322,11 @@ public class WilsonScreen : MyGuiScreenBase
 
 	private void SetSelectedLevel(Level level)
 	{
+		if (RefuseHiddenSelection())
+		{
+			ShowSelectedLevel();
+			return;
+		}
 		string result;
 		if (Cast.IsWilson(s_selected))
 		{
@@ -306,6 +355,10 @@ public class WilsonScreen : MyGuiScreenBase
 
 	private void Rename(string name)
 	{
+		if (RefuseHiddenSelection())
+		{
+			return;
+		}
 		string result = Director.Rename(s_selected, name);
 		SetStatus(result, result.Contains("isn't loaded") ? BadColor : GoodColor);
 		_nameBox?.SetText(new StringBuilder(Personality.CleanName(name) ?? s_selected));
@@ -398,14 +451,21 @@ public class WilsonScreen : MyGuiScreenBase
 				string inExchanges = !Director.Directing ? "Wilson is Off" : c == null ? "no (not loaded)" : c.Level >= Level.Normal ? "yes" : c.Level == Level.Off ? "no (chat off)" : "no (Quiet)";
 				AddCastRow(member.ChatName, c != null && c.Level >= Level.Normal, member.PluginName, chat, inExchanges);
 			}
+			if (_cast.RowsCount == 0)
+			{
+				AddRow(_cast, null, MutedColor, "No match for Find.", "", "", "", "", "");
+			}
+			bool found = false;
 			for (int i = 0; i < _cast.RowsCount; i++)
 			{
 				if (_cast.GetRow(i).UserData is string name && name == s_selected)
 				{
 					_cast.SelectedRowIndex = i;
+					found = true;
 					break;
 				}
 			}
+			_selectedHidden = !found && ListSearch.IsActive(_find);
 			if (_cast.ScrollBar != null)
 			{
 				_cast.ScrollBar.Value = scroll;
@@ -425,11 +485,18 @@ public class WilsonScreen : MyGuiScreenBase
 			_log.Clear();
 			foreach (string line in Director.Log)
 			{
-				AddRow(_log, null, null, line);
+				if (ListSearch.Matches(_find, line))
+				{
+					AddRow(_log, null, null, line);
+				}
 			}
 			if (Director.Log.Count == 0)
 			{
 				AddRow(_log, null, MutedColor, "Nothing yet. The plugins' events show up here as they happen.");
+			}
+			else if (_log.RowsCount == 0)
+			{
+				AddRow(_log, null, MutedColor, "No match for Find.");
 			}
 		}
 	}
@@ -440,10 +507,14 @@ public class WilsonScreen : MyGuiScreenBase
 		Color own = Personality.ColorFor(name);
 		Color? rest = active ? (Color?)null : MutedColor;
 		bool loaded = Cast.IsHome(name) || Director.Find(name) != null;
+		s_colourNames.TryGetValue(name, out string colour);
+		if (!ListSearch.Matches(_find, name, loaded ? Director.DisplayFor(name) : "", colour, plugin, chat, inExchanges))
+		{
+			return;
+		}
 		MyGuiControlTable.Row row = new MyGuiControlTable.Row(name);
 		row.AddCell(new MyGuiControlTable.Cell(name, null, null, loaded ? own : MutedColor) { IsAutoScaleEnabled = true });
 		row.AddCell(new MyGuiControlTable.Cell(loaded ? Director.DisplayFor(name) : "", null, null, own) { IsAutoScaleEnabled = true });
-		s_colourNames.TryGetValue(name, out string colour);
 		row.AddCell(new MyGuiControlTable.Cell(colour ?? "", null, null, own) { IsAutoScaleEnabled = true });
 		row.AddCell(new MyGuiControlTable.Cell(plugin, null, plugin.Length > 20 ? plugin : null, rest) { IsAutoScaleEnabled = true });
 		row.AddCell(new MyGuiControlTable.Cell(chat, null, null, rest) { IsAutoScaleEnabled = true });
@@ -485,7 +556,7 @@ public class WilsonScreen : MyGuiScreenBase
 		"CHAT COMMANDS\n" +
 		"/wilson opens this window. /wilson off, /wilson quiet, /wilson normal or /wilson chatty sets his setting. /wilson try plays a random exchange now, with made-up names and numbers, ignoring the timers. /wilson rollcall calls the roll again.\n\n" +
 		"WINDOW\n" +
-		"Crew (above) is the main page. Decision log shows what Wilson decided about the latest events: who spoke, which exchange played, and why something passed. Try an exchange and Roll call play one right away. The dropdown at the top left switches to another of the family's windows; the one at the top right is Wilson's setting.\n\n" +
+		"Crew (above) is the main page. Decision log shows what Wilson decided about the latest events: who spoke, which exchange played, and why something passed. Find on either page shortens the list when you've lost track of somebody; Rename and Chat leave a character alone while Find hides its row. Try an exchange and Roll call play one right away. The dropdown at the top left switches to another of the family's windows; the one at the top right is Wilson's setting.\n\n" +
 		"SETTINGS FILE\n" +
 		"Wilson's setting and the names for Wilson and Tim are kept in Wilson_Settings.txt in the game's local storage for plugins.";
 }
