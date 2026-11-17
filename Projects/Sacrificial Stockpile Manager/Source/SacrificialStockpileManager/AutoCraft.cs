@@ -177,7 +177,8 @@ internal static class AutoCraft
 	{
 		ShepherdLink shepherd = construct.Shepherd;
 		GridRules core = Store.GridRules(construct.Snapshot);
-		if (shepherd == null || !shepherd.Units.Contains(unit.Id) || !shepherd.Handles(ShepherdJob.Craft, core))
+		// SHEPHERD before 1.0.51 has the old blueprint names for these items, so it never crafts them: they stay here.
+		if (shepherd == null || !shepherd.Units.Contains(unit.Id) || !shepherd.Handles(ShepherdJob.Craft, core) || shepherd.TooOldToCraft(key))
 		{
 			return null;
 		}

@@ -80,6 +80,7 @@ internal static class Program
 		Check(ShepherdPanel.Parse("SHEPHERD v1.0.21 running\nBase PB") == null, "the Echo's first line is not a panel");
 		Check(ShepherdPanel.Parse("Some LCD text") == null, "other text is not a panel");
 		Check(ShepherdPanel.AtLeast("1.0.21", 1, 0, 21) && !ShepherdPanel.AtLeast("1.0.5", 1, 0, 21) && ShepherdPanel.AtLeast("1.1.0", 1, 0, 21) && !ShepherdPanel.AtLeast(null, 1, 0, 21), "version comparison");
+		Check(!ShepherdPanel.AtLeast("1.0.50", 1, 0, 51) && ShepherdPanel.AtLeast("1.0.51", 1, 0, 51) && ShepherdPanel.AtLeast("1.1.0", 1, 0, 51), "1.0.50 is before 1.0.51, which crafts the renamed Warfare 3 blueprints");
 	}
 
 	// A1 and A2: the default Custom Data marks SHEPHERD and gives the defaults.

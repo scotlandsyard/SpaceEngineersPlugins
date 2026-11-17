@@ -369,6 +369,18 @@ internal sealed class ShepherdLink
 		return Config.AutoQuotas(item).ToList();
 	}
 
+	/// <summary>Items whose blueprint the Warfare 3 update renamed or moved: SHEPHERD crafts them from 1.0.51 only.</summary>
+	public static readonly string[] NeedsShepherd1051 = { "PhysicalGunObject/FlareGunItem", "AmmoMagazine/FlareClip", "Component/Canvas", "Datapad/Datapad" };
+
+	/// <summary>
+	/// The panel shows SHEPHERD older than 1.0.51, which never crafts this item on the current game, so Stockpile Manager
+	/// keeps crafting it. Without a panel the version isn't known and the item stays SHEPHERD's.
+	/// </summary>
+	public bool TooOldToCraft(string item)
+	{
+		return Version != null && !ShepherdPanel.AtLeast(Version, 1, 0, 51) && NeedsShepherd1051.Contains(item);
+	}
+
 	/// <summary>
 	/// Finds SHEPHERD on this construct: the player's programmable blocks with SHEPHERD's Custom Data ([Settings] with
 	/// refineryFillPct, and "SHEPHERD" in the script text when the client has it), and the player's [SHEPHERD] status
@@ -549,6 +561,11 @@ internal sealed class ShepherdLink
 		{
 			List<string> crafted = rules.Quotas.Where(q => Config.AutoQuotas(q.Item).Any()).Select(q => q.Item).ToList();
 			AddCapped(warnings, crafted, item => $"{Items.Name(item)}: both Stockpile Manager and SHEPHERD keep a quota for it; give it to one of them");
+		}
+		else
+		{
+			List<string> tooOld = NeedsShepherd1051.Where(item => TooOldToCraft(item) && Config.AutoQuotas(item).Any()).ToList();
+			AddCapped(warnings, tooOld, item => $"{Items.Name(item)}: SHEPHERD {Version} can't craft it on this game version (needs SHEPHERD 1.0.51); Stockpile Manager crafts it while you have a quota for it here");
 		}
 		if (IsMine(ShepherdJob.Fuel, rules) && (Config.ReactorFillPct > 0 || Config.GasGenFillPct > 0))
 		{
