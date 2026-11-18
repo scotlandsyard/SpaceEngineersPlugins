@@ -1,6 +1,6 @@
 # Sending a bill of materials to Sacrificial Stockpile Manager
 
-Another plugin (Tally, for example) can ask Sacrificial Stockpile Manager (SSM) to stock a container with a list of items: the same as the player pressing **Build kit** in SSM's Block settings. SSM never applies a bill by itself. It opens its window on that block with a preview, and the player confirms.
+Another plugin (Tally, for example) can ask Sacrificial Stockpile Manager (SSM) to stock a container with a list of items: the same as the player pressing **Supply crate** in SSM's Block settings. SSM never applies a bill by itself. It opens its window on that block with a preview, and the player confirms.
 
 The messages go through `MyAPIGateway.Utilities.SendModMessage` / `RegisterMessageHandler`, which stay inside the player's own game: nothing is sent to the server or other players. Every value is a plain type (`string`, `long`, `int`, `double`, arrays of those), so neither plugin needs a reference to the other.
 

@@ -39,13 +39,13 @@ public partial class SsmScreen : MyGuiScreenBase
 	/// The name of the view that fills a crate with the parts to build some blocks (View.Bill): the View list, the
 	/// Block settings button, Help and the log use it. Change it here only.
 	/// </summary>
-	internal const string BuildKitName = "Build kit";
+	internal const string SupplyCrateName = "Supply crate";
 
-	/// <summary><see cref="BuildKitName"/> in a sentence.</summary>
-	internal const string BuildKitLower = "build kit";
+	/// <summary><see cref="SupplyCrateName"/> in a sentence.</summary>
+	internal const string SupplyCrateLower = "supply crate";
 
 	// In the same order as View.
-	private static readonly string[] ViewNames = { "All grids", "Overview", "Items & quotas", "Blocks", "Block settings", BuildKitName, "Block type limits", "Production","Production details", "Refinery priority", "Displays (LCD)", "Log", "Help" };
+	private static readonly string[] ViewNames = { "All grids", "Overview", "Items & quotas", "Blocks", "Block settings", SupplyCrateName, "Block type limits", "Production","Production details", "Refinery priority", "Displays (LCD)", "Log", "Help" };
 
 	// In the same order as BlockRole.
 	private static readonly string[] RoleNames = { "Auto", "Storage", "Intake", "Stock", "Manual" };
@@ -467,7 +467,7 @@ public partial class SsmScreen : MyGuiScreenBase
 			AddButton(-0.315f, "Set minimum", () => SetLimit(minimum: true));
 			AddButton(-0.105f, "Set maximum", () => SetLimit(minimum: false));
 			AddButton(0.105f, "Clear limits", ClearLimits);
-			AddButton(0.315f, BuildKitName, () => OpenBillFor(s_blockId));
+			AddButton(0.315f, SupplyCrateName, () => OpenBillFor(s_blockId));
 			break;
 		case View.Bill:
 			AddButton(-0.315f, "Remove", RemoveBillRow);
