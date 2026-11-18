@@ -52,7 +52,7 @@ From the top: what to tally (Projector, Blueprint (F10) or My grid) and which on
 
 ## Send to an SSM crate
 
-With [Sacrificial Stockpile Manager](../Sacrificial%20Stockpile%20Manager) loaded, the Queue page can also send the components to one of your own cargo containers (not shared ones). Pick it under *SSM crate* and press **Send to SSM crate**. It sends what's still to get when the tally took something off, else the whole bill. Stockpile Manager opens its Build kit view on that container with a preview of the minimums it would add (as *Fill once*, which you can change there). Nothing changes until you press Apply there. Without Stockpile Manager the button is greyed out. The hand-over uses SSM's [bill API](../Sacrificial%20Stockpile%20Manager/BILL-API.md).
+With [Sacrificial Stockpile Manager](../Sacrificial%20Stockpile%20Manager) loaded, the Queue page can also send the components to one of your own cargo containers (not shared ones). Pick it under *SSM crate* and press **Send to SSM crate**. It sends what's still to get when the tally took something off, else the whole bill. Stockpile Manager opens its Supply crate view on that container with a preview of the minimums it would add (as *Fill once*, which you can change there). Nothing changes until you press Apply there. Without Stockpile Manager the button is greyed out. The hand-over uses SSM's [bill API](../Sacrificial%20Stockpile%20Manager/BILL-API.md).
 
 ## Commands
 
