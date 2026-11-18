@@ -2,10 +2,10 @@
 
 A range finder for Space Engineers, in two forms:
 
-- **The plugin** (`Source`): a client-side Pulsar plugin. Point your crosshair at an asteroid, a planet's surface, a ship, a station or a character, and it shows the distance just under the crosshair. Works on foot and in a cockpit.
+- **The plugin** (`Source`): a client-side Pulsar plugin. It measures through a camera block on your ship (or the camera you're looking through) and shows the distance to the asteroid, planet surface, ship, station or character ahead, just under the crosshair.
 - **The script** (`Script`): a programmable block script that does the same with camera blocks and shows it on screens. Nothing to install; it runs on any server that allows scripts.
 
-Both measure only the first thing in the line and only what's already loaded. They never see through rock or a ship.
+Both use a camera block's own raycast, so the game's camera rules (charge, range, view cone) apply to both. They measure only the first thing in the line and never see through rock or a ship.
 
 ## The plugin
 
@@ -13,10 +13,11 @@ The readout looks like this:
 
 `Radar: Asteroid 4.21 km  |  closing 85 m/s  |  0:49 to contact`
 
-- **Readout**: measures six times a second while it's on. *Closing* is how fast the gap is shrinking; *opening* means it's growing. At your current speed, the line turns yellow with *slow down* when you'd reach the target within 60 seconds, and red with *COLLISION IMMINENT* within 10. Both times can be changed (0 turns one off). It hides with the rest of the HUD (Tab).
-- **Ping**: one reading, shown under the crosshair for five seconds and said in chat.
-- **Distance** is from you (your character, or the cockpit you sit in), not from the camera, so third person reads the same as first person. In a cockpit it measures along the ship's aim (the reticle the game draws in front of the ship), even in third person or free look, and the line sits under that reticle. On foot it measures along the camera.
-- **Skipped**: your own ship, anything docked to it, and your character.
+- **Readout**: measures whenever the camera has charge for the full range (about 2 km per second, so a 15 km reading about every 7 seconds) while it's on. *Closing* is how fast the gap is shrinking; *opening* means it's growing. At your current speed, the line turns yellow with *slow down* when you'd reach the target within 60 seconds, and red with *COLLISION IMMINENT* within 10. Both times can be changed (0 turns one off). It hides with the rest of the HUD (Tab).
+- **Ping**: one reading with whatever charge the camera has, shown under the crosshair for five seconds and said in chat.
+- **Which camera**: in a cockpit, a camera on your ship (rotor and piston parts included) whose view cone covers the ship's aim, the best-aligned one; it measures along that aim (the reticle the game draws in front of the ship), even in third person or free look, and the distance is from the cockpit. Looking through a camera, that camera, and the distance is from it. On foot with no camera, no reading: the line says *Needs a camera*.
+- **The camera** must be built, powered and on, yours or shared with you, and within reach: the grid you're on, within 15 m, or linked to you by antenna (the server's rule for using a block). Radar Tech switches the camera's raycast on while it uses it, so the camera draws its charging power, as it would for a script.
+- **Own ship in the way**: if the first thing in front of the camera is your own ship, the line says so; place the camera where it can see.
 - **Range**: 1 to 50 km, 20 by default, but never past the world's **view distance** (15 km unless the world or server changes it). That's how far the game draws: what you can't see, Radar can't measure. A higher setting is held to the view distance, and `/radar status` says so.
 
 ### Controls
@@ -40,15 +41,19 @@ The readout looks like this:
 
 ### How it measures
 
-The same way a camera block's raycast does: the game's physics ray for ships, stations, characters and nearby rock, then the voxel shapes of asteroids and planets further out. Only the nearest hit counts. Planets are traced by stepping down towards the ground and then finding the exact surface, so long rays over a planet stay quick. The voxel part runs on a background thread.
+With the camera's own raycast (`IMyCameraBlock.Raycast`), the call a programmable block script uses, so its range, charge and view-cone limits apply. Radar Tech uses only what the raycast reports about the hit: its kind, position and speed, never its name, owner or faction. Asteroids and rock far off may not register until you're close enough for the game to give them physics, the same as for any camera.
+
+### Fair play
+
+Radar Tech gives you what a camera and a short programmable block script would: the same camera, the same charge, the same reach. The differences are convenience: no programmable block or screens to build, and a line under the crosshair instead of an LCD. Where a world has in-game scripts switched off it doesn't measure at all, because vanilla lets only scripts use a camera's raycast. It never shows names, owners or factions, and never sees through anything.
 
 ### What the server sees
 
-Nothing. Radar Tech only reads what's already on your PC, and sends no requests. A toolbar action saved in a cockpit's toolbar is stored with the ship, like any other toolbar slot.
+Nothing. The raycast runs on your PC, as it would for a script, and sends no request. A toolbar action saved in a cockpit's toolbar is stored with the ship, like any other toolbar slot.
 
 ### Files
 
-`RadarTech_Settings.txt` in `%AppData%\SpaceEngineers\Storage`: readout on/off, range, closing speed, warning times, hotkey and the chat setting.
+`RadarTech_Settings.txt` in `%AppData%\SpaceEngineers\Storage\RadarTech`: readout on/off, range, closing speed, warning times, hotkey and the chat setting.
 
 ## The script
 
@@ -67,7 +72,7 @@ The screens show what was hit, the distance, closing or opening speed and time t
 
 Like the plugin in a cockpit, it measures along the cameras' forward. Between readings the time to contact counts down from the last one, and the screens turn yellow (*SLOW DOWN*) or red (*COLLISION IMMINENT*) when you'd reach the target within the warning times; a reading over 30 seconds old warns of nothing. The text colour goes back to each screen's own when the warning ends.
 
-What a programmable block can't do, compared with the plugin: it can't read the world's view distance, so the range is whatever you set (the game's camera rules still apply); it can't tell a station from a ship (it says *Large grid* or *Small grid*); closing speed needs a cockpit or remote control on the ship to know your own speed; and readings come as often as the cameras' charge allows, not six times a second.
+What a programmable block can't do, compared with the plugin: it can't read the world's view distance, so the range is whatever you set (the game's camera rules still apply); it can't tell a station from a ship (it says *Large grid* or *Small grid*); and closing speed needs a cockpit or remote control on the ship to know your own speed. Both take readings as often as the cameras' charge allows.
 
 It's built to be light for servers that limit scripts: it runs six times a second (every 10 game ticks), finds its blocks once every 10 seconds, and only rewrites the screens when the text changes (about once a second).
 

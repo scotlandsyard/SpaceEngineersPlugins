@@ -12,6 +12,8 @@ using VRage.Game.Models;
 using VRage.ModAPI;
 using VRage.Utils;
 using VRageMath;
+using MyDetectedEntityInfo = Sandbox.ModAPI.Ingame.MyDetectedEntityInfo;
+using MyDetectedEntityType = Sandbox.ModAPI.Ingame.MyDetectedEntityType;
 
 namespace RadarTech;
 
@@ -38,245 +40,225 @@ internal sealed class Reading
 	/// <summary>Metres per second, positive while you're getting closer.</summary>
 	public double Closing;
 
+	/// <summary>How far this reading reached (the camera's charge can make it shorter than the range setting).</summary>
 	public double RangeMetres;
 
-	public bool Hit => Kind != TargetKind.Nothing;
+	/// <summary>Why there's no measurement at all ("Needs a camera", "Charging..."); null for a real reading.</summary>
+	public string Note;
+
+	public bool Hit => Note == null && Kind != TargetKind.Nothing;
 }
 
 /// <summary>
-/// Measures along the crosshair, the way a camera block's raycast does: the game's physics ray for grids, characters
-/// and nearby voxels, then the voxel shapes themselves for asteroids and planets further out. Only the first thing
-/// the line meets counts, so it never sees through rock or a ship, and only entities already loaded on this PC can
-/// be hit. The voxel part runs on a background thread.
+/// Measures with a camera block's own raycast (IMyCameraBlock.Raycast), so the game's camera rules apply exactly as
+/// for a programmable block script: the camera must be working and on, the line must be inside its cone, and every
+/// reading spends the camera's charge (about 2 km of range per second). Only what the raycast reports is used: the
+/// kind of thing hit, where, and how fast it moves; never names, owners or factions.
+///
+/// Which camera: the one you're looking through, or in a cockpit a camera on your ship whose cone covers the ship's
+/// aim (the best-aligned one). It must be a block you have access to and within the server's reach rule. Where a
+/// world has in-game scripts switched off, nothing measures: vanilla only lets scripts use a camera's raycast.
 /// </summary>
 internal static class Rangefinder
 {
-	private const int MaxPlanetSteps = 5000;
-
-	private static readonly List<MyPhysics.HitInfo> s_hits = new List<MyPhysics.HitInfo>();
-
-	private static readonly List<MyLineSegmentOverlapResult<MyVoxelBase>> s_overlaps = new List<MyLineSegmentOverlapResult<MyVoxelBase>>();
-
-	private static readonly HashSet<long> s_ignore = new HashSet<long>();
+	/// <summary>A reading shorter than this isn't worth the charge; Radar waits for the camera instead.</summary>
+	private const double MinScan = 50;
 
 	private static readonly List<IMyCubeGrid> s_group = new List<IMyCubeGrid>();
 
-	public static bool Busy { get; private set; }
+	private static readonly List<IMySlimBlock> s_blocks = new List<IMySlimBlock>();
 
-	/// <summary>Starts a measurement; done runs on the game thread. False if one is already running or there's no camera.</summary>
-	public static bool Start(double rangeMetres, Action<Reading> done)
+	/// <summary>Cameras Radar switched raycasting on for, so it can switch them back off.</summary>
+	private static readonly HashSet<IMyCameraBlock> s_enabled = new HashSet<IMyCameraBlock>();
+
+	/// <summary>
+	/// Takes one measurement now and hands it to done. The readout waits until the camera has charge for the full
+	/// range (false, done not called, so the last reading stays up); a ping uses whatever charge there is.
+	/// </summary>
+	public static bool Start(double rangeMetres, bool ping, Action<Reading> done)
 	{
-		if (Busy || MyAPIGateway.Session?.Camera == null)
+		Reading reading = Measure(rangeMetres, ping, out bool wait);
+		if (wait && s_shownOnce && !ping)
 		{
 			return false;
 		}
-		MatrixD view = MyAPIGateway.Session.Camera.WorldMatrix;
-		Vector3D from = view.Translation;
-		Vector3D dir = view.Forward;
-		IMyEntity self = MyAPIGateway.Session.IsCameraUserControlledSpectator ? null : MyAPIGateway.Session.ControlledObject?.Entity;
-		IMyEntity selfTop = self?.GetTopMostParent();
-		Vector3D origin = self?.GetPosition() ?? from;
-		if (self is IMyShipController && !(MyAPIGateway.Session.CameraController is IMyCameraBlock))
-		{
-			// In a cockpit, along the ship's aim: the game's ship reticle marks the cockpit's forward (MyShipController.DrawHud),
-			// which in third person or free look isn't the middle of the screen.
-			from = origin;
-			dir = self.WorldMatrix.Forward;
-		}
-		// In third person on foot the camera sits behind you: reach far enough that the range still counts from you.
-		double length = rangeMetres + Vector3D.Distance(from, origin);
-		Vector3D to = from + dir * length;
-
-		s_ignore.Clear();
-		if (selfTop is IMyCubeGrid grid)
-		{
-			s_group.Clear();
-			MyAPIGateway.GridGroups.GetGroup(grid, GridLinkTypeEnum.Physical, s_group);
-			foreach (IMyCubeGrid g in s_group)
-			{
-				s_ignore.Add(g.EntityId);
-			}
-			s_ignore.Add(grid.EntityId);
-		}
-		else if (selfTop != null)
-		{
-			s_ignore.Add(selfTop.EntityId);
-		}
-		IMyCharacter character = MyAPIGateway.Session.Player?.Character;
-		if (character != null)
-		{
-			s_ignore.Add(character.EntityId);
-		}
-
-		// Physics first, on the game thread: grids, characters, loose objects, and voxels close enough to have physics.
-		double best = length;
-		IMyEntity bestEntity = null;
-		s_hits.Clear();
-		MyPhysics.CastRay(from, to, s_hits);
-		foreach (MyPhysics.HitInfo hit in s_hits)
-		{
-			IMyEntity top = hit.HkHitInfo.GetHitEntity()?.GetTopMostParent();
-			if (top == null || s_ignore.Contains(top.EntityId))
-			{
-				continue;
-			}
-			double d = Vector3D.Distance(from, hit.Position);
-			if (d < best)
-			{
-				best = d;
-				bestEntity = top;
-			}
-		}
-
-		// Then the voxel shapes, which reach asteroids and planets beyond physics range.
-		LineD ray = new LineD(from, from + dir * best);
-		s_overlaps.Clear();
-		MyGamePruningStructure.GetVoxelMapsOverlappingRay(ref ray, s_overlaps);
-		List<MyVoxelBase> voxels = new List<MyVoxelBase>();
-		foreach (MyLineSegmentOverlapResult<MyVoxelBase> overlap in s_overlaps)
-		{
-			MyVoxelBase root = overlap.Element?.RootVoxel;
-			if (root != null && !root.MarkedForClose && root.Storage != null && !voxels.Contains(root))
-			{
-				voxels.Add(root);
-			}
-		}
-
-		double physicsBest = best;
-		MyVoxelBase voxelHit = null;
-		Busy = true;
-		MyAPIGateway.Parallel.StartBackground(() =>
-		{
-			foreach (MyVoxelBase voxel in voxels)
-			{
-				try
-				{
-					double? d = voxel is MyPlanet planet ? TracePlanet(planet, from, dir, best) : TraceVoxel(voxel, from, dir, best);
-					if (d.HasValue && d.Value < best)
-					{
-						best = d.Value;
-						voxelHit = voxel;
-					}
-				}
-				catch (Exception ex)
-				{
-					MyLog.Default.WriteLineAndConsole($"[Radar Tech] Voxel trace: {ex.Message}");
-				}
-			}
-		}, () =>
-		{
-			Busy = false;
-			try
-			{
-				IMyEntity target = voxelHit != null && best < physicsBest ? voxelHit : bestEntity;
-				Reading reading = new Reading { RangeMetres = rangeMetres };
-				if (target != null)
-				{
-					Vector3D point = from + dir * best;
-					reading.Distance = Vector3D.Distance(origin, point);
-					reading.Kind = KindOf(target);
-					if (reading.Distance > rangeMetres)
-					{
-						reading.Kind = TargetKind.Nothing;
-					}
-					else
-					{
-						Vector3D toward = Vector3D.Normalize(point - origin);
-						Vector3D mine = selfTop?.Physics?.LinearVelocity ?? Vector3D.Zero;
-						Vector3D theirs = target.Physics?.LinearVelocity ?? Vector3D.Zero;
-						reading.Closing = Vector3D.Dot(mine - theirs, toward);
-					}
-				}
-				done(reading);
-			}
-			catch (Exception ex)
-			{
-				MyLog.Default.WriteLineAndConsole($"[Radar Tech] Reading: {ex}");
-			}
-		});
+		s_shownOnce = true;
+		done(reading);
 		return true;
 	}
 
-	/// <summary>An asteroid (or any voxel map that isn't a planet): the exact voxel surface, within its box.</summary>
-	private static double? TraceVoxel(MyVoxelBase voxel, Vector3D from, Vector3D dir, double maxLength)
+	private static bool s_shownOnce;
+
+	/// <summary>Switches raycasting back off on every camera Radar switched it on for (on unload).</summary>
+	public static void Release()
 	{
-		BoundingBoxD box = voxel.PositionComp.WorldAABB;
-		double? enter = box.Contains(from) == ContainmentType.Contains ? 0 : box.Intersects(new RayD(from, dir));
-		if (!enter.HasValue || enter.Value > maxLength)
+		foreach (IMyCameraBlock camera in s_enabled)
 		{
-			return null;
+			try
+			{
+				if (camera != null && !camera.Closed)
+				{
+					camera.EnableRaycast = false;
+				}
+			}
+			catch
+			{
+			}
 		}
-		// Only the part of the line inside the box, so the cell walk stays short.
-		double leave = Math.Min(maxLength, enter.Value + box.Size.Length());
-		LineD inside = new LineD(from + dir * enter.Value, from + dir * leave);
-		if (voxel.GetIntersectionWithLine(ref inside, out MyIntersectionResultLineTriangleEx? hit, IntersectionFlags.DIRECT_TRIANGLES) && hit.HasValue)
-		{
-			return Vector3D.Distance(from, hit.Value.IntersectionPointInWorldSpace);
-		}
-		return null;
+		s_enabled.Clear();
+		s_shownOnce = false;
 	}
 
-	/// <summary>
-	/// A planet: steps along the line by half the height above the ground until it's at or below the surface, then
-	/// finds the exact voxel surface on that short stretch. Walking a planet's whole shape cell by cell would take far
-	/// too long over kilometres.
-	/// </summary>
-	private static double? TracePlanet(MyPlanet planet, Vector3D from, Vector3D dir, double maxLength)
+	private static Reading Measure(double rangeMetres, bool ping, out bool wait)
 	{
-		Vector3D centre = planet.PositionComp.GetPosition();
-		double radius = planet.MaximumRadius;
-		double t;
-		if (Vector3D.DistanceSquared(from, centre) <= radius * radius)
+		wait = false;
+		Reading reading = new Reading { RangeMetres = rangeMetres };
+		if (MyAPIGateway.Session?.SessionSettings != null && !MyAPIGateway.Session.SessionSettings.EnableIngameScripts)
 		{
-			t = 0;
+			reading.Note = "Off: this world has in-game scripts switched off";
+			return reading;
+		}
+		IMyEntity self = MyAPIGateway.Session?.ControlledObject?.Entity;
+		IMyCameraBlock camera = MyAPIGateway.Session?.CameraController as IMyCameraBlock;
+		Vector3D dir;
+		Vector3D origin;
+		if (camera != null)
+		{
+			if (!Usable(camera))
+			{
+				reading.Note = "Needs a camera: this one is off, out of reach or not yours";
+				return reading;
+			}
+			dir = camera.WorldMatrix.Forward;
+			origin = camera.WorldMatrix.Translation;
+		}
+		else if (self is IMyShipController controller)
+		{
+			dir = controller.WorldMatrix.Forward;
+			origin = controller.GetPosition();
+			camera = CameraFor(controller, dir);
+			if (camera == null)
+			{
+				reading.Note = "Needs a camera: none on this ship faces where it points";
+				return reading;
+			}
 		}
 		else
 		{
-			double? enter = new BoundingSphereD(centre, radius).Intersects(new RayD(from, dir));
-			if (!enter.HasValue || enter.Value > maxLength)
-			{
-				return null;
-			}
-			t = enter.Value;
+			reading.Note = "Needs a camera: look through one, or sit in a ship that has one";
+			return reading;
 		}
-		double last = t;
-		for (int step = 0; step < MaxPlanetSteps && t <= maxLength; step++)
+
+		if (!camera.EnableRaycast)
 		{
-			Vector3D point = from + dir * t;
-			Vector3D up = point - centre;
-			double height = up.Length();
-			if (height > radius + 1 && Vector3D.Dot(up, dir) > 0)
-			{
-				return null;
-			}
-			Vector3D surface = planet.GetClosestSurfacePointGlobal(ref point);
-			double altitude = height - (surface - centre).Length();
-			if (altitude <= 0.5)
-			{
-				double a = Math.Max(0, last - 1);
-				double b = Math.Min(maxLength, t + 30);
-				LineD stretch = new LineD(from + dir * a, from + dir * b);
-				if (planet.GetIntersectionWithLine(ref stretch, out MyIntersectionResultLineTriangleEx? hit, IntersectionFlags.DIRECT_TRIANGLES) && hit.HasValue)
-				{
-					return Vector3D.Distance(from, hit.Value.IntersectionPointInWorldSpace);
-				}
-				return t;
-			}
-			last = t;
-			t += Math.Max(altitude * 0.5, 1.0);
+			camera.EnableRaycast = true;
+			s_enabled.Add(camera);
 		}
-		return null;
+		double limit = camera.RaycastDistanceLimit;
+		double want = limit > 0 ? Math.Min(rangeMetres, limit) : rangeMetres;
+		double available = camera.AvailableScanRange;
+		double scan = ping ? Math.Min(want, available) : want;
+		if (available < scan || scan < MinScan)
+		{
+			int ms = camera.TimeUntilScan(want);
+			reading.Note = $"Charging the camera ({Math.Max(1, (ms + 999) / 1000)} s for {FormatDistance(want)})";
+			wait = true;
+			return reading;
+		}
+		reading.RangeMetres = scan;
+		Vector3D from = camera.WorldMatrix.Translation;
+		MyDetectedEntityInfo info = camera.Raycast(from + dir * scan);
+		if (info.IsEmpty() || !info.HitPosition.HasValue)
+		{
+			return reading;
+		}
+		Vector3D point = info.HitPosition.Value;
+		IMyEntity hitEntity = MyAPIGateway.Entities.GetEntityById(info.EntityId);
+		IMyEntity selfTop = self?.GetTopMostParent() ?? camera.CubeGrid;
+		if (hitEntity is IMyCubeGrid hitGrid && SameShip(hitGrid, camera.CubeGrid))
+		{
+			reading.Note = "Your own ship is in front of the camera";
+			return reading;
+		}
+		reading.Kind = KindOf(info, hitEntity);
+		reading.Distance = Vector3D.Distance(origin, point);
+		Vector3D toward = Vector3D.Normalize(point - origin);
+		Vector3D mine = camera.CubeGrid?.Physics?.LinearVelocity ?? selfTop?.Physics?.LinearVelocity ?? Vector3D.Zero;
+		reading.Closing = Vector3D.Dot(mine - (Vector3D)info.Velocity, toward);
+		return reading;
 	}
 
-	private static TargetKind KindOf(IMyEntity entity)
+	/// <summary>A camera you could use for a script: working, on, yours or shared with you, and in reach.</summary>
+	private static bool Usable(IMyCameraBlock camera)
 	{
-		switch (entity)
+		return camera != null && !camera.Closed && camera.IsFunctional && camera.Enabled && camera.IsWorking && camera.HasLocalPlayerAccess() && Reach.InReach(camera.CubeGrid);
+	}
+
+	/// <summary>The camera on the ship (rotors and pistons included, not docked ships) whose cone covers the aim best.</summary>
+	private static IMyCameraBlock CameraFor(IMyShipController controller, Vector3D dir)
+	{
+		s_group.Clear();
+		MyAPIGateway.GridGroups.GetGroup(controller.CubeGrid, GridLinkTypeEnum.Mechanical, s_group);
+		if (!s_group.Contains(controller.CubeGrid))
 		{
-		case MyVoxelBase voxel:
-			return voxel.RootVoxel is MyPlanet ? TargetKind.Planet : TargetKind.Asteroid;
-		case IMyCubeGrid grid:
-			return grid.IsStatic ? TargetKind.Station : grid.GridSizeEnum == MyCubeSize.Large ? TargetKind.LargeShip : TargetKind.SmallShip;
-		case IMyCharacter _:
+			s_group.Add(controller.CubeGrid);
+		}
+		IMyCameraBlock best = null;
+		double bestDot = -2;
+		foreach (IMyCubeGrid grid in s_group)
+		{
+			s_blocks.Clear();
+			grid.GetBlocks(s_blocks, b => b.FatBlock is IMyCameraBlock);
+			foreach (IMySlimBlock slim in s_blocks)
+			{
+				IMyCameraBlock camera = (IMyCameraBlock)slim.FatBlock;
+				if (!Usable(camera))
+				{
+					continue;
+				}
+				Vector3D target = camera.WorldMatrix.Translation + dir * 1000;
+				if (!((Sandbox.Game.Entities.MyCameraBlock)camera).CheckAngleLimits(Vector3D.Normalize(target - camera.WorldMatrix.Translation)))
+				{
+					continue;
+				}
+				double dot = Vector3D.Dot(camera.WorldMatrix.Forward, dir);
+				if (dot > bestDot)
+				{
+					bestDot = dot;
+					best = camera;
+				}
+			}
+		}
+		s_blocks.Clear();
+		return best;
+	}
+
+	private static bool SameShip(IMyCubeGrid hit, IMyCubeGrid own)
+	{
+		if (own == null)
+		{
+			return false;
+		}
+		s_group.Clear();
+		MyAPIGateway.GridGroups.GetGroup(own, GridLinkTypeEnum.Physical, s_group);
+		return hit.EntityId == own.EntityId || s_group.Exists(g => g.EntityId == hit.EntityId);
+	}
+
+	/// <summary>The kind, from what the raycast reports (a station is a large grid this PC shows as static).</summary>
+	private static TargetKind KindOf(MyDetectedEntityInfo info, IMyEntity entity)
+	{
+		switch (info.Type)
+		{
+		case MyDetectedEntityType.Asteroid:
+			return TargetKind.Asteroid;
+		case MyDetectedEntityType.Planet:
+			return TargetKind.Planet;
+		case MyDetectedEntityType.LargeGrid:
+			return entity is IMyCubeGrid grid && grid.IsStatic ? TargetKind.Station : TargetKind.LargeShip;
+		case MyDetectedEntityType.SmallGrid:
+			return TargetKind.SmallShip;
+		case MyDetectedEntityType.CharacterHuman:
+		case MyDetectedEntityType.CharacterOther:
 			return TargetKind.Character;
 		default:
 			return TargetKind.Object;
@@ -327,6 +309,10 @@ internal static class Rangefinder
 	/// <summary>"Asteroid 4.21 km, closing 85 m/s, 0:49 to contact", or "Nothing within 20 km".</summary>
 	public static string Describe(Reading reading, bool closing)
 	{
+		if (reading.Note != null)
+		{
+			return reading.Note;
+		}
 		if (!reading.Hit)
 		{
 			return $"Nothing within {FormatDistance(reading.RangeMetres)}";

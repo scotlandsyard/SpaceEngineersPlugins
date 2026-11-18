@@ -57,6 +57,7 @@ namespace RadarTechScript
         int nextCamera;
         int refreshTicks;
         string setupError = "";
+        string settingsError = "";
 
         // The last reading
         bool hasReading;
@@ -120,7 +121,8 @@ namespace RadarTechScript
         void LoadSettings()
         {
             MyIniParseResult result;
-            if (!ini.TryParse(Me.CustomData, out result)) { setupError = "Custom Data: " + result.ToString(); return; }
+            settingsError = "";
+            if (!ini.TryParse(Me.CustomData, out result)) { settingsError = "Custom Data: " + result.ToString(); return; }
             tag = ini.Get(Section, "Tag").ToString(tag);
             rangeKm = ini.Get(Section, "RangeKm").ToDouble(rangeKm);
             screenIndex = ini.Get(Section, "CockpitScreen").ToInt32(screenIndex);
@@ -131,6 +133,8 @@ namespace RadarTechScript
 
         void SaveSettings()
         {
+            // Never write over Custom Data that didn't parse: the player's text would be lost.
+            if (settingsError != "") return;
             ini.Set(Section, "Tag", tag);
             ini.Set(Section, "RangeKm", rangeKm);
             ini.Set(Section, "CockpitScreen", screenIndex);
@@ -171,7 +175,7 @@ namespace RadarTechScript
             }
             lastText = "";
             warnLevel = -1;
-            setupError = cameras.Count == 0 ? "No camera with " + tag + " in its name." : "";
+            setupError = settingsError != "" ? settingsError : cameras.Count == 0 ? "No camera with " + tag + " in its name." : "";
         }
 
         /// <summary>One reading from the next camera that has charge for the whole range.</summary>

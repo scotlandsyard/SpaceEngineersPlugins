@@ -28,7 +28,7 @@ public class RadarTechSession : MySessionComponentBase
 
 	private const string ActionPrefix = "RadarTech_";
 
-	/// <summary>The readout measures every this many ticks (six times a second).</summary>
+	/// <summary>The readout tries a measurement every this many ticks; it waits for the camera's charge.</summary>
 	private const int ReadoutTicks = 10;
 
 	/// <summary>How long a ping's answer stays under the crosshair.</summary>
@@ -107,6 +107,8 @@ public class RadarTechSession : MySessionComponentBase
 		{
 			MyLog.Default.WriteLineAndConsole($"[Radar Tech] Unload: {ex}");
 		}
+		Rangefinder.Release();
+		Reach.Clear();
 		Hud.Close();
 		_actions.Clear();
 		Last = null;
@@ -132,12 +134,12 @@ public class RadarTechSession : MySessionComponentBase
 				Hud.Close();
 			}
 			bool due = s_pingPending || Settings.Readout && ++_tick >= ReadoutTicks;
-			if (due && !Rangefinder.Busy)
+			if (due)
 			{
 				_tick = 0;
 				bool ping = s_pingPending;
 				s_pingPending = false;
-				Rangefinder.Start(Settings.EffectiveKm * 1000, reading => Show(reading, ping));
+				Rangefinder.Start(Settings.EffectiveKm * 1000, ping, reading => Show(reading, ping));
 			}
 			Hud.Update();
 		}
@@ -157,7 +159,11 @@ public class RadarTechSession : MySessionComponentBase
 		if (ping)
 		{
 			s_pingTicksLeft = PingTicks;
-			if (reading.Hit)
+			if (reading.Note != null)
+			{
+				MyAPIGateway.Utilities.ShowNotification("Radar Tech: " + reading.Note, 3000);
+			}
+			else if (reading.Hit)
 			{
 				Personality.Say("ping_hit", "target", Rangefinder.KindName(reading.Kind), "distance", Rangefinder.FormatDistance(reading.Distance));
 			}
