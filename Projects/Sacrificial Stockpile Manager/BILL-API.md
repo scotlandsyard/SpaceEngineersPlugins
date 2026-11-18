@@ -28,7 +28,7 @@ SSM answers synchronously: if no `ssm-here` arrives during your `SendModMessage(
 | `version` | 1 |
 | `blockId` | `EntityId` of the block to stock: any of the player's blocks with an inventory |
 | `items` | Item ids as `MyDefinitionId.ToString()` gives them, e.g. `MyObjectBuilder_Component/SteelPlate`. The short form SSM uses, `Component/SteelPlate`, works too |
-| `amounts` | How many of each, same order and length as `items`. Values of 0 or less are dropped; the same item twice is added up |
+| `amounts` | How many of each, same order and length as `items`. Values of 0 or less, and values that aren't finite, are dropped; the same item twice is added up; an item is capped at 10,000,000 |
 | `mode` | `"once"` (Fill once: the minimums are cleared again once they're met) or `"keep"` (Keep stocked). Anything else means `"once"`. The player can change it in the preview |
 | `source` | A short label shown in the preview and the log, e.g. `"Tally: Hangar 3 bill"` (cut to 60 characters) |
 

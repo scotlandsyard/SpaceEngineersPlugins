@@ -86,6 +86,12 @@ internal static class ShepherdExport
 	/// A few seconds after an export to SHEPHERD before 1.0.21, puts back any [Categories] line a save of its own
 	/// dropped, and reloads it once more. Called on every refresh of a construct.
 	/// </summary>
+	/// <summary>Drops a follow-up that's still waiting, when the world unloads.</summary>
+	public static void Reset()
+	{
+		s_pending = null;
+	}
+
 	public static void CheckPending(Construct construct, double now)
 	{
 		Pending pending = s_pending;
@@ -95,7 +101,15 @@ internal static class ShepherdExport
 		}
 		s_pending = null;
 		MyIni ini = new MyIni();
-		if (pending.Block.Closed || !ini.TryParse(pending.Block.CustomData ?? ""))
+		long me = MyAPIGateway.Session?.Player?.IdentityId ?? 0;
+		// The follow-up write is a request like the export itself: the block must still be the player's, in reach,
+		// and SHEPHERD still allowed to run.
+		if (pending.Block.Closed || pending.Block.OwnerId != me || !ShepherdLink.ScriptsAllowed || !Reach.Check(construct, now))
+		{
+			construct.AddLog("SHEPHERD export: the check of its [Categories] lines was skipped (block gone, not yours or out of reach)");
+			return;
+		}
+		if (!ini.TryParse(pending.Block.CustomData ?? ""))
 		{
 			return;
 		}
@@ -128,6 +142,13 @@ internal static class ShepherdExport
 		if (plan.Block.OwnerId != me)
 		{
 			plan.Problem = $"{plan.Block.CustomName} isn't yours, so its Custom Data can't be written.";
+			return plan;
+		}
+		// Export only writes to the grid itself, never to a programmable block on a ship docked to it.
+		LiveBlock home = construct.Find(plan.Block.EntityId);
+		if (home != null && home.Unit != construct.CoreUnit)
+		{
+			plan.Problem = $"{plan.Block.CustomName} is on a docked ship. Undock that ship first, then export from its own Overview.";
 			return plan;
 		}
 		rules ??= new GridRules();

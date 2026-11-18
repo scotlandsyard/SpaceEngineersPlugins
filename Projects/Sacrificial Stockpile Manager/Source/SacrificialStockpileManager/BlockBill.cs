@@ -56,6 +56,12 @@ internal static class BlockBill
 
 	private static List<MyCubeBlockDefinition> s_blocks;
 
+	/// <summary>Drops the block list when the world unloads: the next world can have other mods.</summary>
+	public static void ResetCaches()
+	{
+		s_blocks = null;
+	}
+
 	/// <summary>Every public block with components (mod blocks included), by name.</summary>
 	public static List<MyCubeBlockDefinition> AllBlocks
 	{

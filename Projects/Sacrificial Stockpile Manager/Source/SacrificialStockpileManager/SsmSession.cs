@@ -159,6 +159,10 @@ public class SsmSession : MySessionComponentBase
 		Detach(PluginSwitcher.Unregister);
 		Detach(Personality.Unregister);
 		Detach(BillApi.Unregister);
+		Detach(ShepherdExport.Reset);
+		Detach(SsmScreen.ForgetOpen);
+		Detach(Items.ResetCaches);
+		Detach(BlockBill.ResetCaches);
 		if (_started)
 		{
 			// Only saved after a complete start, so a failed load can't overwrite the stored settings.
@@ -298,7 +302,7 @@ public class SsmSession : MySessionComponentBase
 				return null;
 			}
 			string notice = null;
-			string shepherd = construct.Shepherd?.RunUnloadShip(construct, Store.GridRules(construct.Snapshot), out notice);
+			string shepherd = construct.Shepherd?.RunUnloadShip(construct, Store.GridRules(construct.Snapshot), Now, out notice);
 			if (shepherd != null)
 			{
 				bool failed = shepherd.StartsWith("Not", StringComparison.Ordinal);

@@ -336,6 +336,13 @@ public partial class SsmScreen
 			{
 				return;
 			}
+			// The box can stay open a while: check reach and ownership again before anything is sent.
+			long me = MyAPIGateway.Session?.Player?.IdentityId ?? 0;
+			if (plan.Block.Closed || plan.Block.OwnerId != me || !ShepherdLink.ScriptsAllowed || !Reach.Check(live, SsmSession.Now))
+			{
+				ShowMessage("Not exported: the SHEPHERD block is gone, isn't yours any more, or is out of reach.", WarningColor);
+				return;
+			}
 			ShepherdExport.Apply(live, rules, plan);
 			TimShared.Personality.SayAs(SsmSession.ShepherdGuest, "export_done", "grid", grid.Name);
 			ShowMessage($"Exported to {plan.Block.CustomName}. Its status screen shows what it made of it; the Log view lists every change.", GoodColor);

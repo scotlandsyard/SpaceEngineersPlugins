@@ -45,6 +45,18 @@ internal static class Items
 
 	private static List<string> s_catalog;
 
+	/// <summary>Drops every definition cache when the world unloads: the next world can have other mods.</summary>
+	public static void ResetCaches()
+	{
+		s_names.Clear();
+		s_blueprints.Clear();
+		s_catalog = null;
+		s_offered = null;
+		s_refinedFrom = null;
+		s_assemblerMade = null;
+		s_refinable = null;
+	}
+
 	public static string Key(MyDefinitionId id)
 	{
 		if (!s_keys.TryGetValue(id, out string key))

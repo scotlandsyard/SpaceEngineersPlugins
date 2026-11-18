@@ -292,12 +292,19 @@ internal sealed class ShepherdLink
 	/// in the terminal), so it's run on every working SHEPHERD block, which only the leader acts on. Returns what to
 	/// tell the player, or null when Stockpile Manager should unload the ships itself.
 	/// </summary>
-	public string RunUnloadShip(Construct construct, GridRules rules, out string notice)
+	public string RunUnloadShip(Construct construct, GridRules rules, double now, out string notice)
 	{
 		notice = null;
-		if (!Active || !Handles(ShepherdJob.Sort, rules))
+		if (!Active || !Handles(ShepherdJob.Sort, rules) || !ScriptsAllowed)
 		{
 			return null;
+		}
+		// Run is a request the server checks for access, so nothing is sent for a grid out of reach.
+		if (!Reach.Check(construct, now))
+		{
+			construct.AddLog("Unload docked ships: SHEPHERD not run, " + (construct.ReachNote ?? "out of reach"));
+			notice = Notices.ShepherdNotRun();
+			return "Not unloaded: this grid is out of reach, so the server would refuse the Run. Come closer first.";
 		}
 		List<IMyProgrammableBlock> targets = new List<IMyProgrammableBlock>();
 		if (Health == null)
@@ -314,7 +321,7 @@ internal sealed class ShepherdLink
 			{
 				return null;
 			}
-			IMyProgrammableBlock leader = Leader != null ? FindLeader(Leader) : Block != null && !Block.Closed && Block.CustomName.Trim() == PanelName ? Block : null;
+			IMyProgrammableBlock leader = Leader != null ? FindLeader(Leader, now) : Block != null && !Block.Closed && Block.CustomName.Trim() == PanelName ? Block : null;
 			if (leader == null || !leader.IsWorking)
 			{
 				string missing = Leader != null ? $"its leader {Leader} isn't one of your loaded, working blocks" : $"{PanelName} isn't one of your working blocks on this grid";
@@ -342,13 +349,20 @@ internal sealed class ShepherdLink
 			: $"Ran {targets[0].CustomName} with unloadShip: SHEPHERD unloads the ships docked now, once, into its containers.";
 	}
 
-	/// <summary>The player's SHEPHERD block named "&lt;PB name&gt; on &lt;grid name&gt;", on any loaded construct (a working one first).</summary>
-	private static IMyProgrammableBlock FindLeader(string leader)
+	/// <summary>
+	/// The player's SHEPHERD block named "&lt;PB name&gt; on &lt;grid name&gt;", on any loaded construct in reach (a working
+	/// one first). A construct out of reach is skipped: the server would refuse the Run.
+	/// </summary>
+	private static IMyProgrammableBlock FindLeader(string leader, double now)
 	{
 		long me = MyAPIGateway.Session?.Player?.IdentityId ?? 0;
 		List<IMyProgrammableBlock> found = new List<IMyProgrammableBlock>();
 		foreach (Construct other in SsmSession.Instance?.Constructs ?? new List<Construct>())
 		{
+			if (!Reach.Check(other, now))
+			{
+				continue;
+			}
 			other.Terminal?.GetBlocksOfType(found, b => !b.Closed && b.OwnerId == me && ShepherdConfig.Looks(b.CustomData) && $"{b.CustomName.Trim()} on {b.CubeGrid.CustomName.Trim()}" == leader);
 			if (found.Count > 0)
 			{
@@ -388,6 +402,12 @@ internal sealed class ShepherdLink
 	/// </summary>
 	public static ShepherdLink Find(Construct construct, double now)
 	{
+		// With in-game scripts off no programmable block runs, so SHEPHERD is treated as absent: Stockpile Manager
+		// keeps every job and never sends it a Run request. (The scripter role only locks editing scripts, not running them.)
+		if (!ScriptsAllowed)
+		{
+			return null;
+		}
 		long me = MyAPIGateway.Session?.Player?.IdentityId ?? 0;
 		List<IMyProgrammableBlock> blocks = new List<IMyProgrammableBlock>();
 		construct.Terminal.GetBlocksOfType(blocks, b => !b.Closed && b.OwnerId == me && ShepherdConfig.Looks(b.CustomData) && HasScript(b));
@@ -430,6 +450,9 @@ internal sealed class ShepherdLink
 		link.FindUnits(construct);
 		return link;
 	}
+
+	/// <summary>False when the world has in-game scripts switched off.</summary>
+	public static bool ScriptsAllowed => MyAPIGateway.Session?.SessionSettings?.EnableIngameScripts != false;
 
 	/// <summary>A block that switched scripts keeps the old Custom Data; when the client has the script text, it must name SHEPHERD.</summary>
 	private static bool HasScript(IMyProgrammableBlock block)

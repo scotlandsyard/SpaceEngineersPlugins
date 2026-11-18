@@ -215,6 +215,7 @@ public partial class SsmScreen : MyGuiScreenBase
 				s_view = View.Displays;
 			}
 		}
+		s_current = this;
 		EnabledBackgroundFade = true;
 		m_closeOnEsc = true;
 		CanHideOthers = true;
@@ -227,8 +228,24 @@ public partial class SsmScreen : MyGuiScreenBase
 		return "SacrificialStockpileManagerScreen";
 	}
 
+	/// <summary>The Stockpile Manager window that opened last, until it closes.</summary>
+	private static SsmScreen s_current;
+
+	/// <summary>True while a Stockpile Manager window is open.</summary>
+	internal static bool IsOpen => s_current != null;
+
+	/// <summary>Forgets the open window when the world unloads.</summary>
+	internal static void ForgetOpen()
+	{
+		s_current = null;
+	}
+
 	protected override void OnClosed()
 	{
+		if (s_current == this)
+		{
+			s_current = null;
+		}
 		if (Session != null)
 		{
 			Session.ViewedKey = 0;

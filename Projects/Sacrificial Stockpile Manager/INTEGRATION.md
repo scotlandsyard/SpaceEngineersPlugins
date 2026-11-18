@@ -2,7 +2,7 @@
 
 [SHEPHERD](https://github.com/chrumck/SHEPHERD), built by chrumck, is an inventory script for a programmable block. Sacrificial Stockpile Manager (SSM) is a client plugin. Where SHEPHERD runs on a grid, SSM leaves SHEPHERD's jobs to it, shows its state, and can hand SSM's setup over to it. This file lists everything SSM relies on from SHEPHERD and everything SSM writes for it. SHEPHERD's side is its own [INTEGRATION.md](https://github.com/chrumck/SHEPHERD/blob/main/INTEGRATION.md): SSM relies only on its Part A (promised), and reads nothing from its Part B.
 
-SSM never uses IGC, never works out which SHEPHERD block leads, and never runs SHEPHERD except when the player presses Export (section 3).
+SSM never uses IGC, and runs SHEPHERD only when the player asks: `configReload` after Export (section 3) and `unloadShip` for Unload docked ships (A6). It sends nothing for a grid out of reach, and on a world with in-game scripts switched off it treats SHEPHERD as absent and never runs it.
 
 ## 1. What SSM reads
 

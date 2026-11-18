@@ -19,6 +19,9 @@ internal static class BillApi
 
 	public const int Version = 1;
 
+	/// <summary>The largest amount one bill line can ask for; more is cut to this.</summary>
+	private const double MaxAmount = 1e7;
+
 	private static bool s_registered;
 
 	public static void Register()
@@ -99,6 +102,10 @@ internal static class BillApi
 		catch (Exception)
 		{
 		}
+		if (SsmScreen.IsOpen)
+		{
+			return "The Stockpile Manager window is already open, so it's in the way. Close it and try again.";
+		}
 		if (parts.Length < 7 || items == null || amounts == null || items.Length != amounts.Length)
 		{
 			return "The bill is malformed: it needs matching item and amount lists.";
@@ -120,7 +127,8 @@ internal static class BillApi
 		for (int i = 0; i < items.Length; i++)
 		{
 			string raw = (items[i] ?? "").Trim();
-			if (amounts[i] <= 0.0 || raw.Length == 0)
+			// Only finite, sensible amounts: Infinity or NaN would become a minimum nothing can meet.
+			if (!(amounts[i] > 0.0) || double.IsInfinity(amounts[i]) || raw.Length == 0)
 			{
 				continue;
 			}
@@ -130,7 +138,7 @@ internal static class BillApi
 				continue;
 			}
 			bill.TryGetValue(key, out double amount);
-			bill[key] = amount + amounts[i];
+			bill[key] = Math.Min(MaxAmount, amount + Math.Min(MaxAmount, amounts[i]));
 		}
 		if (bill.Count == 0)
 		{
