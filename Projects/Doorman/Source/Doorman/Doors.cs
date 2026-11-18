@@ -149,7 +149,6 @@ internal static class Doors
 	public static void Reset()
 	{
 		s_grids.Clear();
-		Reach.Clear();
 		s_nextRescan = 0;
 		ClosesSent = 0;
 		// Play time starts again in another world: a start time left from the last one would hold every close back.
@@ -458,6 +457,12 @@ internal static class Doors
 		Personality.Say("door_closed", "door", door.Name, "grid", door.Grid.Name);
 	}
 
+	private static bool CharacterAlive()
+	{
+		IMyCharacter character = MyAPIGateway.Session?.Player?.Character;
+		return character != null && !character.Closed && !character.IsDead;
+	}
+
 	/// <summary>Why an open door is left as it is, or null if it gets closed after its delay.</summary>
 	internal static string SkipReason(Door door)
 	{
@@ -491,11 +496,11 @@ internal static class Doors
 		{
 			return "Open (off or no power)";
 		}
-		// The server refuses a close for a door out of reach (MyReplicableRightsValidator.GetAccess), so send none:
-		// nothing for grids beyond 15 m with no antenna link, and nothing while you're dead or respawning.
-		if (!Reach.InReachCached(block.CubeGrid, MyAPIGateway.Session?.ElapsedPlayTime.TotalSeconds ?? 0))
+		// Every door on a grid loaded on this PC (sync range), but nothing while you're dead or respawning: the server
+		// checks the request against your character, so without one every close would be refused.
+		if (MyAPIGateway.Multiplayer != null && !MyAPIGateway.Multiplayer.IsServer && !CharacterAlive())
 		{
-			return "Open (out of reach)";
+			return "Open (you're dead or respawning)";
 		}
 		return null;
 	}
