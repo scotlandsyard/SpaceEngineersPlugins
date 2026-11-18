@@ -20,8 +20,11 @@ internal static partial class PluginSwitcher
 {
 	private const string ToolboxPageName = "PageTimToolbox";
 
-	/// <summary>Tab key, well away from the game's own pages (0-6).</summary>
-	private const int ToolboxPageKey = 5524813;
+	/// <summary>
+	/// Key of the Toolbox page: the one after the game's own. Ctrl+Tab and the gamepad bumpers step through the
+	/// pages with (key ± 1) % count and look the result up, so the keys must stay 0..count-1.
+	/// </summary>
+	private static int s_pageKey = -1;
 
 	private const float RowHeight = 0.052f;
 
@@ -112,19 +115,23 @@ internal static partial class PluginSwitcher
 
 	private static void AddToolboxPage(MyGuiScreenBase screen, MyGuiControlTabControl tabs)
 	{
-		if (tabs.Pages.Any(p => p.PageKey == ToolboxPageKey))
+		int before = tabs.PagesCount;
+		List<int> keys = tabs.Pages.Select(p => p.PageKey).OrderBy(k => k).ToList();
+		// Only when the game's pages are numbered 0..N-1, so the new page N keeps tab cycling working.
+		if (before == 0 || keys.Where((k, i) => k != i).Any())
 		{
+			DisableToolbox("the terminal's tabs aren't numbered 0.." + (before - 1) + " (" + string.Join(",", keys) + ")");
 			return;
 		}
+		s_pageKey = before;
 		float buttonScale = tabs.TabButtonScale;
-		int before = Math.Max(1, tabs.PagesCount);
-		MyGuiControlTabPage page = tabs.GetTabSubControl(ToolboxPageKey);
+		MyGuiControlTabPage page = tabs.GetTabSubControl(s_pageKey);
 		page.Name = ToolboxPageName;
 		page.Text = new StringBuilder("Toolbox");
 		page.TextScale = 0.7005405f;
 		// Narrower tab buttons, so the row of tabs keeps the width it had without this one.
 		tabs.TabButtonScale = buttonScale * before / (before + 1);
-		page.Visible = tabs.SelectedPage == ToolboxPageKey;
+		page.Visible = tabs.SelectedPage == s_pageKey;
 		FillToolboxPage(screen, page);
 	}
 

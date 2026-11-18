@@ -91,17 +91,20 @@ internal static partial class PluginSwitcher
 		catch (Exception ex)
 		{
 			MyLog.Default.WriteLineAndConsole($"[{displayName}] Plugin switcher: {ex.Message}");
+			try
+			{
+				ToolboxDetach();
+			}
+			catch
+			{
+			}
 		}
 	}
 
 	/// <summary>Call when the session unloads (UnloadData).</summary>
 	public static void Unregister()
 	{
-		if (!s_registered)
-		{
-			return;
-		}
-		s_registered = false;
+		// Before the check: Register subscribes the Toolbox first, so a Register that failed later still unhooks it.
 		try
 		{
 			ToolboxDetach();
@@ -109,6 +112,11 @@ internal static partial class PluginSwitcher
 		catch
 		{
 		}
+		if (!s_registered)
+		{
+			return;
+		}
+		s_registered = false;
 		try
 		{
 			Send("bye");
