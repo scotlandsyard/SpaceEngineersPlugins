@@ -47,9 +47,12 @@ internal static class Reach
 		s_cache.Clear();
 	}
 
+	/// <summary>For automated tests: apply the rule in a single-player world too, where nobody checks it.</summary>
+	internal static bool CheckOffline { get; set; }
+
 	public static bool InReach(IMyCubeGrid grid)
 	{
-		if (MyAPIGateway.Multiplayer == null || MyAPIGateway.Multiplayer.IsServer || grid == null)
+		if (grid == null || (!CheckOffline && (MyAPIGateway.Multiplayer == null || MyAPIGateway.Multiplayer.IsServer)))
 		{
 			return true;
 		}
