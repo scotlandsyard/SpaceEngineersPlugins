@@ -1755,7 +1755,7 @@ public class FatAlbertScreen : MyGuiScreenBase
 		"ARTIFICIAL MASS\n" +
 		"Working Artificial Mass blocks and Space Balls pull down in a planet's gravity (since Warfare 3), so their mass is added to the ship's weight. Switch them off to leave it out.\n\n" +
 		"OPENING IT\n" +
-		"/fat in chat, the Fat Albert action on a cockpit's toolbar, or the plugin list at the top left of any of our plugins' windows.\n\n" +
+		"/fat in chat, the Fat Albert action on a cockpit's toolbar, Open next to Fat Albert in the Toolbox tab of the terminal (K or I), or the plugin list at the top left of any of our plugins' windows. /tim in chat opens whichever of our windows you used last. Esc closes the window; only one of our plugin windows is open at a time.\n\n" +
 		"PARACHUTES\n" +
 		"With Parachutes ticked, a landing on a planet with air opens every parachute that has its canopy material (canvas) on board, using the game's own drag formula at sea level. The ship comes down at the parachutes' speed instead of the speed limit, so the braking burn is shorter, and the parachutes keep pulling while it brakes. If they alone get it down to 5 m/s or less, it lands even when the thrusters couldn't hold it up (lifting off again is another matter). Parachutes need air at least as thick as their opening level (0.2 for vanilla ones).\n\n" +
 		"HUD OVERLAY\n" +

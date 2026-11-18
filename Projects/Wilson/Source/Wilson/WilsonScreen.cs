@@ -536,7 +536,9 @@ public class WilsonScreen : MyGuiScreenBase
 	}
 
 	private const string HelpText =
-		"Wilson is the neighbour over the fence. His job is keeping the rest of the family in order: with any of BaR Maid, Fat Albert, Sacrificial Stockpile Manager, Script to Plugin or OreScout loaded, their chat lines go through him. When something happens, the plugin tells Wilson, and he decides who speaks: usually the plugin itself, with one of its own lines, and now and then a short exchange between several characters, one line every few seconds. Every character's name has its own colour in chat. Only you see any of it; nothing goes to the server or other players.\n\n" +
+		"Wilson is the neighbour over the fence. His job is keeping the rest of the family in order: with any of our other plugins loaded (BaR Maid, Fat Albert, Sacrificial Stockpile Manager, Script to Plugin, OreScout, Quiet Skies, Drill Sergeant, Radar Tech, Digby, Doorman, Tripwire, Tally and Hush), their chat lines go through him. When something happens, the plugin tells Wilson, and he decides who speaks: usually the plugin itself, with one of its own lines, and now and then a short exchange between several characters, one line every few seconds. Every character's name has its own colour in chat. Only you see any of it; nothing goes to the server or other players.\n\n" +
+		"GUEST VOICES\n" +
+		"Some plugins bring a second voice that only speaks in exchanges. Sacrificial Stockpile Manager's is Shepherd (SSM), the voice of its link to the SHEPHERD sorting script. A guest has no roll call, chat command or window of its own, and follows its plugin's chat setting.\n\n" +
 		"ONE TURN PER CYCLE\n" +
 		"A turn is one character's line or one short exchange. After a turn, nobody says an ordinary line until the cycle is over: 2 minutes on Chatty, 5 on Normal, 15 on Quiet. Important moments (a starved assembler, a ship too heavy to lift, a crashed script, full containers) can break in, but never within 30 seconds of the last line. A character isn't asked about the same event again for 10 minutes, the same exchange doesn't come round again for 30, and each character also keeps to its own setting's cycle. The plugins keep the same rhythm when Wilson isn't loaded.\n\n" +
 		"ROLL CALL\n" +
@@ -556,7 +558,7 @@ public class WilsonScreen : MyGuiScreenBase
 		"CHAT COMMANDS\n" +
 		"/wilson opens this window. /wilson off, /wilson quiet, /wilson normal or /wilson chatty sets his setting. /wilson try plays a random exchange now, with made-up names and numbers, ignoring the timers. /wilson rollcall calls the roll again.\n\n" +
 		"WINDOW\n" +
-		"Crew (above) is the main page. Decision log shows what Wilson decided about the latest events: who spoke, which exchange played, and why something passed. Find on either page shortens the list when you've lost track of somebody; Rename and Chat leave a character alone while Find hides its row. Try an exchange and Roll call play one right away. The dropdown at the top left switches to another of the family's windows; the one at the top right is Wilson's setting.\n\n" +
+		"Crew (above) is the main page. Decision log shows what Wilson decided about the latest events: who spoke, which exchange played, and why something passed. Find on either page shortens the list when you've lost track of somebody; Rename and Chat leave a character alone while Find hides its row. Try an exchange and Roll call play one right away. The dropdown at the top left switches to another of the family's windows; the one at the top right is Wilson's setting. The Toolbox tab in the terminal (K or I) also lists our loaded plugins with an Open button. Esc closes the window, and only one of our plugin windows is open at a time.\n\n" +
 		"SETTINGS FILE\n" +
 		"Wilson's setting and the names for Wilson and Tim are kept in Wilson_Settings.txt in the game's local storage for plugins.";
 }

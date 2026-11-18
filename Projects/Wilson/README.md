@@ -1,6 +1,6 @@
 # Wilson
 
-A client-side Pulsar plugin: **the neighbour over the fence**. Wilson directs the chat personalities of the rest of the family (BaR Maid, Fat Albert, Sacrificial Stockpile Manager, Script to Plugin and OreScout), and has a few words of his own.
+A client-side Pulsar plugin: **the neighbour over the fence**. Wilson directs the chat personalities of the rest of the family (BaR Maid, Fat Albert, Sacrificial Stockpile Manager, Script to Plugin, OreScout, Quiet Skies, Drill Sergeant, Radar Tech, Digby, Doorman, Tripwire, Tally and Hush, plus Sacrificial Stockpile Manager's second voice, Shepherd (SSM)), and has a few words of his own.
 
 Without Wilson, each plugin says its own lines in chat. With Wilson loaded, the plugins tell him when something happens and he decides who speaks: usually the plugin itself, and now and then a short written exchange between several characters, one line every few seconds. Every character's name has its own colour in chat. Chat lines only show on your own screen, so it's fine on any server.
 
@@ -14,7 +14,7 @@ Without Wilson, each plugin says its own lines in chat. With Wilson loaded, the 
 
 | Moment | With Wilson |
 |---|---|
-| World load | About ten seconds in, Wilson calls the roll. Each loaded character answers once, saying how to call it up (`/barmaid`, `/fat`, `/ssm`, `/stp`, `/scout`), and Wilson wraps up with `/wilson`. Nobody greets separately any more. |
+| World load | About ten seconds in, Wilson calls the roll. Each loaded character answers once, saying how to call it up (`/barmaid`, `/fat`, `/ssm`, `/stp`, `/scout` and so on), and Wilson wraps up with `/wilson`. Nobody greets separately any more. |
 | A plugin's event (BaR Maid runs short of an item, Fat Albert's ship is too heavy, OreScout finds rare ore...) | If it's that character's turn, Wilson either asks it to say one of its own lines, or plays an exchange written for that event when every character in it is loaded. |
 | An exchange ends in an argument | Sometimes Wilson steps in with a line to calm things down. |
 | A long quiet spell | Now and then, Wilson shares one of his odd proverbs. |
