@@ -35,8 +35,17 @@ public partial class SsmScreen : MyGuiScreenBase
 		Help
 	}
 
+	/// <summary>
+	/// The name of the view that fills a crate with the parts to build some blocks (View.Bill): the View list, the
+	/// Block settings button, Help and the log use it. Change it here only.
+	/// </summary>
+	internal const string BuildKitName = "Build kit";
+
+	/// <summary><see cref="BuildKitName"/> in a sentence.</summary>
+	internal const string BuildKitLower = "build kit";
+
 	// In the same order as View.
-	private static readonly string[] ViewNames = { "All grids", "Overview", "Items & quotas", "Blocks", "Block settings", "Block materials", "Block type limits", "Production","Production details", "Refinery priority", "Displays (LCD)", "Log", "Help" };
+	private static readonly string[] ViewNames = { "All grids", "Overview", "Items & quotas", "Blocks", "Block settings", BuildKitName, "Block type limits", "Production","Production details", "Refinery priority", "Displays (LCD)", "Log", "Help" };
 
 	// In the same order as BlockRole.
 	private static readonly string[] RoleNames = { "Auto", "Storage", "Intake", "Stock", "Manual" };
@@ -325,7 +334,7 @@ public partial class SsmScreen : MyGuiScreenBase
 			CreateAllGridsControls();
 			tableTop = -0.29f;
 		}
-		else if (s_view == View.Blocks)
+		else if (HasBlockFind(s_view))
 		{
 			CreateBlocksControls();
 			tableTop = -0.29f;
@@ -458,7 +467,7 @@ public partial class SsmScreen : MyGuiScreenBase
 			AddButton(-0.315f, "Set minimum", () => SetLimit(minimum: true));
 			AddButton(-0.105f, "Set maximum", () => SetLimit(minimum: false));
 			AddButton(0.105f, "Clear limits", ClearLimits);
-			AddButton(0.315f, "Add block materials", () => OpenBillFor(s_blockId));
+			AddButton(0.315f, BuildKitName, () => OpenBillFor(s_blockId));
 			break;
 		case View.Bill:
 			AddButton(-0.315f, "Remove", RemoveBillRow);
@@ -1021,7 +1030,7 @@ public partial class SsmScreen : MyGuiScreenBase
 		case View.Items:
 			return "Pick an item, type an amount: Set quota to keep at least that many (autocraft), Set maximum to disassemble above it." + offline;
 		case View.Blocks:
-			return (ListSearch.IsActive(s_blocksFind) ? $"Find shows {_blocksFindShown}. " : "") + "Double-click a block to edit its role, what it accepts and its stock limits." + offline;
+			return FindShownPrefix + "Double-click a block to edit its role, what it accepts and its stock limits." + offline;
 		case View.Bill:
 			return BillHint(grid);
 		case View.Block:
@@ -1031,7 +1040,7 @@ public partial class SsmScreen : MyGuiScreenBase
 			return volume + "Pick an item, type an amount, set a minimum or maximum. Blank clears it.";
 		}
 		case View.Production:
-			return live ? "Double-click for queue details. Autocraft only uses Main and Co-op assemblers (default: Manual)." : "Last known state." + offline;
+			return FindShownPrefix + (live ? "Double-click for queue details. Autocraft only uses Main and Co-op assemblers (default: Manual)." : "Last known state." + offline);
 		case View.Machine:
 			return live ? "Queue first, then the materials the whole queue needs. Missing = what the grid doesn't have." : "Not loaded: queue details show while the grid is in range.";
 		case View.Refining:
@@ -1065,7 +1074,7 @@ public partial class SsmScreen : MyGuiScreenBase
 		GridSnapshot grid = Grid;
 		// Block materials shows the bill's parts even before any grid is known.
 		List<RowData> rows = s_view == View.AllGrids ? AllGridRows() : s_view == View.Bill ? BillRows(grid) : grid == null ? new List<RowData>() : BuildRows(grid);
-		if (s_view == View.Blocks)
+		if (HasBlockFind(s_view))
 		{
 			rows = FilterBlockRows(rows);
 		}

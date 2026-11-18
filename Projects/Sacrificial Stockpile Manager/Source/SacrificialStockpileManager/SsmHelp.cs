@@ -25,6 +25,7 @@ internal static class SsmHelp
 		"- Remove from list is for grids that were deleted or destroyed. It removes the grid and its settings (block settings, quotas, displays). A grid that is loaded can't be removed. If a removed grid still exists, it comes back with default settings the next time it's in range.",
 		"- To remove several at once, tick them (click a grid's first column, press Space, or pick from the Tick list: not loaded now, not seen in 7, 30 or 90 days, has no settings) and press Remove ticked. A confirm box lists them first; loaded and docked grids are skipped.",
 		"- Find, above the Blocks table, shortens it to the blocks whose name, type, role or settings match.",
+		"- Find, above the Production table, does the same there: name, type, mode, state or what the block is doing.",
 		"- Find, above the All grids table, shortens the list as you type. Ticks stay on grids it hides, the Tick list only changes the grids it shows, and the confirm box says how many ticked grids are hidden.",
 		"",
 		"# Automation (Overview)",
@@ -61,11 +62,11 @@ internal static class SsmHelp
 		"Sorting starts once at least one storage block accepts something. Items then move into the block that accepts them best: an exact item beats its category, which beats general storage (a storage block that accepts nothing in particular). Items a block doesn't accept are moved out of it.",
 		"Priority (Block settings, 0-9): among storage blocks that accept an item equally well, the one with the higher number fills first. It decides where new items go; it doesn't drag items already in a good place to another block.",
 		"",
-		"# Block materials",
-		"Block materials (the View list, or Block settings > Add block materials) fills a crate with the parts to build some blocks. Pick the crate under Crate: type part of its name in its Find box, and pick it from the list (containers first, with their role). Make it Stock turns it into a Stock crate, which keeps only the items it has minimums or maximums for, so nothing else is sorted into it; Back to Auto undoes that. What a crate accepts by category (components, ores, ingots...) is set in Block settings.",
+		"# " + SsmScreen.BuildKitName,
+		SsmScreen.BuildKitName + " (the View list, or the " + SsmScreen.BuildKitName + " button in Block settings) fills a crate with the parts to build some blocks. Pick the crate under Crate: type part of its name in its Find box, and pick it from the list (containers first, with their role). Make it Stock turns it into a Stock crate, which keeps only the items it has minimums or maximums for, so nothing else is sorted into it; Back to Auto undoes that. What a crate accepts by category (components, ores, ingots...) is set in Block settings.",
 		"Then pick a block type (Find, Large or Small, mod blocks too) and a count, press Add line, and repeat for other blocks (3 x Prototech Drill, 1 x Small Reactor). Before you add anything, the table shows the parts of the block type picked. Each line shows its own parts under it: the newest is open, double-click a line to open or close it.",
 		"Total for the bill sums the components: needed, in the block, on the grid, short. Parts no assembler here offers are marked 'not buildable here', parts with no blueprint at all 'loot only'; those are only added as far as the grid has them.",
-		"Apply adds them to the block's minimums, on top of what's set; nothing is lowered. Fill once: once the block holds an item it isn't refilled, and when the block holds them all it's packed (log and chat line); the minimums go when you take the parts out. Keep stocked: refilled until you remove the set (select it at the bottom of the view and press Remove). Block settings shows how much of each minimum comes from block materials.",
+		"Apply adds them to the block's minimums, on top of what's set; nothing is lowered. Fill once: once the block holds an item it isn't refilled, and when the block holds them all it's packed (log and chat line); the minimums go when you take the parts out. Keep stocked: refilled until you remove the set (select it at the bottom of the view and press Remove). Block settings shows how much of each minimum comes from the " + SsmScreen.BuildKitLower + ".",
 		"Quotas for shortfall sets grid quotas for what's short and can be made here, so autocraft makes it. Another plugin (Tally) can send its bill here too; it only opens this preview, and you press Apply.",
 		"",
 		"# Limits",
@@ -126,7 +127,7 @@ internal static class SsmHelp
 		"- Category and pool names are letters and digits only, since brackets, commas and a trailing :#N mean something in a tag.",
 		"Then it runs the block with configReload and leaves every job to SHEPHERD. With SHEPHERD older than 1.0.21, it checks the [Categories] lines again a few seconds later and puts back any that a save of SHEPHERD's own dropped. Only the grid itself and blocks you own are changed, and blocks that already have a SHEPHERD tag are skipped. Refinery priority, block type limits and docked ships aren't exported.",
 		"Shepherd (SSM) speaks. With the Chat setting on, Stockpile Manager gives SHEPHERD a voice of its own while it minds a grid: a weathered hill shepherd, in slate gray, under the name Shepherd (SSM) so it isn't taken for the script itself. It speaks when it's found running on a grid, when its status screen shows a new problem, when its crafting meets a quota, and after an export. It keeps quiet while SHEPHERD is learning (its screen then previews what it will save). Stockpile Manager says a word when SHEPHERD stops and the jobs come back to it.",
-		"Finding SHEPHERD sends nothing to the server: Stockpile Manager only reads block names, the block's Custom Data and the status screens' text, which your game already has.",
+		"Finding SHEPHERD sends nothing to the server: Stockpile Manager only reads block names, the block's Custom Data and the status screens' text, which your game already has. Export sends, once, the same requests as renaming blocks and editing Custom Data in the terminal, plus one Run with configReload (and, before SHEPHERD 1.0.21, one more write and Run 5 seconds later if a category line was dropped). Unload docked ships sends one Run with unloadShip to the leading SHEPHERD block, or to each working one when there's no panel. Nothing is sent for a grid out of reach (the leader's grid included), and on a world with in-game scripts off SHEPHERD is never run.",
 		"",
 		"# Good to know",
 		"- Moving items uses the same request as dragging them in the terminal, and queuing uses the same request as clicking a blueprint, so the server checks your access. Items only move between inventories connected by conveyors, just like a programmable block.",
@@ -134,7 +135,10 @@ internal static class SsmHelp
 		"- In multiplayer the server takes a moment to confirm each move. The plugin allows for moves still on their way, so it doesn't send them twice.",
 		"- Only while you're around: unlike a programmable block, the plugin works only while you're online and the grid is loaded.",
 		"- Settings are stored on your computer, per world. Other players don't see them. LCD text is visible to everyone.",
-		"- If two players with the plugin manage the same grid, both will move items."
+		"- If two players with the plugin manage the same grid, both will move items.",
+		"",
+		"# Our other plugins",
+		"With any of our other plugins loaded (BaR Maid, Fat Albert, OreScout, Script to Plugin and others), the dropdown at the top left of this window switches to another plugin's window. Type /tim in chat to open whichever of these windows you used last. The terminal (K or I) also has a Toolbox tab that lists our loaded plugins, each with an Open button."
 	};
 
 	public static void Write(MyGuiControlMultilineText text)

@@ -862,7 +862,7 @@ public partial class SsmScreen
 			{
 				bool packed = rules.Bill.Where(b => b.Item == key).All(b => b.Keep || b.Done) && rules.Bill.Any(b => b.Item == key && !b.Keep);
 				limit = new ItemLimit { Item = key, Min = (limit != null && limit.HasMin ? limit.Min : 0.0) + bill, Max = limit?.Max ?? -1.0 };
-				from += $" ({Items.Amount(bill)} block materials{(packed ? ", packed" : "")})";
+				from += $" ({Items.Amount(bill)} from the {BuildKitLower}{(packed ? ", packed" : "")})";
 			}
 			string state = "";
 			Color? color = null;

@@ -240,7 +240,7 @@ public partial class SsmScreen
 		_billStockButton.Enabled = block != null && !block.NotYours;
 		_billStockButton.SetToolTip(stock
 			? "It's a Stock crate: it keeps only the items it has minimums or maximums for. Back to Auto lets the plugin use it as it would by default."
-			: "Stock crate: keeps only the items it has minimums or maximums for (these block materials included), and nothing else is sorted into it.");
+			: $"Stock crate: keeps only the items it has minimums or maximums for (this {BuildKitLower} included), and nothing else is sorted into it.");
 	}
 
 	/// <summary>Switches the crate between the Stock role and Auto, like the Role box in Block settings.</summary>
@@ -504,7 +504,7 @@ public partial class SsmScreen
 		string source = BillSource();
 		int added = BlockBill.Apply(s_billBlockId, preview, s_billKeep, source);
 		int skipped = preview.Count(l => l.Fill <= 0.0);
-		Live?.AddLog($"Block materials for {block.Name} ({(s_billKeep ? "Keep stocked" : "Fill once")}): {added} item(s) added to its minimums, {source}");
+		Live?.AddLog($"{BuildKitName} for {block.Name} ({(s_billKeep ? "Keep stocked" : "Fill once")}): {added} item(s) added to its minimums, {source}");
 		s_billLines.Clear();
 		s_billExtra = new Dictionary<string, double>();
 		Session?.RunNow(Live);
