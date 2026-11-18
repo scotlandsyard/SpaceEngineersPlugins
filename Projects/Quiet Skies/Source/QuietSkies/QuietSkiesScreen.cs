@@ -258,5 +258,5 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		"WHAT THE SERVER SEES\n" +
 		"Hide sends one Show on HUD request per marker (none for Jump Signatures, which are hidden on this PC only). Show sends two for each marker Quiet Skies hid: Show on HUD, and Always visible (the game turns that off when a marker is hidden). Delete all and Keep newest send one Delete request per marker. They're all the same requests the G menu sends, at most five a second. Nearby only, the window, the commands and the toolbar actions send nothing. A toolbar action saved in a cockpit's toolbar is stored with the ship, like any other toolbar slot.\n\n" +
 		"FILES\n" +
-		"The chat setting is in QuietSkies_Settings.txt and each world's modes, Keep newest and the markers' arrival order in QuietSkies_<world>_Settings.txt, in %AppData%\\SpaceEngineers\\Storage.";
+		"The chat setting is in QuietSkies_Settings.txt and each world's modes, Keep newest and the markers' arrival order in QuietSkies_<world>_Settings.txt, in %AppData%\\SpaceEngineers\\Storage\\QuietSkies. The world file goes by the world's name, so two servers whose worlds have the same name share these settings, Keep newest included.";
 }

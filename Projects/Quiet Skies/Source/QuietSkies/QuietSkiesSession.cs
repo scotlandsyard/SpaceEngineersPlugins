@@ -17,8 +17,8 @@ namespace QuietSkies;
 
 /// <summary>
 /// Runs the filter and wires up the /skies chat command, the toolbar actions on cockpits and remote controls, and the
-/// plugin switcher. Client only. The only thing it sends is the game's own Show on HUD and Always visible requests
-/// for encounter and cargo drop markers (Filter.cs).
+/// plugin switcher. Client only. The only things it sends are the G menu's own Show on HUD, Always visible and Delete
+/// requests for signal markers (Filter.cs).
 /// </summary>
 [MySessionComponentDescriptor(MyUpdateOrder.AfterSimulation)]
 public class QuietSkiesSession : MySessionComponentBase
@@ -81,21 +81,29 @@ public class QuietSkiesSession : MySessionComponentBase
 
 	protected override void UnloadData()
 	{
-		if (_started)
+		// Unsubscribed whether or not BeforeStart finished: a -= on a handler that was never added does nothing, and a
+		// BeforeStart that failed halfway would otherwise leave its handlers on the game's static events.
+		try
 		{
-			try
+			if (MyAPIGateway.TerminalControls != null)
 			{
 				MyAPIGateway.TerminalControls.CustomActionGetter -= CustomActionGetter;
+			}
+			if (MyAPIGateway.Utilities != null)
+			{
 				MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
-				PluginSwitcher.Unregister();
-				Personality.Unregister();
-				Personality.Changed -= Chatter.Save;
+			}
+			PluginSwitcher.Unregister();
+			Personality.Unregister();
+			Personality.Changed -= Chatter.Save;
+			if (_started)
+			{
 				Settings.SaveWorld();
 			}
-			catch (Exception ex)
-			{
-				MyLog.Default.WriteLineAndConsole($"[Quiet Skies] Unload: {ex}");
-			}
+		}
+		catch (Exception ex)
+		{
+			MyLog.Default.WriteLineAndConsole($"[Quiet Skies] Unload: {ex}");
 		}
 		Filter.Stop();
 		Signals.Reset();

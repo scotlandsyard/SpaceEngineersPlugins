@@ -63,7 +63,7 @@ Requests are sent at most five a second. Hidden markers stay hidden after a reco
 
 ## Files
 
-`QuietSkies_Settings.txt` (chat setting) and `QuietSkies_<world>_Settings.txt` (modes, distances, Keep newest, the markers Quiet Skies hid, and the order markers arrived in) in `%AppData%\SpaceEngineers\Storage`.
+`QuietSkies_Settings.txt` (chat setting) and `QuietSkies_<world>_Settings.txt` (modes, distances, Keep newest, the markers Quiet Skies hid, and the order markers arrived in) in `%AppData%\SpaceEngineers\Storage\QuietSkies`. The world file goes by the world's name, so two servers whose worlds have the same name share these settings, Keep newest included.
 
 ## Building
 

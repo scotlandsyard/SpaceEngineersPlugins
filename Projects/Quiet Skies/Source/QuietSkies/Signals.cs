@@ -11,7 +11,7 @@ using VRageMath;
 
 namespace QuietSkies;
 
-/// <summary>The three kinds of marker the plugin filters. Nothing else is ever touched.</summary>
+/// <summary>The four kinds of marker the plugin filters. Nothing else is ever touched.</summary>
 public enum SignalKind
 {
 	/// <summary>"Unidentified Signal": global encounter markers (IsGlobalEncounterGPS).</summary>
