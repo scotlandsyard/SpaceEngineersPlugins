@@ -47,7 +47,6 @@ Every line of code is in this repo, and the build uses only the .NET SDK and you
 | [Radar Tech](Projects/Radar%20Tech/) | A range finder: shows the distance to the asteroid, planet surface, ship or station under your crosshair, with closing speed and time to contact. Only measures what your game has loaded, and stops at the first thing in the way. Also comes as a programmable block script that does the same with camera blocks. | `/radar`, the Ctrl+Alt+R hotkey, or the **Radar Tech** toolbar actions |
 | [Digby](Projects/Digby/) | Plans a tunnel to a deposit: from where you stand (or any GPS) to a spot a given depth under the surface elsewhere on the same planet, or straight to a point in space. Reads the planet and the real terrain height, gives the angles and the route, marks the start, turns and end, lines up a drilling rig, and writes the plan onto a datapad. | `/digby` |
 | [Doorman](Projects/Doorman/) | Closes doors left open after a delay. Client-side, and only doors you have access to; skips airlocks and waits while someone is in the doorway | `/doorman`, or the **Doorman** toolbar actions on a cockpit or remote control |
-| [Seamless Unload Fix](Projects/Seamless%20Unload%20Fix/) | Background fix: lets the game finish unloading a world when a mod throws an error while unloading, so a failed Nexus Seamless Switcher transfer no longer leaves the game unable to join anything until a restart. Also tidies up Seamless Switcher's state between worlds when that plugin is loaded. Doesn't need Seamless Switcher. | Nothing to open: it works when enabled, and says in chat when it stepped in |
 
 Each plugin has its own DLL name, action IDs, chat command and Custom Data section, so they can all be loaded together without clashing.
 
@@ -60,7 +59,6 @@ With more than one of these plugins loaded:
 - **Chat personalities:** each plugin has a character who comments in chat when something happens, with an Off / Quiet / Normal / Chatty setting in that plugin. With Wilson loaded too, the characters talk to each other. Chat lines only show on your own screen.
 - **Assembler modes:** BaR Maid and Sacrificial Stockpile Manager share one mode per assembler: **Main** (takes the orders), **Co-op** (helps a Main one) or **Manual** (left alone). New assemblers start as Manual, so neither plugin touches an assembler until you opt it in. You can set the mode from either plugin.
 
-Seamless Unload Fix has no window or chat character, so it takes no part in the above.
 
 Each plugin still works on its own; none of them needs another to be loaded. See [`Shared/`](Shared/) for how this works.
 
