@@ -351,6 +351,12 @@ internal static class Watcher
 
 	private static void Report(GridWatch gw, Watched w, string kind, string detail)
 	{
+		// Only what the terminal could show you now: the grid within 15 m of you or linked to you by antenna
+		// (the server's reach rule). Beyond that, damage goes unreported, as in vanilla.
+		if (!Reach.InReachCached(gw.Grid, s_now))
+		{
+			return;
+		}
 		w.LastEvent = s_now;
 		MySlimBlock block = w.Block;
 		string name = block.FatBlock is IMyTerminalBlock terminal ? terminal.CustomName : block.BlockDefinition.DisplayNameText;
@@ -411,6 +417,7 @@ internal static class Watcher
 
 	public static void Unload()
 	{
+		Reach.Clear();
 		foreach (GridWatch gw in s_order.ToArray())
 		{
 			Remove(gw);

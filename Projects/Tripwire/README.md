@@ -63,6 +63,7 @@ The terminal (K or I) also has a **Toolbox** tab that lists our loaded plugins, 
 - A block that disappears after losing integrity. A block that moves to another grid in one piece (a split or merge) isn't reported.
 - A terminal block that stops being yours.
 - Small losses add up until they reach 2% of the block, and the same block is reported at most once a minute.
+- Only for grids you could open in the terminal right now: within 15 m of you (or the ship you're on), or linked to you by antenna, the same reach rule the server uses. Damage on a grid out of reach isn't reported, as in vanilla.
 
 **How you're told:** chat gets one line per grid at most every 30 seconds, with an optional sound. The window keeps every event.
 
