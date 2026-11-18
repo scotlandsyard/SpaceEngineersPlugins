@@ -253,6 +253,8 @@ public class QuietSkiesScreen : MyGuiScreenBase
 		"Show and Nearby only only turn a marker back on if Quiet Skies hid it. A marker you took off the HUD yourself in the G menu stays off. When a setting changes, or when you load the world, Quiet Skies applies it to every marker again.\n\n" +
 		"TOOLBAR\n" +
 		"In a cockpit or remote control, the toolbar has Quiet Skies: signal filter (opens this window), one action per kind that steps through Show, Hide and Nearby only, and one per kind that deletes them all (it asks first).\n\n" +
+		"TOOLBOX TAB\n" +
+		"The terminal (K or I) has a Toolbox tab beside Inventory and Control Panel. It lists our loaded plugins, each with a one-line status and an Open button. Quiet Skies' status says how many signal markers you have and how many are on your HUD; Open closes the terminal and opens this window.\n\n" +
 		"COMMANDS\n" +
 		"/skies opens this window. /skies status lists each kind's mode and markers. /skies unidentified hide, /skies unknown show, /skies strong nearby 20 or /skies all hide set a mode (nearby takes an optional distance in km). /skies keep unknown 5 keeps the newest 5 (0 turns it off; all works too). /skies delete strong deletes every Strong Unknown Signal after asking. Jump Signatures are jump (/skies jump hide, /skies keep jump 3). /skies chat off, quiet, normal or chatty sets how much it comments. /skies name and a name changes what its chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins.\n\n" +
 		"WHAT THE SERVER SEES\n" +

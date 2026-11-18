@@ -29,7 +29,7 @@ Quiet Skies never touches any other marker: not your own GPS, not Body Location,
 ## Controls
 
 - **Window**: `/skies` in chat, the *Quiet Skies: signal filter* toolbar action, or `/tim` / the plugin switcher. One row per kind with its mode, the Nearby only distance, Keep newest, how many markers there are and how many are shown, and a Delete all button.
-- **Toolbox**: the terminal (K or I) has a Toolbox tab listing our loaded plugins, each with an Open button.
+- **Toolbox**: the terminal (K or I) has a Toolbox tab listing our loaded plugins, each with a one-line status and an Open button. Quiet Skies' status is how many signal markers you have and how many are on your HUD.
 - **Toolbar actions** on cockpits and remote controls: open the window, one action per kind that steps through Show, Hide and Nearby only, and one per kind that deletes them all (it asks first).
 - **Chat**:
 
