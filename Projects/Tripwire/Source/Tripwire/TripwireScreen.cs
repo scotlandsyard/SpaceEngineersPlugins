@@ -447,7 +447,7 @@ public class TripwireScreen : MyGuiScreenBase
 		"WHAT THE SERVER SEES\n" +
 		"Alerts and reading logs send nothing: they use what the game has already sent to your PC. Copy to Datapad sends the same request as editing a datapad by hand.\n\n" +
 		"COMMANDS\n" +
-		"/tripwire opens this window. /tripwire mute 30 mutes the chat alerts for 30 minutes (10 if you leave out the number); /tripwire unmute turns them back on. /tripwire chat off, quiet, normal or chatty sets how much it comments. /tripwire name and a name changes what its chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left of this window switches to another of our plugins.\n\n" +
+		"/tripwire opens this window. /tripwire mute 30 mutes the chat alerts for 30 minutes (10 if you leave out the number); /tripwire unmute turns them back on. /tripwire chat off, quiet, normal or chatty sets how much it comments. /tripwire name and a name changes what its chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left of this window switches to another of our plugins. The terminal (K or I) has a Toolbox tab that lists our loaded plugins, each with an Open button.\n\n" +
 		"FILES\n" +
 		"Settings are in Tripwire_Settings.txt, this world's alerts in Tripwire_<world>_Alerts.txt and what you've already read in Tripwire_<world>_Visits.txt, all in %AppData%\\SpaceEngineers\\Storage.";
 }

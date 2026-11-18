@@ -24,7 +24,7 @@ internal static class SargeHelp
 		"WHAT THE SERVER SEES\n" +
 		"Only requests a player can make by hand, each sent once when it's needed and never every tick: a sweep is the rotor's velocity (and turning it on), a move is each piston's limits and velocity, pause and stop switch the drills and pistons off and hold the rotor (0 rpm and its Lock box; Lock is unticked again before the next sweep). The LCD is written at most every 10 s, only when the text changed. Timers get the terminal's Start. Script mode adds block renames and one Custom Data edit at setup, and one Run per button. Nothing is stored on the server: the rigs and their progress live in a file on your PC.\n\n" +
 		"COMMANDS\n" +
-		"/sarge opens this window. /sarge chat off, quiet, normal or chatty sets how much Sarge comments. /sarge name and a name changes what Sarge's chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins. Settings can add Start/Pause and Pause to rig rotors' toolbar actions.\n\n" +
+		"/sarge opens this window. /sarge chat off, quiet, normal or chatty sets how much Sarge comments. /sarge name and a name changes what Sarge's chat lines show under; on its own it puts it back. /tim opens whichever of our plugin windows you used last, and the list at the top left switches to another of our plugins. The terminal (K or I) has a Toolbox tab that lists our loaded plugins, each with an Open button. Settings can add Start/Pause and Pause to rig rotors' toolbar actions.\n\n" +
 		"FILES\n" +
 		"Settings are in DrillSergeant_Settings.txt, this world's rigs in DrillSergeant_<world>_Rigs.xml, both in %AppData%\\SpaceEngineers\\Storage.";
 }

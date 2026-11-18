@@ -56,6 +56,8 @@ The game only knows a planet's type (EarthLike, Mars...). Stand on the planet an
 | `/digby chat off\|quiet\|normal\|chatty` | How much Digby comments |
 | `/digby name <name>` | The name Digby's chat lines show under; on its own it puts it back |
 
+`/tim` reopens whichever of our plugin windows you used last, and the list at the top left of the window switches to another of our plugins. The terminal (K or I) also has a **Toolbox** tab that lists our loaded plugins, each with an Open button.
+
 ## What the server sees
 
 | Feature | Sent to the server |

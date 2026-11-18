@@ -6,12 +6,12 @@ Muting only changes what your own PC plays. Nothing is sent to the server, nothi
 
 ## Using it
 
-Type `/hush` in chat (or pick Hush in the plugin list at the top left of another of our plugins' windows).
+Type `/hush` in chat (or pick Hush in the plugin list at the top left of another of our plugins' windows). `/tim` reopens whichever of our plugin windows you used last, and the terminal (K or I) has a **Toolbox** tab that lists our loaded plugins, each with an Open button.
 
 **Blocks on a grid**
 - Pick one of your grids in the Grid list (nearest first). Only grids you own a block on, or that have a block shared with you, are listed, and only the blocks you could open in the terminal. You never see what's inside other players' grids.
 - A block is listed if its type has a working sound (thrusters, drills, refineries, doors, sound blocks...) or if it has played a working sound since the world loaded (damage sounds don't count: every block has those). The **Why listed** column says which: **Sound** and the sound's name, **Played** and the sound's name, or **Muted**.
-- Select a row and press **Mute / Unmute**, or double-click it. **Mute Type on Grid** / **Unmute Type on Grid** do every listed block of the selected block's type on that grid. **Unmute Grid** clears the grid.
+- Select a row and press **Mute / Unmute**, or double-click it. **Mute Type on Grid** / **Unmute Type on Grid** do every listed block of the selected block's type on that grid. **Unmute Grid** clears the grid. Voice chat and character sounds are never muted, even for someone seated in a muted cockpit.
 
 **Find** shortens either list as you type. While it's in use, **Mute Type on Grid**, **Unmute Type on Grid** and **Unmute Grid** only change the blocks it shows.
 
