@@ -73,10 +73,8 @@ public class SargeSession : MySessionComponentBase
 
 	protected override void UnloadData()
 	{
-		if (!_started)
-		{
-			return;
-		}
+		// Unsubscribed whether or not BeforeStart finished, so a failed start leaves no handler behind (-= on a
+		// handler that was never added does nothing). Saves only after a full start, so nothing half-loaded is written.
 		try
 		{
 			ScriptLink.Subscribe(null);
@@ -85,8 +83,11 @@ public class SargeSession : MySessionComponentBase
 			PluginSwitcher.Unregister();
 			Personality.Unregister();
 			Personality.Changed -= Chatter.Save;
-			RigStore.Save();
-			Settings.Save();
+			if (_started)
+			{
+				RigStore.Save();
+				Settings.Save();
+			}
 		}
 		catch (Exception ex)
 		{

@@ -97,11 +97,19 @@ internal static class Mutes
 		}
 	}
 
-	/// <summary>The block an entity belongs to: itself, or the block a subpart (door wing, rotor head part...) hangs from.</summary>
+	/// <summary>
+	/// The block an entity belongs to: itself, or the block a subpart (door wing, rotor head part...) hangs from.
+	/// Never a character's: a seated player is a child of the cockpit, and their voice chat, breathing and
+	/// suffocation sounds must never be muted with it.
+	/// </summary>
 	public static MyCubeBlock BlockOf(MyEntity entity)
 	{
 		for (int depth = 0; entity != null && depth < 8; depth++)
 		{
+			if (entity is Sandbox.Game.Entities.Character.MyCharacter)
+			{
+				return null;
+			}
 			if (entity is MyCubeBlock block)
 			{
 				return block;

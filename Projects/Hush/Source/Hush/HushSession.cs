@@ -18,8 +18,6 @@ public class HushSession : MySessionComponentBase
 
 	private static readonly string[] ChatCommands = { "/hush" };
 
-	private bool _started;
-
 	public override void LoadData()
 	{
 		try
@@ -50,7 +48,6 @@ public class HushSession : MySessionComponentBase
 			Personality.DisplayName = Mutes.DisplayName;
 			Personality.Changed += Chatter.Save;
 			Personality.Register(ChatSender);
-			_started = true;
 		}
 		catch (Exception ex)
 		{
@@ -60,22 +57,20 @@ public class HushSession : MySessionComponentBase
 
 	protected override void UnloadData()
 	{
-		if (_started)
+		// Unsubscribed whether or not BeforeStart finished, so a failed start leaves no handler behind (-= on a
+		// handler that was never added does nothing).
+		try
 		{
-			try
-			{
-				MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
-				PluginSwitcher.Unregister();
-				Personality.Unregister();
-				Personality.Changed -= Chatter.Save;
-			}
-			catch (Exception ex)
-			{
-				MyLog.Default.WriteLineAndConsole($"[Hush] Unload: {ex}");
-			}
+			MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
+			PluginSwitcher.Unregister();
+			Personality.Unregister();
+			Personality.Changed -= Chatter.Save;
+		}
+		catch (Exception ex)
+		{
+			MyLog.Default.WriteLineAndConsole($"[Hush] Unload: {ex}");
 		}
 		Mutes.UnloadWorld();
-		_started = false;
 	}
 
 	private void OnMessageEntered(string messageText, ref bool sendToOthers)

@@ -59,20 +59,22 @@ public class DigbySession : MySessionComponentBase
 
 	protected override void UnloadData()
 	{
-		if (_started)
+		// Unsubscribed whether or not BeforeStart finished, so a failed start leaves no handler behind (-= on a
+		// handler that was never added does nothing). Saves only after a full start, so nothing half-loaded is written.
+		try
 		{
-			try
+			MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
+			PluginSwitcher.Unregister();
+			Personality.Unregister();
+			Personality.Changed -= Chatter.Save;
+			if (_started)
 			{
-				MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
-				PluginSwitcher.Unregister();
-				Personality.Unregister();
-				Personality.Changed -= Chatter.Save;
 				Settings.Save();
 			}
-			catch (Exception ex)
-			{
-				MyLog.Default.WriteLineAndConsole($"[Digby] Unload: {ex}");
-			}
+		}
+		catch (Exception ex)
+		{
+			MyLog.Default.WriteLineAndConsole($"[Digby] Unload: {ex}");
 		}
 		Markers.Unload();
 		Library.Unload();

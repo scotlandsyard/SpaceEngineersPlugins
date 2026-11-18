@@ -1,6 +1,4 @@
 using System;
-using System.Linq;
-using System.Reflection;
 using HarmonyLib;
 using Sandbox.Game.Entities;
 using VRage.Audio;
@@ -13,8 +11,9 @@ namespace Hush;
 /// Hooks the game's 3D sound emitter, the one object every block sound goes through (modded blocks too):
 /// - its constructor, to keep a list of emitters (Mutes.Emitters), so a mute can stop a sound that's already playing;
 /// - PlaySoundInternal, which every play path ends in (PlaySound, PlaySoundWithDistance, the sound queue, a loop
-///   being restarted by the emitter's Update), skipped for a muted block;
-/// - PlaySound(byte[]), the buffered path, skipped the same way.
+///   being restarted by the emitter's Update), skipped for a muted block.
+/// The buffered PlaySound(byte[]) path is left alone on purpose: in the game only voice chat uses it, and voice chat
+/// is never muted. Character sounds are never muted either (Mutes.BlockOf stops at a character).
 /// A muted emitter keeps its Loop flag, so the emitter keeps asking to play and the sound comes back by itself when
 /// the block is unmuted. Nothing here touches the network: it only changes what this PC plays.
 /// </summary>
@@ -39,13 +38,6 @@ internal static class Patches
 				postfix: new HarmonyMethod(typeof(Patches), nameof(ConstructorPostfix)));
 			s_harmony.Patch(AccessTools.Method(typeof(MyEntity3DSoundEmitter), "PlaySoundInternal"),
 				prefix: new HarmonyMethod(typeof(Patches), nameof(PlayPrefix)));
-			// Found by its first parameter, so the project doesn't need VRage.Audio for the last one's type.
-			MethodInfo buffered = AccessTools.GetDeclaredMethods(typeof(MyEntity3DSoundEmitter))
-				.FirstOrDefault(m => m.Name == nameof(MyEntity3DSoundEmitter.PlaySound) && m.GetParameters().FirstOrDefault()?.ParameterType == typeof(byte[]));
-			if (buffered != null)
-			{
-				s_harmony.Patch(buffered, prefix: new HarmonyMethod(typeof(Patches), nameof(BufferedPrefix)));
-			}
 		}
 		catch (Exception ex)
 		{
@@ -69,12 +61,6 @@ internal static class Patches
 	private static bool PlayPrefix(MyEntity3DSoundEmitter __instance)
 	{
 		return Check(__instance, __instance.SoundId);
-	}
-
-	/// <summary>The same for buffered (recorded) audio, which has no cue.</summary>
-	private static bool BufferedPrefix(MyEntity3DSoundEmitter __instance)
-	{
-		return Check(__instance, null);
 	}
 
 	private static bool Check(MyEntity3DSoundEmitter emitter, MyCueId? cue)

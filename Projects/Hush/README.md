@@ -32,11 +32,17 @@ A block mute survives a reload, but not the block being rebuilt or the grid bein
 
 ## Server impact
 
-None. Hush adds no toolbar actions, sends no requests, writes no Custom Data and stores nothing on grids. Muting only takes sound away from you, so it gives no advantage.
+None. Hush adds no toolbar actions, sends no requests, writes no Custom Data and stores nothing on grids. Muting only takes sound away from you, so it gives you no information you wouldn't have.
 
 ## How it works
 
 Every block sound in Space Engineers is played through a 3D sound emitter. Hush patches the emitter (with Harmony, which Pulsar provides) so a sound from a muted block is skipped, including when the game restarts a looping sound. Unmuting lets the block's sound come back on its own.
+
+The Harmony patches, all on `MyEntity3DSoundEmitter` and all removed when the game unloads the plugin:
+- a postfix on its constructor, to keep a list of emitters, so a mute can stop a sound that's already playing;
+- a prefix on `PlaySoundInternal`, which every play path ends in, that skips the sound when the emitter belongs to a muted block. If the check ever fails, the sound plays.
+
+Voice chat and character sounds (breathing, suffocation, mag boots) are never muted, even for a player seated in a muted cockpit.
 
 ## Building
 
