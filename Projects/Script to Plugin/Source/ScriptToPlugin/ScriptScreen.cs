@@ -135,7 +135,12 @@ public class ScriptScreen : MyGuiScreenBase
 
 		_outputCaption = new MyGuiControlLabel(new Vector2(0.07f, -0.355f), null, "", null, 0.8f, "White", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
 		Controls.Add(_outputCaption);
-		_output = new MyGuiControlMultilineText(new Vector2(0.07f, -0.33f), new Vector2(0.35f, 0.5f), null, "Blue", 0.7f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP);
+		_output = new MyGuiControlMultilineText(new Vector2(0.07f, -0.33f), new Vector2(0.35f, 0.5f), null, "Blue", 0.7f, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP, null, drawScrollbarV: true, drawScrollbarH: false, MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP)
+		{
+			// Anchored by its top-left corner like the table: the default centre anchor put the panel's top above the window,
+			// so long text (the Help page) ran over the caption row and the table.
+			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_TOP
+		};
 		Controls.Add(_output);
 
 		_status = new MyGuiControlLabel(new Vector2(-0.42f, 0.2f), null, "", null, 0.75f, "Blue", MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER);
