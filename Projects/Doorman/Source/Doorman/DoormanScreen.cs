@@ -379,9 +379,11 @@ public partial class DoormanScreen : MyGuiScreenBase
 		_filling = false;
 	}
 
+	/// <summary>The selected door, or 0; a door you no longer have access to can't be set up.</summary>
 	private long SelectedDoor()
 	{
-		return (_table?.SelectedRow?.UserData as Doors.Door)?.Block.EntityId ?? 0;
+		Doors.Door door = _table?.SelectedRow?.UserData as Doors.Door;
+		return door != null && Doors.Accessible(door.Block) ? door.Block.EntityId : 0;
 	}
 
 	private void ShowDoorSettings()

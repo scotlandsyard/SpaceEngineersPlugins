@@ -224,11 +224,9 @@ internal static class Doors
 				s_grids[grid.EntityId] = gd;
 			}
 			gd.Seen = true;
-			if (gd.BlockCount != grid.BlocksCount)
-			{
-				gd.BlockCount = grid.BlocksCount;
-				Rebuild(gd);
-			}
+			// Rebuilt on every rescan, not only when blocks change: a door shared with you (or no longer) comes and goes.
+			gd.BlockCount = grid.BlocksCount;
+			Rebuild(gd);
 			MarkAirlocks(gd);
 		}
 		s_entities.Clear();
@@ -275,7 +273,8 @@ internal static class Doors
 		gd.Doors.Clear();
 		foreach (MyDoorBase block in gd.Grid.GetFatBlocks<MyDoorBase>())
 		{
-			if (block.Closed || block.MarkedForClose)
+			// Only doors you have access to (yours, your faction's if shared, or shared with all): never anyone else's.
+			if (block.Closed || block.MarkedForClose || !Accessible(block))
 			{
 				continue;
 			}
@@ -445,6 +444,12 @@ internal static class Doors
 			door.State = "Closing soon";
 			return;
 		}
+		// Checked again right before sending: never a door you have no access to (someone else's, an enemy's).
+		if (!Accessible(block))
+		{
+			door.State = "Open (no access)";
+			return;
+		}
 		// The terminal's Open switch: SetOpenRequest(false, OwnerId). The terminal passes the block's owner as the
 		// identity too (MyDoor's terminal control), so the request is exactly the one a click would send.
 		block.SetOpenRequest(false, block.OwnerId);
@@ -455,6 +460,12 @@ internal static class Doors
 		door.Pending = true;
 		door.State = "Closing";
 		Personality.Say("door_closed", "door", door.Name, "grid", door.Grid.Name);
+	}
+
+	/// <summary>A door you could open in the terminal: yours, or shared with your faction or with all.</summary>
+	internal static bool Accessible(MyDoorBase block)
+	{
+		return block != null && !block.Closed && ((Sandbox.ModAPI.IMyTerminalBlock)block).HasLocalPlayerAccess();
 	}
 
 	private static bool CharacterAlive()

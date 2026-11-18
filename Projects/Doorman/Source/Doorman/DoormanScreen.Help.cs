@@ -21,7 +21,7 @@ public partial class DoormanScreen
 		"WHAT IT DOES\n" +
 		"Doorman closes doors that have been left open. Once a door is fully open, it waits the delay (3 seconds unless you change it) and then closes it, the same as switching it to closed in the terminal.\n\n" +
 		"WHICH DOORS\n" +
-		"Doors on grids you own, or your faction owns if you tick Faction grids too, and only doors you have access to. Doors, sliding doors, advanced doors and modded doors are in. Hangar doors are off unless you tick Hangar doors, for all grids or one grid. Doors that are off, unpowered, not working or part of a projection are left alone.\n\n" +
+		"Doors on grids you own, or your faction owns if you tick Faction grids too, and only doors you have access to (yours, or shared with your faction or with all). It never closes, lists or lets you set up a door owned by someone else or an enemy, even on a loaded grid; access is checked again right before each close. Doors, sliding doors, advanced doors and modded doors are in. Hangar doors are off unless you tick Hangar doors, for all grids or one grid. Doors that are off, unpowered, not working or part of a projection are left alone.\n\n" +
 		"ONLY WHILE YOU'RE HERE\n" +
 		"Doorman runs on your PC, so it closes doors on any of your grids loaded in your game (within sync range). While you're dead or respawning it sends nothing, and the list says so. While you're offline or too far away for the grid to be loaded, open doors stay open. A programmable block script keeps working when you're away; Doorman needs no programmable block and costs the server no script time.\n\n" +
 		"AIRLOCKS, TIMERS AND SCRIPTS\n" +
