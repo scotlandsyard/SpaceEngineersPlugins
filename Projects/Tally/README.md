@@ -2,7 +2,7 @@
 
 A client-side [Pulsar](https://github.com/StarCpt/Pulsar) plugin for Space Engineers that adds up what something takes to build: the components, the ingots the assembler needs for them and the ore the refinery needs for those ingots. It works from a projection, a blueprint in your F10 library or one of your own grids, uses the definitions the game has loaded (mods included), and writes the list onto datapads you can hand round. It can also queue the components in your assemblers.
 
-Open it with `/tally`, or from the plugin list at the top left of any of our plugin windows.
+Open it with `/tally`, from the Toolbox tab in the terminal (K or I; it lists our loaded plugins, each with an Open button), with `/tim` (opens whichever of our plugin windows you used last), or from the plugin list at the top left of any of our plugin windows.
 
 ## What you can tally
 
@@ -23,7 +23,9 @@ Open it with `/tally`, or from the plugin list at the top left of any of our plu
 - **Ore**: the refinery recipe for each ingot, at the refinery yield you type in percent, as the refinery's terminal shows it (modded refineries differ; vanilla is 100%, about 141% with four yield modules). Left empty, it uses the best refinery in the world without modules. Speed modules and refinery speed don't change amounts. Ore is always the ore of the same name (no stone or scrap recipes).
 - Amounts are rounded up. Items without a recipe in the world are listed as not broken down.
 
-The window shows Components, Ingots and Ore as a table you can sort by any column; ingots and ore are in kg.
+## The window
+
+From the top: what to tally (Projector, Blueprint (F10) or My grid) and which one, a Find box with **Refresh list**, the *Still needed*, *Minus what I carry* and *Minus the grid's cargo* boxes, the refinery yield and the datapad to write to. Then the **Components**, **Ingots** and **Ore** tabs with **Copy** at the right, the table (sort by any column; ingots and ore are in kg) and a status line. Along the bottom: **Tally**, **Write datapad**, **Queue in assemblers** and **Help**.
 
 ## Datapad
 
@@ -50,7 +52,7 @@ The window shows Components, Ingots and Ore as a table you can sort by any colum
 
 ## Send to an SSM crate
 
-With [Sacrificial Stockpile Manager](../Sacrificial%20Stockpile%20Manager) loaded, the Queue page can also send the components to one of your own cargo containers (not shared ones). Pick it under *SSM crate* and press **Send to SSM crate**. It sends what's still to get when the tally took something off, else the whole bill. Stockpile Manager opens on that container with a preview of the minimums it would add (as *Fill once*, which you can change there). Nothing changes until you press Apply there. Without Stockpile Manager the button is greyed out. The hand-over uses SSM's [bill API](../Sacrificial%20Stockpile%20Manager/BILL-API.md).
+With [Sacrificial Stockpile Manager](../Sacrificial%20Stockpile%20Manager) loaded, the Queue page can also send the components to one of your own cargo containers (not shared ones). Pick it under *SSM crate* and press **Send to SSM crate**. It sends what's still to get when the tally took something off, else the whole bill. Stockpile Manager opens its Build kit view on that container with a preview of the minimums it would add (as *Fill once*, which you can change there). Nothing changes until you press Apply there. Without Stockpile Manager the button is greyed out. The hand-over uses SSM's [bill API](../Sacrificial%20Stockpile%20Manager/BILL-API.md).
 
 ## Commands
 
@@ -61,6 +63,7 @@ With [Sacrificial Stockpile Manager](../Sacrificial%20Stockpile%20Manager) loade
 | `/tally help` | Opens the Help page |
 | `/tally chat off\|quiet\|normal\|chatty` | How much Tally comments |
 | `/tally name <name>` | The name Tally's chat lines show under; on its own it puts it back |
+| `/tim` | Opens whichever of our plugin windows you used last (any of our plugins answers it) |
 
 ## What the server sees
 
