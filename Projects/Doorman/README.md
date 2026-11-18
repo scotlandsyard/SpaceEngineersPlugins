@@ -9,7 +9,7 @@ A client-side Pulsar plugin for Space Engineers that closes doors left open. Onc
 - **Doorways**: if anyone is standing in the doorway (inside the door block's own space), Doorman waits.
 - Doors that are off, unpowered, not working or part of a projection are left alone.
 
-**Only while you're here**: Doorman runs on your PC, so it only closes doors on grids loaded in your game. While you're offline or out of range, open doors stay open. A programmable block script keeps working while you're away; Doorman needs no programmable block and costs the server no script time.
+**Only while you're here**: Doorman runs on your PC, so it only closes doors on grids loaded in your game and in reach (within 15 m, or linked by antenna). While you're offline or out of reach, open doors stay open (the list says "Open (out of reach)"). A programmable block script keeps working while you're away; Doorman needs no programmable block and costs the server no script time.
 
 ## Controls
 
@@ -31,7 +31,7 @@ A client-side Pulsar plugin for Space Engineers that closes doors left open. Onc
 
 | Feature | Sent to the server |
 |---|---|
-| Closing a door | One request: the terminal's own *Open* switch set to closed. The server checks access and power as for a click. At most five a second; the same door gets at most three tries. |
+| Closing a door | One request: the terminal's own *Open* switch set to closed. The server checks access and power as for a click. At most five a second; the same door gets at most three tries. Only for doors in reach: the grid (or one joined to it) within 15 m of your character, or linked to you by antenna, the same rule the server uses. Nothing is sent while you're dead or respawning. |
 | Watching doors | Nothing. Doorman reads the door state your game already has. |
 | Settings, window, chat commands | Nothing. Settings stay on your PC; nothing is written to your grids (no Custom Data, no names). |
 | Toolbar actions | Nothing when used. If you put one in a cockpit's toolbar, the slot is saved with the ship like any other. |

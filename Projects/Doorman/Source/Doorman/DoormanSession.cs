@@ -62,21 +62,29 @@ public class DoormanSession : MySessionComponentBase
 
 	protected override void UnloadData()
 	{
-		if (_started)
+		// Unsubscribed whether or not BeforeStart finished, so a failed start leaves no handler behind (-= on a
+		// handler that was never added does nothing).
+		try
 		{
-			try
+			if (MyAPIGateway.TerminalControls != null)
 			{
 				MyAPIGateway.TerminalControls.CustomActionGetter -= CustomActionGetter;
+			}
+			if (MyAPIGateway.Utilities != null)
+			{
 				MyAPIGateway.Utilities.MessageEntered -= OnMessageEntered;
-				PluginSwitcher.Unregister();
-				Personality.Unregister();
-				Personality.Changed -= Chatter.Save;
+			}
+			PluginSwitcher.Unregister();
+			Personality.Unregister();
+			Personality.Changed -= Chatter.Save;
+			if (_started)
+			{
 				Settings.SaveWorld();
 			}
-			catch (Exception ex)
-			{
-				MyLog.Default.WriteLineAndConsole($"[Doorman] Unload: {ex}");
-			}
+		}
+		catch (Exception ex)
+		{
+			MyLog.Default.WriteLineAndConsole($"[Doorman] Unload: {ex}");
 		}
 		Doors.Reset();
 		_actions.Clear();

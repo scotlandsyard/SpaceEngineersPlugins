@@ -149,6 +149,7 @@ internal static class Doors
 	public static void Reset()
 	{
 		s_grids.Clear();
+		Reach.Clear();
 		s_nextRescan = 0;
 		ClosesSent = 0;
 		// Play time starts again in another world: a start time left from the last one would hold every close back.
@@ -445,7 +446,8 @@ internal static class Doors
 			door.State = "Closing soon";
 			return;
 		}
-		// The terminal's Open switch: SetOpenRequest(false, OwnerId).
+		// The terminal's Open switch: SetOpenRequest(false, OwnerId). The terminal passes the block's owner as the
+		// identity too (MyDoor's terminal control), so the request is exactly the one a click would send.
 		block.SetOpenRequest(false, block.OwnerId);
 		s_sentThisSecond++;
 		ClosesSent++;
@@ -488,6 +490,12 @@ internal static class Doors
 		if (!block.Enabled || !block.IsWorking)
 		{
 			return "Open (off or no power)";
+		}
+		// The server refuses a close for a door out of reach (MyReplicableRightsValidator.GetAccess), so send none:
+		// nothing for grids beyond 15 m with no antenna link, and nothing while you're dead or respawning.
+		if (!Reach.InReachCached(block.CubeGrid, MyAPIGateway.Session?.ElapsedPlayTime.TotalSeconds ?? 0))
+		{
+			return "Open (out of reach)";
 		}
 		return null;
 	}
