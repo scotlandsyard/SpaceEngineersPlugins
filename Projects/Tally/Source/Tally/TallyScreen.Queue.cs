@@ -241,7 +241,11 @@ public partial class TallyScreen
 		StringBuilder text = new StringBuilder();
 		text.Append($"{Text.Summary(_bill)}");
 		text.Append(_bill.Subtracted ? $" Queuing what's still to get after what's in {_bill.HaveFrom}.\n\n" : "\n\n");
-		if (plan.Orders.Count == 0)
+		if (plan.OutOfReach != null)
+		{
+			text.Append($"Nothing can be sent. {plan.OutOfReach}\n");
+		}
+		else if (plan.Orders.Count == 0)
 		{
 			text.Append(plan.Assemblers.Count == 0 ? "Nothing can be queued there.\n" : "Nothing to queue: every component is covered or can't be made there.\n");
 		}
@@ -278,6 +282,11 @@ public partial class TallyScreen
 	{
 		ShowPlan();
 		QueuePlan plan = _queuePlan;
+		if (plan?.OutOfReach != null)
+		{
+			QueueReport("Not queued. " + plan.OutOfReach);
+			return;
+		}
 		if (plan == null || plan.Orders.Count == 0)
 		{
 			return;
@@ -287,7 +296,12 @@ public partial class TallyScreen
 		{
 			try
 			{
-				Dictionary<long, double> before = Assemblers.Send(plan);
+				Dictionary<long, double> before = Assemblers.Send(plan, out string why);
+				if (before == null)
+				{
+					QueueReport("Not queued, " + why + ".");
+					return;
+				}
 				TallySession.ExpectQueue(plan.Orders, before, QueueReport);
 				QueueReport($"Sent {plan.Runs:N0} runs to {assemblers} assembler{(assemblers == 1 ? "" : "s")}.");
 			}
@@ -308,7 +322,12 @@ public partial class TallyScreen
 		}
 		Ask("Undo last queue", $"Take Tally's last queue ({Assemblers.LastQueue.Sum(o => o.Runs):N0} runs) back out of the assemblers? Runs already started, or passed on to co-op assemblers, stay.", () =>
 		{
-			int removed = Assemblers.Undo(out int queued);
+			int removed = Assemblers.Undo(out int queued, out string why);
+			if (removed < 0)
+			{
+				QueueReport("Nothing taken back, " + why + ". Undo again once you're closer or linked by antenna.");
+				return;
+			}
 			QueueReport(removed == queued ? $"Asked the assemblers to remove all {queued:N0} runs." : $"Asked the assemblers to remove {removed:N0} of the {queued:N0} runs; the rest was already started or passed on.");
 		});
 	}

@@ -105,7 +105,7 @@ public class TallySession : MySessionComponentBase
 		s_reading = false;
 		s_queueCheck = null;
 		s_queueReport = null;
-		Assemblers.LastQueue = null;
+		Assemblers.Forget();
 		_started = false;
 	}
 
@@ -192,6 +192,17 @@ public class TallySession : MySessionComponentBase
 		}
 		MyEntity entity = Sources.Entity(source);
 		Count live;
+		// Access and ownership can change after the list was filled: check again, as the list does.
+		if (entity is MyProjectorBase lost && !lost.HasLocalPlayerAccess())
+		{
+			done(null, "You no longer have access to that projector. Refresh the list.");
+			return;
+		}
+		if (entity is MyCubeGrid notMine && source.Kind == Source.Grid && !notMine.BigOwners.Contains(Sandbox.Game.World.MySession.Static?.LocalPlayerId ?? 0))
+		{
+			done(null, "That grid isn't yours any more. Refresh the list.");
+			return;
+		}
 		if (entity is MyProjectorBase projector && projector.ProjectedGrid != null)
 		{
 			live = Sources.CountProjector(projector, options.StillNeeded);

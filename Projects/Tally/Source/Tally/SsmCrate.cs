@@ -90,10 +90,16 @@ internal static class SsmCrate
 		string why = null;
 		Action<object> reply = message =>
 		{
-			if (message is object[] parts && parts.Length >= 5 && parts[0] as string == "ssm-fill-result")
+			// Any mod can send on this channel, so take only a reply about this crate, with a known status and a short reason.
+			if (message is object[] parts && parts.Length >= 5 && parts[0] as string == "ssm-fill-result" && parts[2] is long block && block == crateId
+				&& parts[3] is string said && (said == "preview" || said == "rejected"))
 			{
-				status = parts[3] as string;
+				status = said;
 				why = parts[4] as string;
+				if (why != null && why.Length > 200)
+				{
+					why = why.Substring(0, 200) + "...";
+				}
 			}
 		};
 		List<KeyValuePair<string, double>> items = Items(bill);

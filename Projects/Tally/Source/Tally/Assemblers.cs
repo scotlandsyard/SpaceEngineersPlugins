@@ -63,6 +63,9 @@ internal class QueuePlan
 	/// <summary>Assemblers left out (disassembling, broken) and other things worth a warning.</summary>
 	public List<string> Warnings = new List<string>();
 
+	/// <summary>Set when the server would refuse requests for these assemblers (see Reach): why, starting "out of reach".</summary>
+	public string OutOfReach;
+
 	public int Runs => Orders.Sum(o => o.Runs);
 }
 
@@ -100,7 +103,7 @@ internal static class Assemblers
 			}
 			MyCubeGrid main = all.Select(a => (MyCubeGrid)a.CubeGrid).OrderByDescending(g => g.BlocksCount).First();
 			Vector3D at = main.PositionComp.WorldAABB.Center;
-			string where = $"on {main.DisplayName}, {Distance(at)}";
+			string where = $"on {main.DisplayName}, {Distance(at)}{(Reach.Check(main, out _) ? "" : ", out of reach")}";
 			List<Target> targets = new List<Target>();
 			List<IMyBlockGroup> groups = new List<IMyBlockGroup>();
 			terminal.GetBlockGroups(groups);
@@ -195,6 +198,14 @@ internal static class Assemblers
 		{
 			plan.Warnings.Add("No assembler there can take orders right now.");
 			return plan;
+		}
+		foreach (MyCubeGrid assemblerGrid in plan.Assemblers.Select(a => a.CubeGrid).Distinct())
+		{
+			if (!Reach.Check(assemblerGrid, out string why))
+			{
+				plan.OutOfReach = char.ToUpperInvariant(why[0]) + why.Substring(1) + ". Move closer or link an antenna, then Refresh lists.";
+				return plan;
+			}
 		}
 		List<string> managed = plan.Assemblers.Where(a => !AssemblerModes.IsManual(a)).Select(a => $"{a.CustomName} ({AssemblerModes.Describe(AssemblerModes.Get(a))})").ToList();
 		if (managed.Count > 0)
@@ -296,16 +307,51 @@ internal static class Assemblers
 		return total;
 	}
 
-	/// <summary>Sends the orders; returns the queue totals before, to check a few seconds later that they arrived.</summary>
-	public static Dictionary<long, double> Send(QueuePlan plan)
+	/// <summary>
+	/// What each assembler had queued just before Tally's last queue, by queue entry (ItemId): Undo only takes away
+	/// what was added on top of that, so it never cuts into someone else's order.
+	/// </summary>
+	private static Dictionary<long, Dictionary<uint, double>> s_queuedBefore = new Dictionary<long, Dictionary<uint, double>>();
+
+	/// <summary>
+	/// Sends the orders, unless the server would refuse them (out of reach: then nothing is sent and
+	/// <paramref name="why"/> says so). Returns the queue totals before, to check a few seconds later that they arrived.
+	/// </summary>
+	public static Dictionary<long, double> Send(QueuePlan plan, out string why)
 	{
+		why = null;
+		foreach (MyCubeGrid grid in plan.Orders.Select(o => o.Assembler.CubeGrid).Distinct())
+		{
+			if (!Reach.Check(grid, out why))
+			{
+				return null;
+			}
+		}
 		Dictionary<long, double> before = Watch(plan.Orders);
+		s_queuedBefore = plan.Orders.Select(o => o.Assembler).Distinct().ToDictionary(a => a.EntityId, a => Snapshot(a));
 		foreach (Order order in plan.Orders)
 		{
 			order.Assembler.AddQueueItemRequest(order.Blueprint, (MyFixedPoint)order.Runs);
 		}
 		LastQueue = plan.Orders.ToList();
 		return before;
+	}
+
+	private static Dictionary<uint, double> Snapshot(MyAssembler assembler)
+	{
+		Dictionary<uint, double> amounts = new Dictionary<uint, double>();
+		foreach (MyProductionBlock.QueueItem item in assembler.Queue)
+		{
+			amounts[item.ItemId] = (double)item.Amount;
+		}
+		return amounts;
+	}
+
+	/// <summary>Forgets the last queue (world unload).</summary>
+	public static void Forget()
+	{
+		LastQueue = null;
+		s_queuedBefore = new Dictionary<long, Dictionary<uint, double>>();
 	}
 
 	/// <summary>
@@ -328,19 +374,31 @@ internal static class Assemblers
 	/// <summary>
 	/// Takes the last queue back out: for each assembler, removes up to what Tally queued of each blueprint, from the end
 	/// of its queue. What was already started or moved on to a co-op assembler can't be told apart from other work,
-	/// so it stays. Returns the runs asked to be removed and the runs Tally had queued.
+	/// so it stays. Only what was added on top of each queue entry since just before the queue counts (matched by the
+	/// entry's ItemId in the queue as it is now), so other orders are never cut. Out of reach, nothing is sent and the
+	/// queue is kept for another try: returns -1 and <paramref name="why"/>. Else returns the runs asked to be removed
+	/// and the runs Tally had queued.
 	/// </summary>
-	public static int Undo(out int queued)
+	public static int Undo(out int queued, out string why)
 	{
 		queued = LastQueue?.Sum(o => o.Runs) ?? 0;
+		why = null;
 		int removed = 0;
 		if (LastQueue == null)
 		{
 			return 0;
 		}
+		foreach (MyCubeGrid grid in LastQueue.Where(o => !o.Assembler.Closed).Select(o => o.Assembler.CubeGrid).Distinct())
+		{
+			if (!Reach.Check(grid, out why))
+			{
+				return -1;
+			}
+		}
 		foreach (IGrouping<MyAssembler, Order> perAssembler in LastQueue.Where(o => !o.Assembler.Closed).GroupBy(o => o.Assembler))
 		{
 			Dictionary<MyBlueprintDefinitionBase, int> left = perAssembler.GroupBy(o => o.Blueprint).ToDictionary(g => g.Key, g => g.Sum(o => o.Runs));
+			s_queuedBefore.TryGetValue(perAssembler.Key.EntityId, out Dictionary<uint, double> before);
 			List<MyProductionBlock.QueueItem> queue = perAssembler.Key.Queue.ToList();
 			// From the end, so the indices still to come don't move.
 			for (int i = queue.Count - 1; i >= 0; i--)
@@ -349,7 +407,8 @@ internal static class Assemblers
 				{
 					continue;
 				}
-				int take = Math.Min(runs, (int)Math.Floor((double)queue[i].Amount + 1e-6));
+				double had = before != null && before.TryGetValue(queue[i].ItemId, out double amount) ? amount : 0.0;
+				int take = Math.Min(runs, (int)Math.Floor((double)queue[i].Amount - had + 1e-6));
 				if (take <= 0)
 				{
 					continue;

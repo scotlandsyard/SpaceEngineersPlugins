@@ -44,7 +44,8 @@ The window shows Components, Ingots and Ore as a table you can sort by any colum
 - It queues what's still to get when the tally took something off, else the whole bill.
 - *Count what's already queued there* (on by default): what the assemblers already have queued, or finished in their output, counts as on its way, so pressing Queue twice doesn't double it.
 - *Minus the assemblers' grid*: also takes off what's in that grid's inventories and what's docked to it.
-- Queue asks first, then checks a few seconds later that the assemblers show the orders. **Undo last queue** takes Tally's last queue back out, except runs already started or passed on to co-op assemblers.
+- Queue asks first, then checks a few seconds later that the assemblers show the orders. **Undo last queue** takes Tally's last queue back out, except runs already started or passed on to co-op assemblers. It only takes off what Tally added, never other orders in the same queue.
+- **Reach:** in multiplayer the server only takes queue changes from a player within 15 m of the assemblers' grid (or what's docked to it) or linked to it by antenna. Tally checks the same rule first: assemblers out of reach are marked "out of reach" in the list, and Queue and Undo send nothing to them and say so, so the server never logs refused requests.
 - Stockpile Manager and BaR Maid queue on assemblers set to Main or Co-op, and inventory scripts may queue too. The page warns when the target has a Main or Co-op assembler. Tally never changes an assembler's mode, cooperative switch or Custom Data. For a big bill, a group nothing else uses is best.
 
 ## Send to an SSM crate
@@ -67,7 +68,7 @@ With [Sacrificial Stockpile Manager](../Sacrificial%20Stockpile%20Manager) loade
 |---|---|
 | Tallying, the table, Copy | Nothing: projections, grids, inventories and definitions are already on your PC, and blueprints are your own files |
 | Write datapad | One datapad edit request per datapad, the same one the game's datapad screen sends when you press OK, only for datapads in your own inventory. The server saves the name and text with your inventory |
-| Queue, Undo last queue | One add-to-queue request per order and one remove request per queue entry, the same ones the terminal's production screen sends. The server checks access to the assembler and that you're near its grid or connected to it by antenna. Only queues change: nothing is ever put into an inventory |
+| Queue, Undo last queue | One add-to-queue request per order and one remove request per queue entry, the same ones the terminal's production screen sends. The server checks access to the assembler and that you're within 15 m of its grid or connected to it by antenna; Tally checks that first and sends nothing out of reach, so the server never sees a refused request. Only queues change: nothing is ever put into an inventory |
 | Send to SSM crate | Nothing: the message to Stockpile Manager stays inside your own game. What it does after you press Apply is its own |
 
 Only what you already have is read: projectors you have access to, grids you own, your own blueprint folder.
