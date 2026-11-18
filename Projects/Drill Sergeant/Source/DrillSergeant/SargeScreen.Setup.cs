@@ -291,16 +291,17 @@ public partial class SargeScreen
 		_drillLabel.Text = drills.Count == 0 ? "No drills on this rotor's arm." : $"Drills: all {drills.Count} on the arm" + (_reach != null ? $", cutting {_reach.Inner:0.0} to {_reach.Outer:0.0} m from the axis." : ".");
 		_autoLabel.Text = _reach == null ? "" : $"(0 = auto: horizontal {RigBlocks.AutoHorizontalStep(_reach):0.0} m, vertical {RigBlocks.AutoVerticalStep(_reach):0.0} m)";
 
-		_cargos = RigBlocks.BlocksOn<IMyCargoContainer>(construct).Cast<IMyTerminalBlock>().ToList();
+		// Only blocks you could open in the terminal yourself (not another player's ship docked to the rig).
+		_cargos = RigBlocks.BlocksOn<IMyCargoContainer>(construct).Cast<IMyTerminalBlock>().Where(b => b.HasLocalPlayerAccess()).ToList();
 		FillBlockCombo(_cargoBox, _cargos, _draft.CargoIds.Count == 1 ? _draft.CargoIds[0] : 0, "The drills themselves", _cargos.Count > 1 ? "All cargo containers on the rig" : null, _draft.CargoIds.Count > 1);
-		_lcds = RigBlocks.BlocksOn<IMyTextPanel>(construct).Cast<IMyTerminalBlock>().ToList();
+		_lcds = RigBlocks.BlocksOn<IMyTextPanel>(construct).Cast<IMyTerminalBlock>().Where(b => b.HasLocalPlayerAccess()).ToList();
 		FillBlockCombo(_lcdBox, _lcds, _draft.LcdId, "None");
-		_timers = RigBlocks.BlocksOn<IMyTimerBlock>(construct).Cast<IMyTerminalBlock>().ToList();
+		_timers = RigBlocks.BlocksOn<IMyTimerBlock>(construct).Cast<IMyTerminalBlock>().Where(b => b.HasLocalPlayerAccess()).ToList();
 		FillBlockCombo(_doneTimerBox, _timers, _draft.FinishedTimerId, "None");
 		FillBlockCombo(_fullTimerBox, _timers, _draft.CargoTimerId, "None");
 		List<IMyCubeGrid> logical = new List<IMyCubeGrid>();
 		MyAPIGateway.GridGroups.GetGroup(rotor.CubeGrid, GridLinkTypeEnum.Logical, logical);
-		_pbs = RigBlocks.BlocksOn<IMyProgrammableBlock>(logical.Count > 0 ? logical : construct).Cast<IMyTerminalBlock>().ToList();
+		_pbs = RigBlocks.BlocksOn<IMyProgrammableBlock>(logical.Count > 0 ? logical : construct).Cast<IMyTerminalBlock>().Where(b => b.HasLocalPlayerAccess()).ToList();
 		long pb = _draft.ScriptPbId != 0 ? _draft.ScriptPbId : _pbs.FirstOrDefault(p => ScriptLink.Fields(p as IMyProgrammableBlock) != null)?.EntityId ?? 0;
 		FillBlockCombo(_pbBox, _pbs, pb, "None");
 		if (string.IsNullOrWhiteSpace(_nameBox.Text) || (_editing == null && _nameBox.Text.StartsWith("Rig ", StringComparison.Ordinal)))

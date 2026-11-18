@@ -165,7 +165,7 @@ internal static class ScriptLink
 			live.CargoFill = int.Parse(cargo.Groups[1].Value) / 100.0;
 		}
 
-		string info = live.SubscribedPb == pb.EntityId ? pb.DetailedInfo : "";
+		string info = live.SubscribedPb == pb.EntityId && pb.HasLocalPlayerAccess() ? pb.DetailedInfo : "";
 		string detail = string.IsNullOrWhiteSpace(status) ? "" : "Script: " + status;
 		if (!string.IsNullOrWhiteSpace(info))
 		{
@@ -233,6 +233,12 @@ internal static class ScriptLink
 	{
 		if (RigBlocks.Get<IMyProgrammableBlock>(pbId) is MyTerminalBlock block)
 		{
+			// Only a PB you could open in the terminal: its script output is the PB's own detail text, which vanilla
+			// shows only to players with access.
+			if (on && !((Sandbox.ModAPI.IMyTerminalBlock)block).HasLocalPlayerAccess())
+			{
+				return false;
+			}
 			block.OnOpenedInTerminal(on);
 			return true;
 		}
@@ -366,6 +372,10 @@ internal static class ScriptLink
 		if (!Reach.InReach(pb.CubeGrid))
 		{
 			return $"Out of reach: be within {Reach.Distance:0} m of the rig or linked to it by antenna.";
+		}
+		if (!pb.HasLocalPlayerAccess())
+		{
+			return $"You have no access to {pb.CustomName}, so Sarge won't touch its settings.";
 		}
 		string[] fields = Fields(pb);
 		if (fields == null)

@@ -36,6 +36,8 @@ Press **New Rig** near the rig and pick its rotor (rotors with a head within 150
 - **LCD** (optional): one of your LCDs shows the rig's state.
 - **When done / When full** (optional): timer blocks started when the rig finishes, or when the cargo pause sets in.
 
+The Cargo, LCD, timer and programmable block lists only offer blocks you could open in the terminal yourself, so another player's ship docked to the rig never shows up there. Sarge reads a script's output and writes a PB's settings only on a PB you have access to.
+
 Settings (the script's defaults):
 
 | Setting | Default | Meaning |
@@ -99,7 +101,7 @@ Only requests a player can make by hand, each sent once when it's needed and nev
 | LCD | One text update at most every 10 s, only when the text changed; only on your own LCDs |
 | Timers | The terminal's Start, once per event |
 | Share inertia tensor | The checkbox, once at start; with the refresh option, 2 per minute while sweeping |
-| Script mode setup | Block renames and one Custom Data edit |
+| Script mode setup | Block renames and one Custom Data edit, only on blocks you have access to and in reach |
 | Script mode commands | One Run per button press |
 | Toolbar actions (optional) | Their ids are saved in the grid's toolbar, like any action. Other players see an empty slot |
 
