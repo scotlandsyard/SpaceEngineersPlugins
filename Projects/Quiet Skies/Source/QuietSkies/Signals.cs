@@ -117,7 +117,13 @@ internal static class Signals
 			return null;
 		}
 		// The server names cargo drops "<Strong Unknown Signal|Unknown Signal> <number>" in its own language.
-		// Check the large name first: in English it ends in the small one.
+		// Check the large name first: in English it ends in the small one. The number must be there too
+		// (MySessionComponentContainerDropSystem names them "<name> <id>"), so a mod or scenario marker that only
+		// starts with the same words is never taken for a drop.
+		if (!EndsInNumber(name))
+		{
+			return null;
+		}
 		if (StartsWith(name, MyTexts.GetString(MySpaceTexts.ContainerDropSystemContainerLarge)) || StartsWith(name, "Strong Unknown Signal"))
 		{
 			return SignalKind.Strong;

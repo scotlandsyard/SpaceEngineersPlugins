@@ -62,9 +62,10 @@ internal static class Reach
 		}
 		catch (Exception ex)
 		{
-			// If the check itself breaks, don't block the player for it.
+			// If the check itself breaks, send nothing: the server might refuse it.
 			VRage.Utils.MyLog.Default.WriteLineAndConsole($"[Tally] Reach check: {ex.Message}");
-			return true;
+			why = "the reach check failed (see the log), so nothing was sent";
+			return false;
 		}
 	}
 

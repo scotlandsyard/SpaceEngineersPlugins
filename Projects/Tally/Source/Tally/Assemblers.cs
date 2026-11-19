@@ -320,6 +320,12 @@ internal static class Assemblers
 	public static Dictionary<long, double> Send(QueuePlan plan, out string why)
 	{
 		why = null;
+		// Checked again after the confirm box: access can change while it's open.
+		if (plan.Orders.Any(o => !Usable(o.Assembler)))
+		{
+			why = "you no longer have access to one of the assemblers";
+			return null;
+		}
 		foreach (MyCubeGrid grid in plan.Orders.Select(o => o.Assembler.CubeGrid).Distinct())
 		{
 			if (!Reach.Check(grid, out why))
@@ -387,6 +393,11 @@ internal static class Assemblers
 		if (LastQueue == null)
 		{
 			return 0;
+		}
+		if (LastQueue.Any(o => !o.Assembler.Closed && !Usable(o.Assembler)))
+		{
+			why = "you no longer have access to one of the assemblers";
+			return -1;
 		}
 		foreach (MyCubeGrid grid in LastQueue.Where(o => !o.Assembler.Closed).Select(o => o.Assembler.CubeGrid).Distinct())
 		{

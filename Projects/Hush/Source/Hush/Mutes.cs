@@ -461,6 +461,8 @@ internal static class Mutes
 		{
 			s_blocks.Clear();
 			s_heard.Clear();
+			// Keyed by definition objects: keeping them would hold the last world's definitions in memory.
+			s_definitionSounds.Clear();
 		}
 		s_worldFile = null;
 	}

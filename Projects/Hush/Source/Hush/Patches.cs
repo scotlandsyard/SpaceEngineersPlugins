@@ -15,7 +15,8 @@ namespace Hush;
 /// The buffered PlaySound(byte[]) path is left alone on purpose: in the game only voice chat uses it, and voice chat
 /// is never muted. Character sounds are never muted either (Mutes.BlockOf stops at a character).
 /// A muted emitter keeps its Loop flag, so the emitter keeps asking to play and the sound comes back by itself when
-/// the block is unmuted. Nothing here touches the network: it only changes what this PC plays.
+/// the block is unmuted. A loop that first starts while muted gets the flag set here as the game would have set it
+/// (PlaySoundInternal), so it comes back on unmute too. Nothing here touches the network: it only changes what this PC plays.
 /// </summary>
 internal static class Patches
 {
@@ -24,6 +25,8 @@ internal static class Patches
 	private static Harmony s_harmony;
 
 	private static bool s_loggedPlayError;
+
+	private static Action<MyEntity3DSoundEmitter, bool> s_setLoop;
 
 	public static void Apply()
 	{
@@ -36,6 +39,7 @@ internal static class Patches
 		{
 			s_harmony.Patch(AccessTools.Constructor(typeof(MyEntity3DSoundEmitter), new[] { typeof(MyEntity), typeof(bool), typeof(float) }),
 				postfix: new HarmonyMethod(typeof(Patches), nameof(ConstructorPostfix)));
+			s_setLoop = AccessTools.MethodDelegate<Action<MyEntity3DSoundEmitter, bool>>(AccessTools.PropertySetter(typeof(MyEntity3DSoundEmitter), nameof(MyEntity3DSoundEmitter.Loop)));
 			s_harmony.Patch(AccessTools.Method(typeof(MyEntity3DSoundEmitter), "PlaySoundInternal"),
 				prefix: new HarmonyMethod(typeof(Patches), nameof(PlayPrefix)));
 		}
@@ -58,9 +62,34 @@ internal static class Patches
 	}
 
 	/// <summary>False (skip the game's method) when the emitter belongs to a muted block. SoundId is the cue about to play.</summary>
-	private static bool PlayPrefix(MyEntity3DSoundEmitter __instance)
+	private static bool PlayPrefix(MyEntity3DSoundEmitter __instance, bool skipToEnd)
 	{
-		return Check(__instance, __instance.SoundId);
+		bool play = Check(__instance, __instance.SoundId);
+		if (!play)
+		{
+			MarkLoop(__instance, skipToEnd);
+		}
+		return play;
+	}
+
+	/// <summary>
+	/// The game sets Loop inside PlaySoundInternal, which a muted block skips. Set it the same way, so the emitter's
+	/// Update keeps asking to play and the loop comes back by itself on unmute. The block's own StopSound clears it.
+	/// </summary>
+	private static void MarkLoop(MyEntity3DSoundEmitter emitter, bool skipToEnd)
+	{
+		try
+		{
+			if (s_setLoop != null && !emitter.Loop && !skipToEnd && emitter.CanPlayLoopSounds && !emitter.SoundId.IsNull && MyAudio.Static != null && MyAudio.Static.IsLoopable(emitter.SoundId))
+			{
+				s_setLoop(emitter, true);
+			}
+		}
+		catch (Exception)
+		{
+			// Not worth a log line per sound: the loop just won't come back until the block asks again, as before.
+			s_setLoop = null;
+		}
 	}
 
 	private static bool Check(MyEntity3DSoundEmitter emitter, MyCueId? cue)

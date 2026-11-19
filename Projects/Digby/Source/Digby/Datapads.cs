@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using Sandbox.Common.ObjectBuilders.Definitions;
 using Sandbox.Engine.Multiplayer;
 using Sandbox.Game;
@@ -162,9 +163,20 @@ internal static class Datapads
 			chosen.Add(first);
 		}
 		string baseName = NamePrefix + result.PlanName;
-		chosen.AddRange(pads.Where(p => !chosen.Contains(p) && IsThisPlan(p.Name, baseName)).OrderBy(p => p.Name, StringComparer.Ordinal));
+		// Same name isn't enough: two plans from different starts to the same target share it, and so can a pad a
+		// teammate gave you. A set of pads ("<name>", "<name> (1/3)"...) is this plan only if one of them holds this
+		// plan's start GPS line; any other set is left alone and Assign gives the new one a "#2" name.
+		string startLine = Gps(result.AllMarkers()[0], result, coloured: true);
+		HashSet<string> ours = new HashSet<string>(pads.Where(p => IsThisPlan(p.Name, baseName) && (p.Data ?? "").Contains(startLine)).Select(p => SetName(p.Name)), StringComparer.Ordinal);
+		chosen.AddRange(pads.Where(p => !chosen.Contains(p) && IsThisPlan(p.Name, baseName) && ours.Contains(SetName(p.Name))).OrderBy(p => p.Name, StringComparer.Ordinal));
 		chosen.AddRange(pads.Where(p => !chosen.Contains(p) && p.Empty));
 		return chosen.Take(needed).ToList();
+	}
+
+	/// <summary>A pad's name without its " (2/3)" page count: the name the whole set shares.</summary>
+	private static string SetName(string padName)
+	{
+		return Regex.Replace(padName ?? "", @" \(\d+/\d+\)$", "");
 	}
 
 	public static bool IsThisPlan(string padName, string baseName)

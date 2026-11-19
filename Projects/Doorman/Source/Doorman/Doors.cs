@@ -149,6 +149,7 @@ internal static class Doors
 	public static void Reset()
 	{
 		s_grids.Clear();
+		Reach.Clear();
 		s_nextRescan = 0;
 		ClosesSent = 0;
 		// Play time starts again in another world: a start time left from the last one would hold every close back.
@@ -507,11 +508,15 @@ internal static class Doors
 		{
 			return "Open (off or no power)";
 		}
-		// Every door on a grid loaded on this PC (sync range), but nothing while you're dead or respawning: the server
-		// checks the request against your character, so without one every close would be refused.
+		// The server refuses a close for a door out of reach (MyReplicableRightsValidator.GetAccess), so send none:
+		// nothing while you're dead or respawning, and nothing for grids beyond 15 m with no antenna link.
 		if (MyAPIGateway.Multiplayer != null && !MyAPIGateway.Multiplayer.IsServer && !CharacterAlive())
 		{
 			return "Open (you're dead or respawning)";
+		}
+		if (!Reach.InReachCached(block.CubeGrid, MyAPIGateway.Session?.ElapsedPlayTime.TotalSeconds ?? 0))
+		{
+			return "Open (out of reach)";
 		}
 		return null;
 	}

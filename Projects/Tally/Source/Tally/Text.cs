@@ -130,7 +130,8 @@ internal static class Text
 				MyLog.Default.WriteLineAndConsole($"[Tally] Clipboard: {ex.Message}");
 			}
 		});
-		thread.SetApartmentState(ApartmentState.STA);
+		// STA is Windows only; on Linux (Pulsar Interim) TrySetApartmentState returns false instead of throwing.
+		thread.TrySetApartmentState(ApartmentState.STA);
 		thread.Start();
 		thread.Join(2000);
 		return done;

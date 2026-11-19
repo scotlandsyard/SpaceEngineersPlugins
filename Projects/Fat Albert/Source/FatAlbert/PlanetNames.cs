@@ -156,7 +156,8 @@ internal static class PlanetNames
 				MyLog.Default.WriteLineAndConsole($"[Fat Albert] Clipboard: {ex.Message}");
 			}
 		});
-		thread.SetApartmentState(ApartmentState.STA);
+		// STA is Windows only; on Linux (Pulsar Interim) TrySetApartmentState returns false instead of throwing.
+		thread.TrySetApartmentState(ApartmentState.STA);
 		thread.Start();
 		thread.Join(2000);
 		return text;
