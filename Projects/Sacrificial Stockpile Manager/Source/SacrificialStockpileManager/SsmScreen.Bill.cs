@@ -37,6 +37,14 @@ public partial class SsmScreen
 
 	private static string s_billCount = "1";
 
+	/// <summary>Items added as lines of their own (500 x Steel Plate), item key and amount, in the order added.</summary>
+	private static readonly List<KeyValuePair<string, double>> s_billItems = new List<KeyValuePair<string, double>>();
+
+	/// <summary>The picker lists items instead of block types (the third choice in the size list).</summary>
+	private static bool s_billItemMode;
+
+	private static string s_billItemPick;
+
 	private MyGuiControlCombobox _billBlockCombo;
 
 	private readonly List<string> _billBlockKeys = new List<string>();
@@ -48,6 +56,7 @@ public partial class SsmScreen
 		s_blockId = blockId;
 		s_billBlockId = blockId;
 		s_billLines.Clear();
+		s_billItems.Clear();
 		s_billExtra = new Dictionary<string, double>(items);
 		s_billExtraSource = source;
 		s_billKeep = keep;
@@ -65,6 +74,7 @@ public partial class SsmScreen
 		{
 			s_billBlockId = blockId;
 			s_billLines.Clear();
+			s_billItems.Clear();
 			s_billExtra = new Dictionary<string, double>();
 			s_billExtraSource = "";
 		}
@@ -83,7 +93,7 @@ public partial class SsmScreen
 			Size = new Vector2(0.12f, BoxHeight),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
 		};
-		search.SetToolTip("Type part of a block's name to shorten the block type list.");
+		search.SetToolTip("Type part of a block's (or, with Items picked, an item's) name to shorten the list.");
 		search.TextChanged += box =>
 		{
 			s_billSearch = box.Text ?? "";
@@ -92,13 +102,18 @@ public partial class SsmScreen
 		};
 		Controls.Add(search);
 
-		MyGuiControlCombobox size = AddCombo(-0.245f, Row2Y, 0.1f, 2);
+		MyGuiControlCombobox size = AddCombo(-0.245f, Row2Y, 0.1f, 3, "Large or Small: block types, whose parts are added.\nItems: a component or any other item and an amount, added as it is.");
 		size.AddItem(1, "Large", 0, null, sort: false);
 		size.AddItem(0, "Small", 1, null, sort: false);
-		size.SelectItemByKey(s_billLarge ? 1 : 0, sendEvent: false);
+		size.AddItem(2, "Items", 2, null, sort: false);
+		size.SelectItemByKey(s_billItemMode ? 2 : s_billLarge ? 1 : 0, sendEvent: false);
 		size.ItemSelected += () =>
 		{
-			s_billLarge = size.GetSelectedKey() == 1;
+			s_billItemMode = size.GetSelectedKey() == 2;
+			if (!s_billItemMode)
+			{
+				s_billLarge = size.GetSelectedKey() == 1;
+			}
 			FillBillBlocks();
 			RefreshBillRows();
 		};
@@ -109,7 +124,14 @@ public partial class SsmScreen
 			int index = (int)_billBlockCombo.GetSelectedKey();
 			if (index >= 0 && index < _billBlockKeys.Count)
 			{
-				s_billPick = _billBlockKeys[index];
+				if (s_billItemMode)
+				{
+					s_billItemPick = _billBlockKeys[index];
+				}
+				else
+				{
+					s_billPick = _billBlockKeys[index];
+				}
 				RefreshBillRows();
 			}
 		};
@@ -117,11 +139,12 @@ public partial class SsmScreen
 
 		// Buttons are taller than combo boxes, so the rows with a button sit further apart than Row2Y and Row3Y.
 		AddLabel(Left, BillRow3Y, "Count");
-		MyGuiControlTextbox count = new MyGuiControlTextbox(new Vector2(BillBoxX, BillRow3Y + BoxNudge), s_billCount, 5)
+		MyGuiControlTextbox count = new MyGuiControlTextbox(new Vector2(BillBoxX, BillRow3Y + BoxNudge), s_billCount, 9)
 		{
 			Size = new Vector2(0.07f, BoxHeight),
 			OriginAlign = MyGuiDrawAlignEnum.HORISONTAL_LEFT_AND_VERTICAL_CENTER
 		};
+		count.SetToolTip("How many blocks, or with Items picked, how much of the item (like 500).");
 		count.TextChanged += box => s_billCount = box.Text;
 		Controls.Add(count);
 		AddButton(-0.205f, "Add line", AddBillLine, BillRow3Y);
@@ -303,6 +326,11 @@ public partial class SsmScreen
 		}
 		_billBlockCombo.ClearItems();
 		_billBlockKeys.Clear();
+		if (s_billItemMode)
+		{
+			FillBillItemChoices();
+			return;
+		}
 		foreach (MyCubeBlockDefinition def in BlockBill.Choices(s_billSearch, s_billLarge).Take(400))
 		{
 			string mod = def.Context != null && !def.Context.IsBaseGame ? $"  ({def.Context.ModName})" : "";
@@ -321,8 +349,81 @@ public partial class SsmScreen
 		}
 	}
 
+	/// <summary>
+	/// The item list in Items mode: the quota picker's rule (what can be made here, plus what the grid holds or has a
+	/// quota for, marked), so admin-only items only show when the grid has some.
+	/// </summary>
+	private void FillBillItemChoices()
+	{
+		GridSnapshot grid = Grid;
+		IEnumerable<string> keys = Items.Catalog;
+		if (grid != null)
+		{
+			keys = keys.Concat(grid.Totals.Keys.Where(k => !Items.Catalog.Contains(k)));
+		}
+		string text = (s_billSearch ?? "").Trim();
+		foreach (KeyValuePair<string, bool> choice in Items.QuotaChoices(keys, QuotaKeep(grid), QuotaAssemblers(grid))
+			.Where(c => text.Length == 0 || Items.Name(c.Key).IndexOf(text, StringComparison.OrdinalIgnoreCase) >= 0)
+			.OrderBy(c => (int)Items.Category(c.Key)).ThenBy(c => Items.Name(c.Key), StringComparer.OrdinalIgnoreCase))
+		{
+			string mark = choice.Value ? "" : "  - not buildable here";
+			_billBlockCombo.AddItem(_billBlockKeys.Count, $"{Items.Name(choice.Key)}  ({Items.CategoryShort[(int)Items.Category(choice.Key)]}){mark}", _billBlockKeys.Count, null, sort: false);
+			_billBlockKeys.Add(choice.Key);
+		}
+		int selected = s_billItemPick == null ? -1 : _billBlockKeys.IndexOf(s_billItemPick);
+		if (selected < 0 && _billBlockKeys.Count > 0)
+		{
+			selected = 0;
+			s_billItemPick = _billBlockKeys[0];
+		}
+		if (selected >= 0)
+		{
+			_billBlockCombo.SelectItemByKey(selected, sendEvent: false);
+		}
+	}
+
+	/// <summary>Adds the picked item and amount as a line of its own (Items mode).</summary>
+	private void AddBillItem()
+	{
+		if (s_billItemPick == null)
+		{
+			ShowMessage("Pick an item first (type part of its name in Find).", WarningColor);
+			return;
+		}
+		string text = (s_billCount ?? "").Trim();
+		bool parsed = double.TryParse(text, System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out double amount)
+			|| double.TryParse(text, out amount);
+		if (!parsed || double.IsNaN(amount) || amount <= 0.0 || amount > 10000000.0)
+		{
+			ShowMessage("Type how much, like 500.", WarningColor);
+			return;
+		}
+		if (Items.IsIntegral(s_billItemPick) && Math.Abs(amount - Math.Round(amount)) > 1e-6)
+		{
+			ShowMessage($"{Items.Name(s_billItemPick)} only comes whole: type a whole number.", WarningColor);
+			return;
+		}
+		int index = s_billItems.FindIndex(l => l.Key == s_billItemPick);
+		if (index >= 0)
+		{
+			s_billItems[index] = new KeyValuePair<string, double>(s_billItemPick, s_billItems[index].Value + amount);
+		}
+		else
+		{
+			s_billItems.Add(new KeyValuePair<string, double>(s_billItemPick, amount));
+		}
+		ShowMessage($"Added {Items.Amount(amount)} x {Items.Name(s_billItemPick)}.", GoodColor);
+		_rowsSignature = null;
+		RefreshAll();
+	}
+
 	private void AddBillLine()
 	{
+		if (s_billItemMode)
+		{
+			AddBillItem();
+			return;
+		}
 		if (s_billPick == null)
 		{
 			ShowMessage("Pick a block type first (type part of its name in Find).", WarningColor);
@@ -361,7 +462,7 @@ public partial class SsmScreen
 	private static Dictionary<string, double> BillItems()
 	{
 		Dictionary<string, double> items = BlockBill.Sum(s_billLines.Select(l => l.Key).ToList(), s_billLines.Select(l => l.Value).ToList());
-		foreach (KeyValuePair<string, double> extra in s_billExtra)
+		foreach (KeyValuePair<string, double> extra in s_billExtra.Concat(s_billItems))
 		{
 			items.TryGetValue(extra.Key, out double amount);
 			items[extra.Key] = amount + extra.Value;
@@ -372,7 +473,9 @@ public partial class SsmScreen
 	/// <summary>A label for what the bill is for, saved with its lines.</summary>
 	private static string BillSource()
 	{
-		List<string> parts = s_billLines.Select(l => $"{l.Value} x {BlockName(l.Key)}").ToList();
+		List<string> parts = s_billLines.Select(l => $"{l.Value} x {BlockName(l.Key)}")
+			.Concat(s_billItems.Select(l => $"{Items.Amount(l.Value)} x {Items.Name(l.Key)}"))
+			.ToList();
 		if (s_billExtra.Count > 0)
 		{
 			parts.Insert(0, s_billExtraSource);
@@ -399,17 +502,21 @@ public partial class SsmScreen
 				rows.AddRange(PartRows($"bp:{i}:", id, s_billLines[i].Value));
 			}
 		}
+		for (int i = 0; i < s_billItems.Count; i++)
+		{
+			rows.Add(Row("bm:" + i, GoodColor, $"  {Items.Amount(s_billItems[i].Value)} x {Items.Name(s_billItems[i].Key)}", "", "", "", "", "item line"));
+		}
 		if (s_billExtra.Count > 0)
 		{
 			rows.Add(Row("bx", GoodColor, $"From {s_billExtraSource}", "", "", "", "", $"{s_billExtra.Count} item(s)"));
 		}
-		if (s_billLines.Count == 0 && s_billExtra.Count == 0 && s_billPick != null)
+		if (s_billLines.Count == 0 && s_billItems.Count == 0 && s_billExtra.Count == 0 && s_billPick != null && !s_billItemMode)
 		{
 			// Nothing added yet: the parts of the block type picked above, so they show before Add line.
 			rows.Add(Row("bpick", MutedColor, $"Parts for 1 x {BlockName(s_billPick)} (not added yet)"));
 			rows.AddRange(PartRows("bp:pick:", s_billPick, 1));
 		}
-		else if (s_billLines.Count + (s_billExtra.Count > 0 ? 1 : 0) > 1 || s_billOpen.Overlaps(s_billLines.Select(l => l.Key)))
+		else if (s_billLines.Count + s_billItems.Count + (s_billExtra.Count > 0 ? 1 : 0) > 1 || s_billOpen.Overlaps(s_billLines.Select(l => l.Key)))
 		{
 			rows.Add(Row("bt", null, "Total for the bill"));
 		}
@@ -427,6 +534,54 @@ public partial class SsmScreen
 			string state = first.Keep ? "Keep stocked" : done == set.Count() ? "Fill once, packed" : $"Fill once, {done} of {set.Count()} items in";
 			rows.Add(Row("bs:" + set.Key, MutedColor, $"On the block: {first.Source}", "", "", "", "", state));
 		}
+		rows.AddRange(WaitingRows(grid, existing));
+		return rows;
+	}
+
+	/// <summary>
+	/// What the sets already on the crate ask for, per item: the amount, what the crate holds, what's on the grid, and
+	/// what's still to come (the minimum the engine fills to, less what's there; Fill-once items already packed don't
+	/// come again), with the set(s) it's for.
+	/// </summary>
+	private static List<RowData> WaitingRows(GridSnapshot grid, List<BillLine> existing)
+	{
+		List<RowData> rows = new List<RowData>();
+		List<BillLine> lines = existing.Where(b => b.Amount > 0.0).ToList();
+		if (lines.Count == 0)
+		{
+			return rows;
+		}
+		BlockSnapshot block = grid?.Block(s_billBlockId);
+		BlockRules rules = Store.BlockRules(s_billBlockId);
+		Dictionary<string, double> totals = grid?.Totals ?? new Dictionary<string, double>();
+		List<IGrouping<string, BillLine>> items = lines.GroupBy(b => b.Item)
+			.OrderBy(g => (int)Items.Category(g.Key)).ThenBy(g => Items.Name(g.Key), StringComparer.OrdinalIgnoreCase).ToList();
+		int waitingItems = 0;
+		List<RowData> itemRows = new List<RowData>();
+		foreach (IGrouping<string, BillLine> item in items)
+		{
+			double wanted = item.Sum(b => b.Amount);
+			double packed = item.Where(b => !b.Keep && b.Done).Sum(b => b.Amount);
+			ItemLimit own = rules?.Limit(item.Key);
+			double ownMin = own != null && own.HasMin ? own.Min : 0.0;
+			double have = 0.0;
+			block?.ItemAmounts.TryGetValue(item.Key, out have);
+			totals.TryGetValue(item.Key, out double onGrid);
+			double toCome = Math.Max(0.0, ownMin + wanted - packed - have);
+			if (toCome > 1e-6)
+			{
+				waitingItems++;
+			}
+			string sets = string.Join(", ", item.Select(b => string.IsNullOrEmpty(b.Source) ? "(no name)" : b.Source).Distinct());
+			string state = toCome > 1e-6 ? $"{Items.Amount(toCome)} to come" : packed > 0.0 && packed >= wanted - 1e-6 ? "packed" : "loaded";
+			// Short: what of it isn't anywhere else on the grid either, so it has to be made or brought.
+			double missing = Math.Max(0.0, toCome - Math.Max(0.0, onGrid - have));
+			itemRows.Add(Row("bw:" + item.Key, toCome > 1e-6 ? (Color?)null : GoodColor, "   " + Items.Name(item.Key),
+				Items.Amount(wanted), Items.Amount(have), Items.Amount(onGrid), missing > 1e-6 ? Items.Amount(missing) : "",
+				$"{state}{(ownMin > 0.0 ? $" (+ its own min {Items.Amount(ownMin)})" : "")}: {sets}"));
+		}
+		rows.Add(Row("bwh", null, $"In the crate for its sets: {items.Count - waitingItems} loaded, {waitingItems} still to come"));
+		rows.AddRange(itemRows);
 		return rows;
 	}
 
@@ -436,9 +591,11 @@ public partial class SsmScreen
 		{
 			return "Pick the crate to fill under Crate (Find shortens the list), and the block types to build above.";
 		}
-		if (s_billLines.Count == 0 && s_billExtra.Count == 0)
+		if (s_billLines.Count == 0 && s_billItems.Count == 0 && s_billExtra.Count == 0)
 		{
-			return "Pick a block type and count, Add line, then Apply. Adds to the crate's minimums; nothing is lowered.";
+			return s_billItemMode
+				? "Pick an item and amount, Add line, then Apply. Adds to the crate's minimums; nothing is lowered."
+				: "Pick a block type and count (or Items for a component), Add line, then Apply. Nothing is lowered.";
 		}
 		List<BlockBill.Line> preview = BillPreview(grid);
 		int shortItems = preview.Count(l => l.Short > 0.0 && l.Buildable);
@@ -459,6 +616,11 @@ public partial class SsmScreen
 			ShowMessage($"Removed {BlockName(s_billLines[index].Key)}.", null);
 			s_billLines.RemoveAt(index);
 		}
+		else if (key.StartsWith("bm:", StringComparison.Ordinal) && int.TryParse(key.Substring(3), out int itemIndex) && itemIndex < s_billItems.Count)
+		{
+			ShowMessage($"Removed {Items.Name(s_billItems[itemIndex].Key)}.", null);
+			s_billItems.RemoveAt(itemIndex);
+		}
 		else if (key == "bx")
 		{
 			ShowMessage($"Removed the list from {s_billExtraSource}.", null);
@@ -471,6 +633,11 @@ public partial class SsmScreen
 			int removed = BlockBill.Remove(s_billBlockId, source, keep);
 			Session?.RunNow(Live);
 			ShowMessage($"Removed {removed} block-materials minimum(s) ({source}) from the block.", null);
+		}
+		else if (key.StartsWith("bw", StringComparison.Ordinal))
+		{
+			ShowMessage("That's what the crate's sets ask for: select the set (On the block: ...) and Remove it instead.", WarningColor);
+			return;
 		}
 		else
 		{
@@ -506,6 +673,7 @@ public partial class SsmScreen
 		int skipped = preview.Count(l => l.Fill <= 0.0);
 		Live?.AddLog($"{SupplyCrateName} for {block.Name} ({(s_billKeep ? "Keep stocked" : "Fill once")}): {added} item(s) added to its minimums, {source}");
 		s_billLines.Clear();
+		s_billItems.Clear();
 		s_billExtra = new Dictionary<string, double>();
 		Session?.RunNow(Live);
 		ShowMessage($"Added {added} item(s) to {block.Name}'s minimums{(skipped > 0 ? $"; {skipped} skipped (none here, can't be made)" : "")}.", GoodColor);
