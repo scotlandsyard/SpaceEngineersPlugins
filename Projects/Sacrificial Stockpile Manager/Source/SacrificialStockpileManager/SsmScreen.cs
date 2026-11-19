@@ -75,6 +75,9 @@ public partial class SsmScreen : MyGuiScreenBase
 
 	private const int RefreshFrames = 30;
 
+	/// <summary>Cells with more characters than this get a tooltip with the whole text.</summary>
+	private const int LongCellText = 24;
+
 	private const float Left = -0.42f;
 
 	private const float Row1Y = -0.375f;
@@ -1134,7 +1137,8 @@ public partial class SsmScreen : MyGuiScreenBase
 				// A cell draws every line of its text, so line breaks (from block or modded item names) would spill over the rows below.
 				string text = (i < data.Texts.Length ? data.Texts[i] ?? "" : "").Replace("\r", "").Replace('\n', ' ');
 				object sortValue = data.SortValues != null && i < data.SortValues.Length && data.SortValues[i] != null ? data.SortValues[i] : text;
-				MyGuiControlTable.Cell cell = new MyGuiControlTable.Cell(text, sortValue, null, data.Color);
+				// Long text can be cut off by the column: hovering the cell shows all of it.
+				MyGuiControlTable.Cell cell = new MyGuiControlTable.Cell(text, sortValue, text.Trim().Length > LongCellText ? text.Trim() : null, data.Color);
 				if (i < _rightAligned.Length && _rightAligned[i])
 				{
 					cell.Margin = RightCellMargin;

@@ -88,11 +88,11 @@ public partial class SsmScreen
 			return new List<Column>
 			{
 				new Column { Name = "Item", Width = 0.3f, Sortable = false },
-				new Column { Name = "Needed", Width = 0.11f, RightAligned = true, Sortable = false },
-				new Column { Name = "In block", Width = 0.11f, RightAligned = true, Sortable = false },
-				new Column { Name = "On grid", Width = 0.11f, RightAligned = true, Sortable = false },
-				new Column { Name = "Short", Width = 0.11f, RightAligned = true, Sortable = false },
-				new Column { Name = "Note", Width = 0.26f, Sortable = false }
+				new Column { Name = "Needed", Width = 0.095f, RightAligned = true, Sortable = false },
+				new Column { Name = "In block", Width = 0.095f, RightAligned = true, Sortable = false },
+				new Column { Name = "On grid", Width = 0.095f, RightAligned = true, Sortable = false },
+				new Column { Name = "Short", Width = 0.085f, RightAligned = true, Sortable = false },
+				new Column { Name = "Note", Width = 0.33f, Sortable = false }
 			};
 		case View.Block:
 			return new List<Column>

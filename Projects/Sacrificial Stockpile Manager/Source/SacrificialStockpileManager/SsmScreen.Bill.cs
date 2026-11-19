@@ -527,12 +527,15 @@ public partial class SsmScreen
 		}
 		// What's already on the block from earlier bills, by set.
 		List<BillLine> existing = Store.BlockRules(s_billBlockId)?.Bill ?? new List<BillLine>();
+		BlockSnapshot crate = grid?.Block(s_billBlockId);
 		foreach (IGrouping<string, BillLine> set in existing.GroupBy(b => (b.Keep ? "k|" : "o|") + b.Source))
 		{
 			BillLine first = set.First();
 			int done = set.Count(b => b.Done);
-			string state = first.Keep ? "Keep stocked" : done == set.Count() ? "Fill once, packed" : $"Fill once, {done} of {set.Count()} items in";
-			rows.Add(Row("bs:" + set.Key, MutedColor, $"On the block: {first.Source}", "", "", "", "", state));
+			// Started: not full yet, but some of it is in the crate.
+			int started = set.Count(b => !b.Done && crate != null && crate.ItemAmounts.TryGetValue(b.Item, out double have) && have > 0.0);
+			string state = first.Keep ? "Keep stocked" : done == set.Count() ? "Fill once, packed" : $"Fill once, {done} of {set.Count()} full{(started > 0 ? $", {started} started" : "")}";
+			rows.Add(Row("bs:" + set.Key, MutedColor, $"Set: {first.Source}", "", "", "", "", state));
 		}
 		rows.AddRange(WaitingRows(grid, existing));
 		return rows;
@@ -580,7 +583,7 @@ public partial class SsmScreen
 				Items.Amount(wanted), Items.Amount(have), Items.Amount(onGrid), missing > 1e-6 ? Items.Amount(missing) : "",
 				$"{state}{(ownMin > 0.0 ? $" (+ its own min {Items.Amount(ownMin)})" : "")}: {sets}"));
 		}
-		rows.Add(Row("bwh", null, $"In the crate for its sets: {items.Count - waitingItems} loaded, {waitingItems} still to come"));
+		rows.Add(Row("bwh", null, $"For its sets: {items.Count - waitingItems} loaded, {waitingItems} to come"));
 		rows.AddRange(itemRows);
 		return rows;
 	}
@@ -636,7 +639,7 @@ public partial class SsmScreen
 		}
 		else if (key.StartsWith("bw", StringComparison.Ordinal))
 		{
-			ShowMessage("That's what the crate's sets ask for: select the set (On the block: ...) and Remove it instead.", WarningColor);
+			ShowMessage("That's what the crate's sets ask for: select the set (Set: ...) and Remove it instead.", WarningColor);
 			return;
 		}
 		else
